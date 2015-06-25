@@ -122,7 +122,7 @@ libDirectional is licensed under the GPLv3 license.
 Contact
 -------
 
-Lead autor: Gerhard Kurz
+Lead author: Gerhard Kurz
 
 Mail: gerhard.kurz (at) kit.edu
 
