@@ -1,0 +1,135 @@
+libDirectional
+==============
+
+libDirectional is a library for directional statistics as well as recursive estimation on directional manifolds. The supported manifolds include 
+
+  * unit circle
+  * unit hypersphere
+  * complex unit hypersphere  
+  * torus
+  * SE(2)
+
+For each of these manifolds, the library contains certain probability distributions as well as recursive filtering algorithms.
+
+Installation
+------------
+
+Requirements:
+
+  * Matlab 2013b or later
+  * a suitable compiler (Visual Studio 2012, Visual Studio 2013 Update 4 or later, gcc 4.7 or later, XCode)
+
+To use libDirectional, add the entire lib-folder including subdirectories to Matlab's search path. Then, change to the lib-folder and run the `compileAll.m` script. This script should compile all mex-files used by libDirectional. 
+
+If you experience any issues, run `mex -setup` and `mex -setup C++` to ensure that you have selected the correct compiler. In case you have trouble compiling with gcc, make sure that you are using a version that is officially supported by MATLAB.
+
+Example: Plotting Probability Density Functions
+-----------------------------------------------
+
+For example, we can generate a two-dimensional plot of the pdf of a wrapped normal distribution with parameters mu = 2 and sigma = 1.3 simply by typing the following two commands.
+
+	>> wn = WNDistribution(2, 1.3);
+	>> wn.plot2d();
+
+We can then set the labels and axis using the following code: 
+
+	>> setupAxisCircular('x');
+	>> xlabel('x'); ylabel('f(x)');
+
+Similarly, we can create plots of other distributions. A three-dimensional plot of the pdf of a von Mises distribution with parameters mu = 6 and kappa=0.5 could be generated using the following code.
+
+	>> vm = VMDistribution(6, 0.5);
+	>> vm.plot3d('color','red');
+	>> hold on; vm.plotCircle('color','black'); hold off;
+	>> xlabel('cos(x)'); ylabel('sin(x)'); zlabel('f(x)');
+
+Example: Numerical and Analytical Calculation
+---------------------------------------------
+
+Let us again consider the wrapped normal distribution defined in the previous example. Suppose we want to calculate the first trigonometric moment, i.e., E(exp(ix)), of this distribution. For this purpose, we simply call the corresponding function:
+
+	>> wn.trigonometricMoment(1)
+
+This produces the output
+
+	ans =
+	  -0.1788 + 0.3906i
+
+In the case of the wrapped normal distribution, `trigonometricMoment` is a function inside the class `WNDistribution` that implements an analytic calculation of the trigonometric moment. If no analytic solution was implemented, the function `trigonometricMoment` in the base class `AbstractCircularDistribution` would automatically fall back to an algorithm based on numerical integration. Even though an analytical solution is available for the wrapped normal distribution, we can still call the numerical algorithm as follows.
+
+	>> wn.trigonometricMomentNumerical(1)
+
+We obtain the result
+
+	ans =
+	  -0.1788 + 0.3906i
+
+This can, for example, be used to compare the numerical and analytical results in order to ensure correctness of the analytical implementation. In this case, both results match up to the displayed number of digits, but in certain cases, analytical and numerical solutions may differ more significantly.
+
+Example: Nonlinear Circular Filtering
+-------------------------------------
+
+Let us consider a system with circular state x_k in [0, 2pi) and dynamics
+
+	x_{k+1} = a(x_k) + w_k 
+	a_k(x_k) = x + 0.1 cos(x_k) mod 2 pi 
+
+where w_k is distributed according to WN(x; 0, 0.4) If we assume that the current state is distributed according to WN(x; 2, 0.5), we can perform the prediction step with the WN-assumed filter using the following commands.
+
+	>> filter = WNFilter();
+	>> filter.setState(WNDistribution(2,0.5));
+	>> a = @(x) mod(x + 0.1*cos(x),2*pi);
+	>> filter.predictNonlinear(a, WNDistribution(0, 0.4));
+	>> filter.getEstimate()
+
+This produces the output
+
+	ans = 
+	  WNDistribution with properties:
+	       mu: 1.9623
+	    sigma: 0.6092
+
+As you can see, the predicted density is returned as a wrapped normal distribution. Now we consider the measurement model
+ 
+	z_k = h_k(x_k) + v_k
+ 
+with
+
+	h_k: [0,2 pi) -> R,  h_k(x) = sin(x)
+ 
+where v_k is additive noise distributed according to N(x; 0, 0.7). As you can see, we have a circular state, but a real-valued measurement, in this case. However, a circular measurement (or a measurement on a completely different manifold) would be possible as well. If we obtain a measurement, say z = 0.3, we can perform the measurement update as follows.
+
+	>> h = @(x) sin(x);
+	>> measurementNoise = GaussianDistribution(0, 0.7);
+	>> likelihood = LikelihoodFactory.additiveNoiseLikelihood(h, measurementNoise);
+	>> filter.updateNonlinearProgressive(likelihood, 0.3)
+	>> filter.getEstimate()
+
+This produces the output
+
+	ans = 
+	  WNDistribution with properties:
+	       mu: 2.0030
+	    sigma: 0.6414
+
+Once again, we obtain the result as a wrapped normal distribution.
+
+License
+-------
+
+libDirectional is licensed under the GPLv3 license.
+
+Contact
+-------
+
+Lead autor: Gerhard Kurz
+
+Mail: gerhard.kurz (at) kit.edu
+
+Web: [http://isas.uka.de/User:Kurz](http://isas.uka.de/User:Kurz)
+
+Contributors:
+
+  * Igor Gilitschenski
+  * Florian Pfaff
+  * Lukas Drude

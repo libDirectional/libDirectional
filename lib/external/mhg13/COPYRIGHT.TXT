@@ -1,0 +1,25 @@
+MHG is a collection of MATLAB functions written in C for computing the
+hypergeometric function of a matrix argument. 
+
+MHG is Copyright (c) 2004 Plamen Koev
+                                                                   
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+                                                                                
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.
+                                                                                
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+                                                                                
+If you use MHG in any program or publication, please acknowledge
+its author by adding a reference to: 
+
+Plamen Koev and Alan Edelman, The Efficient Evaluation of the 
+Hypergeometric Function of a Matrix Argument, Mathematics of Computation
+75 (2006), 833-846.

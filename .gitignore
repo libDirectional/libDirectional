@@ -1,0 +1,9 @@
+output
+*.mexw64
+*.mexw32
+*.mexa64
+*.mexmaci64
+
+cBinghamNorm?.m
+cBinghamGradLogNorm?.m
+cBinghamGradNormDividedByNorm?.m
