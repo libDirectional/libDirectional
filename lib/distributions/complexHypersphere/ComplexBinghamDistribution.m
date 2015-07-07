@@ -19,7 +19,7 @@ classdef ComplexBinghamDistribution < AbstractComplexHypersphericalDistribution
             % Parameters:
             %   B_ (d x d): parameter matrix
             
-            assert(ishermitian(B_), 'B must be hermitian');
+            assert(all(all(B_ == B_')), 'B must be hermitian');
             
             cB.B = B_;
             cB.d = size(B_, 1);

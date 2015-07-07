@@ -61,6 +61,11 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             assert(isfield(parameters.prior, 'B'));
             assert(isfield(parameters.prior, 'alpha'));
             
+            assert(isequal(parameters.initial.B, ...
+                permute(conj(parameters.initial.B), ...
+                [2 1 3:ndims(parameters.initial.B)])), ...
+                'initial B must be hermitian')
+            
             assert(isfield(parameters, 'I'));
             
             [D, N] = size(Z);
@@ -140,6 +145,10 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
                     numberOfObservationsPerClass.', [2 3 1]), ...
                     covarianceMatrix) + parameters.prior.B;
                 
+                % force B to be hermitian (Generalization of 1/2*(B+B')).
+                posterior.B = 1/2*(posterior.B + ...
+                    permute(conj(posterior.B), [2 1 3:ndims(posterior.B)]));
+                
                 quadraticExpectation = zeros(K_, 1);
                 for k = 1:K_
                     quadraticExpectation(k) = ...
@@ -150,9 +159,6 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
                 posterior.kappa = ...
                     hypergeometricRatioInverse(quadraticExpectation, D, concentrationMax);
             end
-            % force B to be hermitian (Generalization of 1/2*(B+B')).
-            posterior.B = 1/2*(posterior.B + ...
-                permute(conj(posterior.B), [2 1 3:ndims(posterior.B)]));
         end
         function [E, W_principal] = quadraticExpectation(dyadicProducts, B)
             % This function calculates the quadratic estimate E{X^H B X} and
@@ -160,6 +166,9 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             %
             % :param dyadicProducts: X * X^H or Phi_XX
             % :param B: Complex Bingham parameter matrix of the underlying distribution.
+            
+            assert(isequal(B, permute(conj(B), [2 1 3:ndims(B)])), ...
+                'initial B must be hermitian')
             
             N = size(dyadicProducts, 3);
             D = size(B, 1);
@@ -172,19 +181,21 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             firstOrderMoments = str2func(evalString);
             
             for k = 1:K_
-                [U, Lambda] = eig(B(:, :, k), 'vector');
+                [U, Lambda] = eig(B(:, :, k));
+                Lambda = diag(Lambda);
                 
-                % Eigenvalues are always positive real values since B_pdf is hermitian
-                lambda0 = real(Lambda);
-                [~, iMax] = max(lambda0);
+                assert(isreal(Lambda), ...
+                    'all Eigenvalues of B have to be real, since B is hermitian')
+                
+                [~, iMax] = max(Lambda);
                 
                 W_principal(:, k) = U(:, iMax);
                 
                 %% Calculate first order moments roughly
                 % Covariance matrix without rotation
-                if sum(lambda0 > 1)
-                    lambda0 = lambda0.'+(1:D)*1e-2;
-                    C = diag(firstOrderMoments(lambda0-max(lambda0)));
+                if sum(Lambda > 1)
+                    Lambda = Lambda.'+(1:D)*1e-2;
+                    C = diag(firstOrderMoments(Lambda-max(Lambda)));
                 else
                     C = 1/D*eye(D);
                 end

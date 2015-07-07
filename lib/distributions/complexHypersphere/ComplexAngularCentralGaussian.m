@@ -10,7 +10,7 @@ classdef ComplexAngularCentralGaussian < AbstractComplexHypersphericalDistributi
     methods
         function cAG = ComplexAngularCentralGaussian(C_)
             
-            assert(ishermitian(C_), 'C must be hermitian');
+            assert(all(all(C_ == C_')), 'C must be hermitian');
             
             cAG.C = C_;
             cAG.d = size(C_, 1);
