@@ -42,7 +42,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
-    %    For more information, see https://bitbucket.org/NonlinearEstimation/toolbox
+    %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
     %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
     %

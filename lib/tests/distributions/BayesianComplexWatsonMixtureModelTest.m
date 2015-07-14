@@ -45,6 +45,12 @@ classdef BayesianComplexWatsonMixtureModelTest < matlab.unittest.TestCase
                 eye(tc.D) + tc.W(:, 1) * tc.W(:, 1)', ...
                 eye(tc.D) + tc.W(:, 2) * tc.W(:, 2)' ...
                 );
+            
+            % force B to be hermitian (Generalization of 1/2*(B+B')).
+            parameters.initial.B = 1/2*(parameters.initial.B + ...
+                permute(conj(parameters.initial.B ), ...
+                [2 1 3:ndims(parameters.initial.B )]));
+            
             parameters.initial.kappa = tc.kappaVector;
             parameters.initial.alpha = [300 700].';
             
@@ -54,6 +60,47 @@ classdef BayesianComplexWatsonMixtureModelTest < matlab.unittest.TestCase
             
             %% Set further EM parameters
             parameters.I = 100;
+            
+            %% Execute EM_Algorithm, test if result is similar to ground true
+            posterior = BayesianComplexWatsonMixtureModel.estimatePosterior( ...
+                tc.Z, parameters);
+            
+            %% Check estimate for mixture weights
+            piVectorEstimated = posterior.alpha ./ sum(posterior.alpha);
+            tc.verifyEqual(piVectorEstimated, tc.piVector, 'AbsTol', 0.1);
+            
+            %% Check concentration parameters
+            tc.verifyEqual(posterior.kappa, tc.kappaVector, 'AbsTol', 5);
+            
+            WSetEstimated = zeros(6, 2);
+            for k = 1:2
+                [eigenVectors, eigenValues] = eig(posterior.B(:, :, k));
+                [~, index] = max(diag(eigenValues));
+                WSetEstimated(:, k) = eigenVectors(:, index);
+                tc.verifyEqual(abs(WSetEstimated(:, k)' * tc.W(:, k))^2, 1, 'AbsTol', 0.1);
+            end
+        end
+        function em_algorithm_test_convergence(tc)
+            
+            B_init = eye(tc.D) + (tc.W(:, 1) * tc.W(:, 1)' + ...
+                + tc.W(:, 2) * tc.W(:, 2)')/2;
+            
+            parameters.initial.B = repmat(B_init, 1, 1, 2);
+            
+            % force B to be hermitian (Generalization of 1/2*(B+B')).
+            parameters.initial.B = 1/2*(parameters.initial.B + ...
+                permute(conj(parameters.initial.B ), ...
+                [2 1 3:ndims(parameters.initial.B )]));
+            
+            parameters.initial.kappa = [20; 20];
+            parameters.initial.alpha = [490 510].';
+            
+            %% Set an uninformative prior
+            parameters.prior.B = zeros(6, 6, 2);
+            parameters.prior.alpha = [400 600].';
+            
+            %% Set further EM parameters
+            parameters.I = 200;
             
             %% Execute EM_Algorithm, test if result is similar to ground true
             posterior = BayesianComplexWatsonMixtureModel.estimatePosterior( ...

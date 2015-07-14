@@ -1,7 +1,7 @@
 
 /* >> This file is part of the Nonlinear Estimation Toolbox
  *
- *    For more information, see https://bitbucket.org/NonlinearEstimation/toolbox
+ *    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
  *
  *    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
  *                        Antonio Zea <antonio.zea@kit.edu>  
@@ -34,15 +34,20 @@
 
 namespace Mex {
 
+typedef Eigen::Matrix<int64_t, Eigen::Dynamic, 1> Dimensions;
+
 struct Utils {
-    static Eigen::VectorXi getDimensions(const mxArray* array) {
+    static Dimensions getDimensions(const mxArray* array) {
         mxAssert(!mxIsSparse(array), "Array must be dense.");
         
-        unsigned int numDims = mxGetNumberOfDimensions(array);
-        Eigen::VectorXi outDims(numDims);
+        const mwSize numDims = mxGetNumberOfDimensions(array);
+        const mwSize* dims   = mxGetDimensions(array);
         
-        const mwSize* dims = mxGetDimensions(array);
-        std::copy(dims, dims + numDims, outDims.data());
+        Dimensions outDims(numDims);
+        
+        for (mwSize i = 0; i < numDims; ++i) {
+            outDims(i) = (int64_t)dims[i];
+        }
         
         return outDims;
     }
@@ -50,11 +55,11 @@ struct Utils {
     // from the slice size vectors [..., i, ...] and [..., j, ...]
     // creates the slice size vector [..., max(i, j), ...], taking 
     // into account that the inputs might have different sizes
-    static Eigen::VectorXi expandSliceDims(const Eigen::VectorXi& sliceDimsA,
-                                           const Eigen::VectorXi& sliceDimsB) {
-        Eigen::VectorXi sliceDims(std::max(sliceDimsA.size(), sliceDimsB.size()));
+    static Dimensions expandSliceDims(const Dimensions& sliceDimsA,
+                                      const Dimensions& sliceDimsB) {
+        Dimensions sliceDims(std::max(sliceDimsA.size(), sliceDimsB.size()));
         
-        for (int i = 0; i < sliceDims.size(); i++) {
+        for (int64_t i = 0; i < sliceDims.size(); i++) {
             sliceDims(i) = std::max(i < sliceDimsA.size() ? sliceDimsA(i) : 1, 
                                     i < sliceDimsB.size() ? sliceDimsB(i) : 1);
         }
@@ -63,25 +68,25 @@ struct Utils {
     }
     
     template<class MatA, class MatB>
-    static Eigen::VectorXi expandSlices(const MatA& matA,
-                                        const MatB& matB) {
+    static Dimensions expandSlices(const MatA& matA,
+                                   const MatB& matB) {
         return expandSliceDims(matA.slices(), matB.slices());
     }
     
-    static Eigen::VectorXi expandSlices(const Eigen::VectorXi& dimsA, 
-                                        const Eigen::VectorXi& dimsB) {
+    static Dimensions expandSlices(const Dimensions& dimsA,
+                                   const Dimensions& dimsB) {
         return expandSliceDims(dimsA.tail(dimsA.size() - 2),
                                dimsB.tail(dimsB.size() - 2));
     }
     
     // checks if sliceMins <= slice <= sliceMax coefficient wise,
     // taking into account that the inputs might have different sizes
-    static bool isValidSlice(const Eigen::VectorXi& slice, 
-                             const Eigen::VectorXi& sliceMins,
-                             const Eigen::VectorXi& sliceMaxs) {
-        const Eigen::VectorXi::Index sliceDims = sliceMins.size();
-        const Eigen::VectorXi sHead = slice.head(sliceDims);
-        const Eigen::VectorXi sTail = slice.tail(slice.size() - sliceDims);
+    static bool isValidSlice(const Dimensions& slice,
+                             const Dimensions& sliceMins,
+                             const Dimensions& sliceMaxs) {
+        const Dimensions::Index sliceDims = sliceMins.size();
+        const Dimensions sHead = slice.head(sliceDims);
+        const Dimensions sTail = slice.tail(slice.size() - sliceDims);
         
         if (slice.size() < sliceDims) {
             return false;
@@ -94,29 +99,9 @@ struct Utils {
         }
     }
     
-    template<typename Scalar>
-    static Scalar* checkArrayType(mxArray* array) {
-        if (!Traits<Scalar>::isValidArray(array)) {
-            throw std::invalid_argument("MX array of invalid type.");
-        }
-        
-        return (Scalar*) mxGetData(array);
-    }
-    
-    template<typename Scalar>
-    static const Scalar* checkArrayType(const mxArray* array) {
-        if (!Traits<Scalar>::isValidArray(array)) {
-            throw std::invalid_argument("MX array of invalid type.");
-        }
-        
-        return (const Scalar*) mxGetData(array);
-    }
-    
     template<int r>
-    static int checkRows(int rows) {
-        if (r == Eigen::Dynamic || r == rows) {
-            return rows;
-        } else {
+    static void checkRows(int64_t rows) {
+        if (r != Eigen::Dynamic && r != rows) {
             throw std::invalid_argument("Mismatch between given (" +
                                         std::to_string(rows) +
                                         ") and expected (" +
@@ -125,16 +110,9 @@ struct Utils {
         }
     }
     
-    template<int r>
-    static int checkRows(const mxArray* array) {
-        return checkRows<r>(mxGetM(array));
-    }
-    
     template<int c>
-    static int checkCols(int cols) {
-        if (c == Eigen::Dynamic || c == cols) {
-            return cols;
-        } else {
+    static void checkCols(int64_t cols) {
+        if (c != Eigen::Dynamic && c != cols) {
             throw std::invalid_argument("Mismatch between given (" +
                                         std::to_string(cols) +
                                         ") and expected (" +
@@ -143,11 +121,42 @@ struct Utils {
         }
     }
     
-    template<int c>
-    static int checkCols(const mxArray* array) {
-        return checkCols<c>(mxGetN(array));
+    template<typename Scalar, int r, int c, bool isMatrix = true>
+    static Scalar* checkArray(mxArray* array) {
+        if (!Traits<Scalar>::isValidArray(array)) {
+            throw std::invalid_argument("MX array of invalid type.");
+        }
+        
+        if (isMatrix && mxGetNumberOfDimensions(array) != 2) {
+            throw std::invalid_argument("MX array is not a matrix.");
+        }
+        
+        const mwSize* dims = mxGetDimensions(array);
+        
+        checkRows<r>((int64_t)dims[0]);
+        checkCols<c>((int64_t)dims[1]);
+        
+        return (Scalar*) mxGetData(array);
     }
     
+    template<typename Scalar, int r, int c, bool isMatrix = true>
+    static const Scalar* checkArray(const mxArray* array) {
+        if (!Traits<Scalar>::isValidArray(array)) {
+            throw std::invalid_argument("MX array of invalid type.");
+        }
+        
+        if (isMatrix && mxGetNumberOfDimensions(array) != 2) {
+            throw std::invalid_argument("MX array is not a matrix.");
+        }
+        
+        const mwSize* dims = mxGetDimensions(array);
+        
+        checkRows<r>((int64_t)dims[0]);
+        checkCols<c>((int64_t)dims[1]);
+        
+        return (const Scalar*) mxGetData(array);
+    }
+
 };
 
 }   // namespace Mex

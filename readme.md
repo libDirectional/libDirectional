@@ -114,6 +114,19 @@ This produces the output
 
 Once again, we obtain the result as a wrapped normal distribution.
 
+Externals
+---------
+
+libDrectional relies on the following external libraries, which are also included in the externals folder.
+
+  * [Eigen](http://eigen.tuxfamily.org/) (MPL 2)
+  * [fmath](https://github.com/herumi/fmath) (BSD)
+  * [mhg](http://www-math.mit.edu/~plamen/software/mhgref.html) (GLPv2 or later)
+  * [Faddeva](http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package) (MIT)
+  * [Nonlinear Estimation Toolbox](https://bitbucket.org/nonlinearestimation/toolbox) (GPL v3), only the necessary subset is included in externals folder
+
+We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in externals folder as only small parts are used.
+
 License
 -------
 

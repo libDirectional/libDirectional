@@ -8,9 +8,9 @@ classdef Distribution < handle
     %   drawRndSamples       - Draw random samples from the distribution.
     %   logPdf               - Evaluate the logarithmic probability density function (pdf) of the distribution.
     
-    % >> This class is part of the Nonlinear Estimation Toolbox
+    % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
-    %    For more information, see https://bitbucket.org/NonlinearEstimation/toolbox
+    %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
     %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
     %

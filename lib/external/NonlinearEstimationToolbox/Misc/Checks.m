@@ -34,9 +34,9 @@ classdef Checks
     %     isFlag              - Checks for a boolean scalar.
     %     isClass             - Checks for a given class type.
     
-    % >> This class is part of the Nonlinear Estimation Toolbox
+    % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
-    %    For more information, see https://bitbucket.org/NonlinearEstimation/toolbox
+    %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
     %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
     %

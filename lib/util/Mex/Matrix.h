@@ -1,7 +1,7 @@
 
 /* >> This file is part of the Nonlinear Estimation Toolbox
  *
- *    For more information, see https://bitbucket.org/NonlinearEstimation/toolbox
+ *    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
  *
  *    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
  *                        Antonio Zea <antonio.zea@kit.edu>  
@@ -45,9 +45,9 @@ class ConstMatrix : public Eigen::Map<const Eigen::Matrix<Scalar, r, c>, Eigen::
         
     public:
         ConstMatrix(const mxArray* array) :
-            BaseClass(Utils::checkArrayType<Scalar>(array), 
-                      Utils::checkRows<r>(array),
-                      Utils::checkCols<c>(array)),
+            BaseClass(Utils::checkArray<Scalar, r, c>(array),
+                      mxGetM(array),
+                      mxGetN(array)),
             mxData(array) { }
       	
         void print() const {
@@ -78,50 +78,39 @@ class MatrixBase : public Eigen::Map<Eigen::Matrix<Scalar, r, c>, Eigen::Aligned
         
     public:
         MatrixBase() :
-            BaseClass(createMxArray(r, c), r, c) {
-            static_assert(r != Eigen::Dynamic && c != Eigen::Dynamic,
-                          "Both template parameters must be non-dynamic.");
-        }
+            BaseClass(createMxArray(),
+                      r,
+                      c) { }
       	
         MatrixBase(Index dim) :
-            BaseClass(createMxArray(r == Eigen::Dynamic ? dim : r,
-                                    c == Eigen::Dynamic ? dim : c),
+            BaseClass(createVectorMxArray(dim),
                       r == Eigen::Dynamic ? dim : r,
-                      c == Eigen::Dynamic ? dim : c) {
-            static_assert(r == 1 || c == 1,
-                          "You called a vector method an a matrix.");
-            
-            if (r == 1) {
-                Utils::checkCols<c>(dim);
-            } else {
-                Utils::checkRows<r>(dim);
-            }
-      	}
+                      c == Eigen::Dynamic ? dim : c) { }
     	
         MatrixBase(Index numRows,
                    Index numCols) :
             BaseClass(createMxArray(numRows, numCols),
-                      Utils::checkRows<r>(numRows),
-                      Utils::checkCols<c>(numCols)) { }
+                      numRows,
+                      numCols) { }
         
         MatrixBase(mxArray* array) :
-            BaseClass(Utils::checkArrayType<Scalar>(array),
-                      Utils::checkRows<r>(array),
-                      Utils::checkCols<c>(array)),
+            BaseClass(Utils::checkArray<Scalar, r, c>(array),
+                      mxGetM(array),
+                      mxGetN(array)),
             mxData(array) { }
       	
         MatrixBase(const MatrixBase& mat) :
             BaseClass(createMxArray(mat.rows(), mat.cols()),
-                      Utils::checkRows<r>(mat.rows()),
-                      Utils::checkCols<c>(mat.cols())) {
+                      mat.rows(),
+                      mat.cols()) {
             BaseClass::operator=(mat);
         }
      	
         template<typename Derived>
         MatrixBase(const Eigen::MatrixBase<Derived>& mat) :
             BaseClass(createMxArray(mat.rows(), mat.cols()),
-                      Utils::checkRows<r>(mat.rows()),
-                      Utils::checkCols<c>(mat.cols())) {
+                      mat.rows(),
+                      mat.cols()) {
             BaseClass::operator=(mat); 
         }
         
@@ -163,10 +152,38 @@ class MatrixBase : public Eigen::Map<Eigen::Matrix<Scalar, r, c>, Eigen::Aligned
         }
         
     private:
-        Scalar* createMxArray(Index numRows,
-                              Index numCols) {
-            mxData = mxCreateNumericMatrix(numRows, numCols, 
-                                           Traits<Scalar>::MxClassID, mxREAL);
+        Scalar* createMxArray() {
+            static_assert(r != Eigen::Dynamic && c != Eigen::Dynamic,
+                          "Both template parameters must be non-dynamic.");
+            
+            mxData = mxCreateNumericMatrix(r, c, Traits<Scalar>::MxClassID, mxREAL);
+            
+            return (Scalar*)mxGetData(mxData);
+        }
+        
+        Scalar* createMxArray(Index rows,
+                              Index cols) {
+            Utils::checkRows<r>(rows);
+            Utils::checkCols<c>(cols);
+            
+            mxData = mxCreateNumericMatrix(rows, cols, Traits<Scalar>::MxClassID, mxREAL);
+            
+            return (Scalar*)mxGetData(mxData);
+        }
+        
+        Scalar* createVectorMxArray(Index dim) {
+            static_assert(r == 1 || c == 1,
+                          "You called a vector method an a matrix.");
+            
+            if (r == 1) {
+                Utils::checkCols<c>(dim);
+                
+                mxData = mxCreateNumericMatrix(1, dim, Traits<Scalar>::MxClassID, mxREAL);
+            } else {
+                Utils::checkRows<r>(dim);
+                
+                mxData = mxCreateNumericMatrix(dim, 1, Traits<Scalar>::MxClassID, mxREAL);
+            }
             
             return (Scalar*)mxGetData(mxData);
         }
@@ -178,7 +195,6 @@ class MatrixBase : public Eigen::Map<Eigen::Matrix<Scalar, r, c>, Eigen::Aligned
 
 
 /* ConstMatrix typedefs */
-/*
 template<typename Scalar = double>
 using ConstMatrixX = ConstMatrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
@@ -192,11 +208,10 @@ template<typename Scalar, int c>
 using ConstRowVector = ConstMatrix<Scalar, 1, c>;
 
 template<typename Scalar = double>
-using ConstRowVectorX = ConstRowVector<Scalar, Eigen::Dynamic>;*/
+using ConstRowVectorX = ConstRowVector<Scalar, Eigen::Dynamic>;
 
 
 /* Matrix typedefs */
-/*
 template<typename Scalar, int r, int c>
 using Matrix = MatrixBase<true, Scalar, r, c>;
 
@@ -213,11 +228,10 @@ template<typename Scalar, int c>
 using RowVector = Matrix<Scalar, 1, c>;
 
 template<typename Scalar = double>
-using RowVectorX = RowVector<Scalar, Eigen::Dynamic>;*/
+using RowVectorX = RowVector<Scalar, Eigen::Dynamic>;
 
 
 /* OutputMatrix typedefs */
-/*
 template<typename Scalar, int r, int c>
 using OutputMatrix = MatrixBase<false, Scalar, r, c>;
 
@@ -235,11 +249,9 @@ using OutputRowVector = OutputMatrix<Scalar, 1, c>;
 
 template<typename Scalar = double>
 using OutputRowVectorX = OutputRowVector<Scalar, Eigen::Dynamic>;
-*/
 
 
 /* Double typedefs */
-/*
 typedef ConstMatrixX<>      ConstMatrixXd;
 typedef MatrixX<>           MatrixXd;
 typedef OutputMatrixX<>     OutputMatrixXd;
@@ -250,7 +262,7 @@ typedef OutputVectorX<> 	OutputVectorXd;
 
 typedef ConstRowVectorX<>   ConstRowVectorXd;
 typedef RowVectorX<>        RowVectorXd;
-typedef OutputRowVectorX<>	OutputRowVectorXd;*/
+typedef OutputRowVectorX<>	OutputRowVectorXd;
 
 }   // namespace Mex
 

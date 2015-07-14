@@ -6,26 +6,20 @@ classdef Utils
     %   getMeanAndCov             - Compute sample mean and sample covariance.
     %   getMeanCovAndCrossCov     - Compute sample mean, covariance, and cross-covariance.
     %   kalmanUpdate              - Perform a Kalman update.
-    %   blockDiag                 - Create a block diagonal matrix using the same matrix
-    %                               mutiple times on the diagonal.
-    %   baseBlockDiag             - Create a block diagonal matrix using a matrix multiple
-    %                               times on the diagonal and add another matrix of the same
-    %                               size to all matrix blocks.
-    %   drawGaussianRndSamples    - Draw (multi-dimensional) random samples of a Gaussian
-    %                               distribution with the specified mean and covariance.
+    %   blockDiag                 - Create a block diagonal matrix.
+    %   baseBlockDiag             - Create a block diagonal matrix.
+    %   drawGaussianRndSamples    - Draw random samples from a multivariate Gaussian distribution.
     %   resampling                - Perform a simple resampling.
     %   systematicResampling      - Perform a systematic resampling.
     %   rndOrthogonalMatrix       - Creates a random orthogonal matrix of the specified dimension.
     %   getStateSamples           - Get a set of samples approximating a Gaussian distributed system state.
     %   getStateNoiseSamples      - Get a set of samples approximating a jointly Gaussian distributed system state and (system/measurement) noise.
-    %   diffQuotientState         - Compute the state difference quotient of a function at 
-    %                               the given nominal state.
-    %   diffQuotientStateAndNoise - Compute the state and noise difference quotient of a 
-    %                               function at the given nominal state and nominal noise.
+    %   diffQuotientState         - Compute the state difference quotient of a function at the given nominal system state.
+    %   diffQuotientStateAndNoise - Compute the state and noise difference quotient of a function at the given nominal sytem state and noise.
     
-    % >> This class is part of the Nonlinear Estimation Toolbox
+    % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
-    %    For more information, see https://bitbucket.org/NonlinearEstimation/toolbox
+    %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
     %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
     %
@@ -163,7 +157,33 @@ classdef Utils
         function [updatedStateMean, ...
                   updatedStateCov] = kalmanUpdate(stateMean, stateCov, measurement, ...
                                                   measMean, measCov, stateMeasCrossCov)
-          	% Perform a Kalman update.
+            % Perform a Kalman update.
+            %
+            % Parameters:
+            %   >> stateMean (Column vector)
+            %      Prior state mean.
+            %
+            %   >> stateCov (Positive definite matrix)
+            %      Prior state covariance matrix.
+            %
+            %   >> measurement (Column vector)
+            %      Measurement vector.
+            %
+            %   >> measMean (Column vector)
+            %      Measurement mean.
+            %
+            %   >> measCov (Positive definite matrix)
+            %      Measurement covariance matrix.
+            %
+            %   >> stateMeasCrossCov (Matrix)
+            %      State measurement cross-covariance matrix.
+            %
+            % Returns:
+            %   << updatedStateMean (Column vector)
+            %      Posterior state mean.
+            %
+            %   << updatedStateCov (Positive definite matrix)
+            %      Posterior state covariance matrix.
             
             [sqrtMeasCov, isNonPos] = chol(measCov);
             
@@ -185,20 +205,59 @@ classdef Utils
         end
         
         function blockMat = blockDiag(matrix, numRepetitions)
-            % Create a block diagonal matrix using the same matrix mutiple times on the diagonal.
+            % Create a block diagonal matrix.
+            %
+            % Parameters:
+            %   >> matrix (Matrix)
+            %      Matrix.
+            %
+            %   >> numRepetitions (Positive scalar)
+            %      Number of matrix repetitions along the diagonal.
+            %
+            % Returns:
+            %   << blockMat (Matrix)
+            %      Block diagonal matrix.
             
             blockMat = kron(speye(numRepetitions), matrix);
         end
         
         function blockMat = baseBlockDiag(matrixBase, matrixDiag, numRepetitions)
-            % Create a block diagonal matrix using a matrix multiple times on the diagonal and add another matrix of the same size to all matrix blocks.
+            % Create a block diagonal matrix.
+            %
+            % Parameters:
+            %   >> matrixBase (Matrix)
+            %      Matrix.
+            %
+            %   >> matrixDiag (Matrix)
+            %      Matrix of same size as matrixBase.
+            %
+            %   >> numRepetitions (Positive scalar)
+            %      Number of matrix repetitions along the diagonal.
+            %
+            % Returns:
+            %   << blockMat (Matrix)
+            %      Block diagonal matrix.
             
             blockMat = repmat(matrixBase, numRepetitions, numRepetitions) + ...
                        Utils.blockDiag(matrixDiag, numRepetitions);
         end
         
         function rndSamples = drawGaussianRndSamples(mean, covSqrt, numSamples)
-            % Draw (multi-dimensional) random samples of a Gaussian distribution with the specified mean and covariance.
+            % Draw random samples from a multivariate Gaussian distribution.
+            %
+            % Parameters:
+            %   >> mean (Column vector)
+            %      Mean vector.
+            %
+            %   >> covSqrt (Square matrix)
+            %      Square root of the covariance matrix.
+            %
+            %   >> numSamples (Positive scalar)
+            %      Number of samples to draw from the given Gaussian distribution.
+            %
+            % Returns:
+            %   << rndSamples (Matrix)
+            %      Column-wise arranged samples drawn from the given Gaussian distribution.
             
             dim = size(mean, 1);
             
@@ -404,7 +463,22 @@ classdef Utils
         end
         
         function stateJacobian = diffQuotientState(func, nominalState, step)
-            % Compute the state difference quotient of a function at the given nominal state.
+            % Compute the state difference quotient of a function at the given nominal system state.
+            %
+            % Parameters:
+            %   >> func (Function handle)
+            %      System/Measurement function.
+            %
+            %   >> nominalState (Column vector)
+            %      Nominal system state to compute the Jacobian.
+            %
+            %   >> step (Positive scalar)
+            %      Step size to compute the finite difference.
+            %      Default: sqrt(eps)
+            %
+            % Returns:
+            %   << stateJacobian (Square matrix)
+            %      Jacobian of the system state variables.
             
             % Default value for step
             if nargin < 3
@@ -424,7 +498,28 @@ classdef Utils
         end
         
         function [stateJacobian, noiseJacobian] = diffQuotientStateAndNoise(func, nominalState, nominalNoise, step)
-            % Compute the state and noise difference quotient of a function at the given nominal state and nominal noise.
+            % Compute the state and noise difference quotient of a function at the given nominal sytem state and noise.
+            %
+            % Parameters:
+            %   >> func (Function handle)
+            %      System/Measurement function.
+            %
+            %   >> nominalState (Column vector)
+            %      Nominal system state to compute the Jacobian.
+            %
+            %   >> nominalNoise (Column vector)
+            %      Nominal system/measurement noise to compute the Jacobian.
+            %
+            %   >> step (Positive scalar)
+            %      Step size to compute the finite difference.
+            %      Default: sqrt(eps)
+            %
+            % Returns:
+            %   << stateJacobian (Square matrix)
+            %      Jacobian of the system state variables.
+            %
+            %   << noiseJacobian (Matrix)
+            %      Jacobian of the system/measurement noise variables.
             
             % Default value for step
             if nargin < 4
