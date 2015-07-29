@@ -355,7 +355,7 @@ classdef AbstractToroidalDistribution
             % the uncertainty of the true distribution.
             proposal = @(x) mod(x + mvnrnd([0;0],eye(2,2))', 2*pi); 
             i=1;
-            while i<=n
+            while i<=totalSamples
                 xNew = proposal(x); %generate new sample
                 a = this.pdf(xNew)/this.pdf(x);
                 if a>1

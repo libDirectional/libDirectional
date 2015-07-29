@@ -18,6 +18,32 @@ classdef VMDistribution < AbstractCircularDistribution
             this.kappa = kappa_;
         end
         
+        function r = cdf(this, xa, startingPoint)
+            % Evaluate cumulative distribution function 
+            %
+            % Parameters:
+            %   xa (1 x n)
+            %       points where the cdf should be evaluated
+            %   startingPoint (scalar)
+            %       point where the cdf is zero (starting point can be
+            %       [0,2pi) on the circle, default 0
+            % Returns:
+            %   val (1 x n)
+            %       cdf evaluated at columns of xa            
+            assert(size(xa,1)==1);
+            if nargin<=2 
+                startingPoint = 0; 
+            end            
+            
+            r = zeros(size(xa));
+            for  i=1:size(xa,2)
+                r(i) = circVMcdf(xa(i)-this.mu,this.kappa) - circVMcdf(startingPoint-this.mu, this.kappa);
+                if r(i)<0
+                    r(i) = r(i)+1;
+                end
+            end
+        end
+        
         function p = pdf(this, xa)
             % Evaluate pdf at each column of xa
             %

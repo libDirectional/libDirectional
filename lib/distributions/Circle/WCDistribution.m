@@ -29,6 +29,31 @@ classdef WCDistribution < AbstractCircularDistribution
             assert(size(xa,1)==1);
             p = 1/2/pi * sinh(this.gamma)./(cosh(this.gamma) - cos(xa-this.mu));
         end
+        
+        function p = cdf(this, xa, startingPoint)
+            % Evaluate cumulative distribution function 
+            %
+            % Parameters:
+            %   xa (1 x n)
+            %       points where the cdf should be evaluated
+            %   startingPoint (scalar)
+            %       point where the cdf is zero (starting point can be
+            %       [0,2pi) on the circle, default 0
+            % Returns:
+            %   val (1 x n)
+            %       cdf evaluated at columns of xa      
+            
+            % see Wolfram Alpha
+            % https://www.wolframalpha.com/input/?i=Integral%281%2F2%2Fpi*sinh%28g%29%2F%28cosh%28g%29-cos%28x-mu%29%29%2C+x%29
+            
+            assert(size(xa,1)==1);
+            if nargin<=2 
+                startingPoint = 0; 
+            end   
+            
+            f = @(x) atan(coth(this.gamma/2) * tan((x-this.mu)/2))/pi;
+            p = mod(f(xa) - f(startingPoint),1) ;
+        end
                
         function m = trigonometricMoment(this, n)
             % Calculate n-th trigonometric moment analytically

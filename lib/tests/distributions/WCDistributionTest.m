@@ -18,6 +18,12 @@ classdef WCDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(wc.pdf(mu), truePdf(mu), 'RelTol', 1E-5);
             testCase.verifyEqual(wc.pdf(mu-1), truePdf(mu-1), 'RelTol', 1E-5);
             testCase.verifyEqual(wc.pdf(mu+2), truePdf(mu+2), 'RelTol', 1E-3);
+            
+            %% test cdf
+            testCase.verifyEqual(wc.cdf(mu),wc.cdfNumerical(mu), 'RelTol', 1E-8);
+            testCase.verifyEqual(wc.cdf(mu+1.3),wc.cdfNumerical(mu+1.3), 'RelTol', 1E-8);
+            testCase.verifyEqual(wc.cdf(-10:0.1:10),wc.cdfNumerical(-10:0.1:10), 'RelTol', 1E-8);
+            testCase.verifyEqual(wc.cdf(-10:10, 2),wc.cdfNumerical(-10:10, 2), 'RelTol', 1E-8);
 
             %% test integral
             testCase.verifyEqual(wc.integral, 1, 'RelTol', 1E-10);

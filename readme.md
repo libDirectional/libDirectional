@@ -125,12 +125,25 @@ libDrectional relies on the following external libraries, which are also include
   * [Faddeva](http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package) (MIT)
   * [Nonlinear Estimation Toolbox](https://bitbucket.org/nonlinearestimation/toolbox) (GPL v3), only the necessary subset is included in externals folder
 
-We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in externals folder as only small parts are used.
+Furthermore, we use the script [circVMcdf](http://www.eecs.berkeley.edu/~sburden/matlab/polypedal/doc/polypedal/util/circVMcdf.html) by Shai Revzen (GPLv3). We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in externals folder as only small parts are used.
 
 License
 -------
 
 libDirectional is licensed under the GPLv3 license.
+
+Citation
+--------
+
+If you use libDirectional in your research, please cite the library using as follows.
+
+	@Misc{kurz2015libdirectional,
+	  Title                    = {libDirectional},
+	  Author                   = {Gerhard Kurz and Igor Gilitschenski and Florian Pfaff and Lukas Drude},
+	  Year                     = {2015},
+	  Url                      = {https://github.com/libDirectional}
+	}
+
 
 Contact
 -------

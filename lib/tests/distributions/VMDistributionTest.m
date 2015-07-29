@@ -12,6 +12,12 @@ classdef VMDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vm.pdf(mu),1/2/pi/besseli(0,kappa) * exp(kappa), 'RelTol', 1E-10);
             testCase.verifyEqual(vm.pdf(mu+1.3),1/2/pi/besseli(0,kappa) * exp(kappa*cos(1.3)), 'RelTol', 1E-10);
             
+            %% test cdf
+            testCase.verifyEqual(vm.cdf(mu),vm.cdfNumerical(mu), 'RelTol', 1E-8);
+            testCase.verifyEqual(vm.cdf(mu+1.3),vm.cdfNumerical(mu+1.3), 'RelTol', 1E-8);
+            testCase.verifyEqual(vm.cdf(-10:10),vm.cdfNumerical(-10:10), 'RelTol', 1E-8);
+            testCase.verifyEqual(vm.cdf(-10:10, 2),vm.cdfNumerical(-10:10, 2), 'RelTol', 1E-8);
+            
             %% test integral
             testCase.verifyEqual(vm.integral, 1, 'RelTol', 1E-10);
             testCase.verifyEqual(vm.integral(0,pi)+vm.integral(pi,2*pi), 1, 'RelTol', 1E-6);
