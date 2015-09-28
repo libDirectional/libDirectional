@@ -68,7 +68,7 @@ classdef FourierDistribution < AbstractCircularDistribution
             %   result (scalar)
             %       value of the integral
             if strcmp(this.transformation,'sqrt') %transform to identity
-                fd=this.transformViaCoefficients('square',2*length(this.a)+1);
+                fd=this.transformViaCoefficients('square',4*length(this.a)-3);
             elseif ~strcmp(this.transformation,'identity') %if not possible to transform to identity, give up
                 error('Cdf not supported for this transformation')
             else
@@ -495,10 +495,10 @@ classdef FourierDistribution < AbstractCircularDistribution
                         case 'identity' 
                             f=ftmp;
                         case 'sqrt'
-                            warning('Conversion:NoFormulaSqrt','No explicit formula available, using FFT to get sqrt');
+                            warning('Conversion:WDMatching','Approximating WD by matching moments');
                             f=ftmp.transformViaFFT('sqrt',noOfCoefficients);
                         case 'log'
-                            warning('Conversion:NoFormulaLog','No explicit formula available, using FFT to get log');
+                            warning('Conversion:WDMatching','Approximating WD by matching moments');
                             f=ftmp.transformViaFFT('log',noOfCoefficients);
                         otherwise 
                             error('Transformation not recognized or unsupported');
@@ -512,11 +512,11 @@ classdef FourierDistribution < AbstractCircularDistribution
                             a=zeros(1,lastk+1);
                             b=zeros(1,lastk);
                             for i=1:length(distribution.cds)
-                                fCurr=FourierDistribution.fromDistribution(distribution.cds(i),noOfCoefficients,desiredTransformation);
+                                fCurr=FourierDistribution.fromDistribution(distribution.cds{i},noOfCoefficients,desiredTransformation);
                                 a=a+fCurr.a*distribution.w(i);
                                 b=b+fCurr.b*distribution.w(i);
-                                f=FourierDistribution(a,b,'identity');
                             end
+                            f=FourierDistribution(a,b,'identity');
                         case 'log'
                             warning('Conversion:NoFormulaLog','No explicit formula available, using FFT to get log');
                             f=FourierDistribution.fromFunction(@distribution.pdf,noOfCoefficients,desiredTransformation);
@@ -524,7 +524,7 @@ classdef FourierDistribution < AbstractCircularDistribution
                             error('Transformation not recognized or unsupported');
                     end
                 otherwise
-                    warning('No explicit formula available, using FFT to get transformation');
+                    warning('Conversion:NoFormula','No explicit formula available, using FFT to get transformation');
                     f=FourierDistribution.fromFunction(@distribution.pdf,noOfCoefficients,desiredTransformation);
             end
         end

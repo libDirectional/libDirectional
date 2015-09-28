@@ -5,18 +5,18 @@ classdef GeneralCircularMixtureTest < matlab.unittest.TestCase
     methods (Test)                                
         function testGeneralCircularMixture(testCase)
             mu1 = 3;
-            sigma1 = 1.5;
-            wn1 = WNDistribution(mu1,sigma1);
+            sigma = 1.5;
+            wn = WNDistribution(mu1,sigma);
             mu2 = 2;
-            sigma2 = 0.2;
-            wn2 = WNDistribution(mu2,sigma2);
+            kappa = 0.2;
+            vm = VMDistribution(mu2,kappa);
             w1 = 0.3;
             w2 = 1-w1;
-            mixture = GeneralCircularMixture([wn1, wn2],[w1, w2]);
+            mixture = GeneralCircularMixture({wn, vm},[w1, w2]);
             
             %% test pdf
             for x= 0:1:2*pi
-                testCase.verifyEqual(mixture.pdf(x), w1*wn1.pdf(x)+w2*wn2.pdf(x), 'RelTol', 1E-10);
+                testCase.verifyEqual(mixture.pdf(x), w1*wn.pdf(x)+w2*vm.pdf(x), 'RelTol', 1E-10);
             end
 
             %% test integral

@@ -113,6 +113,34 @@ classdef FourierDistributionTest< matlab.unittest.TestCase
             dist=CUDistribution();
             FourierDistributionTest.testFourierConversion(testCase,dist,101,'sqrt',1E-8);
         end
+        function testGCMToFourierId(testCase)
+            vm=VMDistribution(1,2);
+            wn=WNDistribution(2,1);
+            dist=GeneralCircularMixture({vm,wn},[0.3,0.7]);
+            FourierDistributionTest.testFourierConversion(testCase,dist,101,'identity',1E-8);
+        end
+        function testGCMToFourierSqrt(testCase)
+            warningSettings=warning('off','Conversion:NoFormulaSqrt');
+            vm=VMDistribution(1,2);
+            wn=WNDistribution(2,1);
+            dist=GeneralCircularMixture({vm,wn},[0.3,0.7]);
+            FourierDistributionTest.testFourierConversion(testCase,dist,101,'sqrt',1E-8);
+            warning(warningSettings);
+        end
+        function testCCDToFourierId(testCase)
+            warningSettings=warning('off','Conversion:NoFormula');
+            vm=VMDistribution(1,2);
+            dist=CustomCircularDistribution(@(x)vm.pdf(x));
+            FourierDistributionTest.testFourierConversion(testCase,dist,101,'identity',1E-8);
+            warning(warningSettings);
+        end
+        function testCCDToFourierSqrt(testCase)
+            warningSettings=warning('off','Conversion:NoFormula');
+            vm=VMDistribution(1,2);
+            dist=CustomCircularDistribution(@(x)vm.pdf(x));
+            FourierDistributionTest.testFourierConversion(testCase,dist,101,'sqrt',1E-8);
+            warning(warningSettings);
+        end
         % Test coefficient conversions
         function testCoefficientConversion1(testCase)
             a=[1/pi,4,3,2,1];

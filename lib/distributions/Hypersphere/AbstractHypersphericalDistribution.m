@@ -26,8 +26,6 @@ classdef AbstractHypersphericalDistribution
                     plot(phi, p);
                 case 3
                     % plot sphere, pdf is represented by color on sphere
-                    fxyz = @(x,y,z) this.pdf([x;y;z]);
-
                     
                     if nargin < 2
                         faces = 100;
@@ -41,14 +39,15 @@ classdef AbstractHypersphericalDistribution
                     [xSphereOuter, ySphereOuter, zSphereOuter]= sphere(gridFaces);
                     [xSphereInner, ySphereInner, zSphereInner]= sphere(faces);
                     
-                    % ealuate p.d.f.
-                    cSphere = arrayfun(fxyz, xSphereInner, ySphereInner, zSphereInner);
+                    % evaluate p.d.f.
+                    cSphere=reshape(this.pdf([xSphereInner(:)';ySphereInner(:)';zSphereInner(:)']),size(xSphereInner));
                     
                     % resize inner sphere
                     xSphereInner = 0.99 * xSphereInner;
                     ySphereInner = 0.99 * ySphereInner;
                     zSphereInner = 0.99 * zSphereInner;
                     
+                    holdStatus=ishold;
                     % Plot spheres
                     if gridFaces > 0
                         surf(xSphereOuter, ySphereOuter, zSphereOuter, max(max(cSphere))*ones(size(xSphereOuter)), 'FaceColor', 'none');
@@ -57,7 +56,9 @@ classdef AbstractHypersphericalDistribution
                     surf(xSphereInner, ySphereInner, zSphereInner, cSphere,'EdgeColor', 'none');
                     axis equal
                     colorbar
-                    hold off;
+                    if ~holdStatus
+                        hold off
+                    end
                 otherwise
                     error('cannot plot hyperspherical distribution with this number of dimensions');
             end
@@ -81,15 +82,14 @@ classdef AbstractHypersphericalDistribution
                 
                 % spherical coordinates
                 fangles = @(phi1,phi2) f([ ...
-                r*sin(phi1)*sin(phi2); ...
-                r*cos(phi1)*sin(phi2); ...
-                r*cos(phi2); ...
+                r.*sin(phi1).*sin(phi2); ...
+                r.*cos(phi1).*sin(phi2); ...
+                r.*cos(phi2); ...
                 ]);
 
-                g = @(phi1,phi2) fangles(phi1,phi2) * sin(phi2); % volume correcting term
-                ga = @(phi1,phi2) arrayfun(g, phi1, phi2);
+                g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
 
-                i = integral2(ga, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                i = integral2(g, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
             elseif this.d==4     
                 % use matlab integration
                 f = @(x) this.pdf(x);

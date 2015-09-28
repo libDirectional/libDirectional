@@ -3,19 +3,21 @@ classdef GeneralCircularMixture < AbstractCircularDistribution
     % to different classes.
     
     properties
-        cds     % Array of circular distributions
+        cds     % Cell array of circular distributions
         w       % Weights
     end
     
     methods
         function this = GeneralCircularMixture(cds, w)
             % Constructor
-            assert(all(size(cds) == size(w)),'size of wns and w must be equal');
-            assert(all(isa(cds,'AbstractCircularDistribution')),'cds must consist only of circular distributions');
-            if all(isa(cds,'FourierDistribution'))
+            assert(isa(cds,'cell') && all(cellfun(@(cd)isa(cd,'AbstractCircularDistribution'),cds)),...
+                'cds must be a cell array of circular distributions');
+            assert(all(size(cds) == size(w)),'size of cds and w must be equal');
+            
+            if all(cellfun(@(cd)isa(cd,'FourierDistribution'),cds))
                 warning('Mixtures of Fourier distributions can be built by combining the Fourier coefficients so using a mixture may not be necessary');
             end
-            if all(isa(cds,'WDDistribution'))
+            if all(cellfun(@(cd)isa(cd,'WDDistribution'),cds))
                 warning('WDDistributions are mixtures by themselves');
             end
             this.cds = cds;
@@ -34,7 +36,7 @@ classdef GeneralCircularMixture < AbstractCircularDistribution
             assert(size(xa,1)==1);
             p = zeros(1, size(xa,2));
             for i=1:length(this.cds);
-                p = p + this.w(i)*this.cds(i).pdf(xa); % Calculate pdf using individual pdfs
+                p = p + this.w(i)*this.cds{i}.pdf(xa); % Calculate pdf using individual pdfs
             end
         end
         
@@ -49,7 +51,7 @@ classdef GeneralCircularMixture < AbstractCircularDistribution
             %       n-th trigonometric moment (complex number)
             m = 0;
             for i=1:length(this.cds);
-                m = m + this.w(i)*this.cds(i).trigonometricMoment(n); % Calculate moments using moments of each component
+                m = m + this.w(i)*this.cds{i}.trigonometricMoment(n); % Calculate moments using moments of each component
             end
         end
         
@@ -67,7 +69,7 @@ classdef GeneralCircularMixture < AbstractCircularDistribution
             d = discretesample(this.w,n);
             s = zeros(1,n);
             for i=1:n
-                s(i) = this.cds(d(i)).sample(1);
+                s(i) = this.cds{d(i)}.sample(1);
             end
         end
     end

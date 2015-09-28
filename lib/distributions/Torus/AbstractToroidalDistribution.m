@@ -133,7 +133,7 @@ classdef AbstractToroidalDistribution
             % Biometrika, Vol. 67, No. 1 (Apr., 1980), pp. 163-173
             C = this.covariance4D();
             % use signed nonsquared version
-            rhoc = sign(det(C(1:2,3:4))) * sqrt(trace (inv(C(1:2,1:2)) * C(1:2,3:4) * inv(C(3:4,3:4)) * C(3:4,1:2) ));
+            rhoc = sign(det(C(1:2,3:4))) * sqrt(trace (C(1:2,1:2) \ C(1:2,3:4) / C(3:4,3:4) * C(3:4,1:2) ));
         end
                 
         function rhoc = circularCorrelationJohnson(this)
