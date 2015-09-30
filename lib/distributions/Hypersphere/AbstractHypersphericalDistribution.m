@@ -118,6 +118,49 @@ classdef AbstractHypersphericalDistribution
             end
         end
         
+        function i = entropyNumerical(this)
+            if this.d==2
+                %use matlab integration
+                f = @(phi) this.pdf([cos(phi); sin(phi)]).*log(this.pdf([cos(phi); sin(phi)]));
+                i = -integral(f,0,2*pi, 'AbsTol', 0.01);
+            elseif this.d ==3
+                % use matlab integration
+                f = @(x) this.pdf(x).*log(this.pdf(x));
+                r=1;
+                
+                % spherical coordinates
+                fangles = @(phi1,phi2) f([ ...
+                r*sin(phi1)*sin(phi2); ...
+                r*cos(phi1)*sin(phi2); ...
+                r*cos(phi2); ...
+                ]);
+
+                g = @(phi1,phi2) fangles(phi1,phi2) * sin(phi2); % volume correcting term
+                ga = @(phi1,phi2) arrayfun(g, phi1, phi2);
+
+                i = -integral2(ga, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+            elseif this.d==4     
+                % use matlab integration
+                f = @(x) this.pdf(x).*log(this.pdf(x));
+                r=1;
+                
+                % hyperspherical coordinates
+                fangles = @(phi1,phi2,phi3) f([ ...
+                r*sin(phi1)*sin(phi2)*sin(phi3); ...
+                r*cos(phi1)*sin(phi2)*sin(phi3); ...
+                r*cos(phi2)*sin(phi3); ...
+                r*cos(phi3)
+                ]);
+
+                g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) * sin(phi2)*(sin(phi3))^2; % volume correcting term
+                ga = @(phi1,phi2,phi3) arrayfun(g, phi1, phi2, phi3);
+
+                i = -integral3(ga, 0, 2*pi, 0, pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+            else
+                error('not supported')
+            end
+        end
+        
     end
     
     methods (Static)

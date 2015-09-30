@@ -25,7 +25,7 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf.integral(), 1, 'RelTol', 1E-5);
             
             %% test fitting to samples
-            %compare to results von von Mises distribution
+            % compare to results von von Mises distribution
             vm = VMDistribution(0,1);
             n = 2000;
             s = vm.sample(n);
@@ -43,6 +43,26 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             c = vmfMul.pdf([1;0])/(vmf.pdf([1;0])*other.pdf([1;0]));
             testCase.verifyEqual(vmf.pdf([cos(x);sin(x)]).*other.pdf([cos(x);sin(x)])*c, vmfMul.pdf([cos(x);sin(x)]), 'RelTol', 1E-10);
             testCase.verifyEqual(vmf.pdf([cos(x);sin(x)]).*other.pdf([cos(x);sin(x)])*c, vmfMul2.pdf([cos(x);sin(x)]), 'RelTol', 1E-10);
+            
+            %% test colvolve
+            vmfConv = vmf.convolve(other);
+            vmfConv2 = other.convolve(vmf);            
+            testCase.verifyEqual(vmfConv.mu, vmf.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmfConv2.mu, other.mu, 'RelTol', 1E-10);
+            d = 2;
+            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
+            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv2.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
+            
+            %% test stochastic sampling
+            n = 10;
+            s = vmf.sample(n);
+            testCase.verifySize(s, [length(mu), n])
+            testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
+            
+            %% test entropy
+            e = vmf.entropy();
+            testCase.verifyEqual(e, vmf.entropyNumerical(), 'RelTol', 1E-10);
+            testCase.verifyEqual(e, vmf.toVM().entropy(), 'RelTol', 1E-10);
         end
         
         function testVMFDistribution3d(testCase)
@@ -68,6 +88,37 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             x = [0,1,0]';
             testCase.verifyEqual(vmf.pdf(x).*other.pdf(x)*c, vmfMul.pdf(x), 'RelTol', 1E-10);
             testCase.verifyEqual(vmf.pdf(x).*other.pdf(x)*c, vmfMul2.pdf(x), 'RelTol', 1E-10);
+            
+            %% test colvolve
+            vmfConv = vmf.convolve(other);
+            vmfConv2 = other.convolve(vmf);
+            testCase.verifyEqual(vmfConv.mu, vmf.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmfConv2.mu, other.mu, 'RelTol', 1E-10);
+            d = 3;
+            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
+            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv2.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
+            
+            %% test stochastic sampling
+            n = 10;
+            s = vmf.sample(n);
+            testCase.verifySize(s, [length(mu), n])
+            testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
+            
+            s = vmf.sampleCdf(n);
+            testCase.verifySize(s, [length(mu), n])
+            testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
+            
+            s = vmf.sampleCdfVectorized(n);
+            testCase.verifySize(s, [length(mu), n])
+            testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
+            
+            s = vmf.sampleWood(n);
+            testCase.verifySize(s, [length(mu), n])
+            testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
+            
+            %% test entropy
+            e = vmf.entropy();
+            testCase.verifyEqual(e, vmf.entropyNumerical(), 'RelTol', 1E-7);
         end
         
         function testVMFDistribution4d(testCase)
@@ -93,6 +144,21 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             x = [0,1,0,0]';
             testCase.verifyEqual(vmf.pdf(x).*other.pdf(x)*c, vmfMul.pdf(x), 'RelTol', 1E-10);
             testCase.verifyEqual(vmf.pdf(x).*other.pdf(x)*c, vmfMul2.pdf(x), 'RelTol', 1E-10);
+            
+            %% test colvolve
+            vmfConv = vmf.convolve(other);
+            vmfConv2 = other.convolve(vmf);
+            testCase.verifyEqual(vmfConv.mu, vmf.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmfConv2.mu, other.mu, 'RelTol', 1E-10);
+            d = 4;
+            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
+            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv2.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);            
+            
+            %% test stochastic sampling
+            n = 10;
+            s = vmf.sample(n);
+            testCase.verifySize(s, [length(mu), n])
+            testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
         end
     end
 end
