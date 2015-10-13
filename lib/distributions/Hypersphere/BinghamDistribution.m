@@ -279,6 +279,13 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Unscented Orientation Estimation Based on the Bingham Distribution
             % IEEE Transactions on Automatic Control, January 2016.
             %
+            % Important: The paper discusses samples from both modes of the
+            % Bingham. This code only samples from one mode. If desired, the samples
+            % from the other mode can be obtained by mirroring:
+            % [s,w] = bd.sampleDeterministic
+            % s2 = [s, -s]
+            % w2 = [w, w]/2
+            %
             % Parameters:
             %   lambda (scalar or string)
             %       weighting parameter in [0,1] or the string 'uniform' (only
@@ -308,29 +315,29 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             else
                 assert (lambda>=0 && lambda <=1);
                 B = BinghamDistribution(this.Z, eye(this.d,this.d));
-                S = B.moment();
+                S = B.moment(); 
                 samples = zeros(2*this.d-1,this.d);
                 weights = zeros(1, 2*this.d-1);
-                w = zeros(1, this.d-1);
+                p = zeros(1, this.d-1);
                 alpha = zeros(1, this.d-1);
-                samples(1,end) = 1; %sample at mean
+                samples(1,end) = 1; %sample at mode
                 for i=1:this.d-1
-                    w(i) = S(i,i) + (1-lambda)*(S(end,end)/(this.d-1));
-                    alpha(i) = asin(sqrt(S(i,i)/w(i)));
+                    p(i) = S(i,i) + (1-lambda)*(S(end,end)/(this.d-1));
+                    alpha(i) = asin(sqrt(S(i,i)/p(i)));
                     samples(2*i,end) = cos(alpha(i));
                     samples(2*i+1,end) = cos(alpha(i));
                     samples(2*i,i) = sin(alpha(i));
                     samples(2*i+1,i) = -sin(alpha(i));
-                    weights(1,2*i) = w(i)/2;
-                    weights(1,2*i+1) = w(i)/2;
+                    weights(1,2*i) = p(i)/2;
+                    weights(1,2*i+1) = p(i)/2;
                 end
-                weights(1) = 1-sum(weights(2:end));
+                weights(1) = 1-sum(weights(2:end)); % = lambda*S(4,4)
                 samples = this.M*samples';
             end
         end       
         
         function [s,w] = sampleWeighted(this, n)
-            % Weighted sample generator
+            % Weighted sample generator.
             % Generates uniform (w.r.t. the Haar Measure) random samples on 
             % the unit sphere and assigns each sample a weight based on the
             % pdf.

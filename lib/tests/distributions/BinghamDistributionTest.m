@@ -134,6 +134,25 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
             end
         end
         
+        function testVmRelation(testCase)
+            phi = 1.9;
+            M = [cos(phi),-sin(phi);sin(phi),cos(phi)]';
+            Z = [-8 0]';
+            B = BinghamDistribution(Z,M);
+            
+            % convert to VM and compare pdf
+            m=B.mode;
+            vm = VMDistribution(2*atan2(m(2),m(1)), -Z(1)/2);
+            x = 0:0.2:2*pi;
+            testCase.verifyEqual(vm.pdf(x), B.pdf([cos(x/2);sin(x/2)]),'RelTol',1E-10);
+            
+            % compare deterministic samples
+            wd = vm.toDirac3();
+            samples = B.sampleDeterministic('uniform');
+            samples1D = mod(atan2(samples(2,:), samples(1,:))*2,2*pi);
+            testCase.verifyEqual(sort(wd.d), sort(samples1D), 'RelTol',1E-10);
+        end
+        
         function testNormConst(testCase)
             % test normalization constant and derivatives
             
