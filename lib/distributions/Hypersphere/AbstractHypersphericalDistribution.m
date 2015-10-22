@@ -20,7 +20,7 @@ classdef AbstractHypersphericalDistribution
             switch this.d
                 case 2
                     % use polar coordinates, plot angle->pdf(angle)
-                    phi = 0:0.02:2*pi;
+                    phi = linspace(0,2*pi,320);
                     x = [cos(phi); sin(phi)];
                     p = this.pdf(x);
                     plot(phi, p);
@@ -97,14 +97,14 @@ classdef AbstractHypersphericalDistribution
                 
                 % hyperspherical coordinates
                 fangles = @(phi1,phi2,phi3) f([ ...
-                r*sin(phi1)*sin(phi2)*sin(phi3); ...
-                r*cos(phi1)*sin(phi2)*sin(phi3); ...
-                r*cos(phi2)*sin(phi3); ...
-                r*cos(phi3)
+                r.*sin(phi1).*sin(phi2).*sin(phi3); ...
+                r.*cos(phi1).*sin(phi2).*sin(phi3); ...
+                r.*cos(phi2).*sin(phi3); ...
+                r.*cos(phi3)
                 ]);
 
-                g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) * sin(phi2)*(sin(phi3))^2; % volume correcting term
-                ga = @(phi1,phi2,phi3) arrayfun(g, phi1, phi2, phi3);
+                g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
+                ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
 
                 i = integral3(ga, 0, 2*pi, 0, pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
             else
@@ -130,13 +130,13 @@ classdef AbstractHypersphericalDistribution
                 
                 % spherical coordinates
                 fangles = @(phi1,phi2) f([ ...
-                r*sin(phi1)*sin(phi2); ...
-                r*cos(phi1)*sin(phi2); ...
+                r*sin(phi1).*sin(phi2); ...
+                r*cos(phi1).*sin(phi2); ...
                 r*cos(phi2); ...
                 ]);
 
-                g = @(phi1,phi2) fangles(phi1,phi2) * sin(phi2); % volume correcting term
-                ga = @(phi1,phi2) arrayfun(g, phi1, phi2);
+                g = @(phi1,phi2) fangles(phi1,phi2) .* sin(phi2); % volume correcting term
+                ga = @(phi1,phi2) reshape(g(phi1(:)', phi2(:)'), size(phi1));
 
                 i = -integral2(ga, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
             elseif this.d==4     
@@ -146,14 +146,14 @@ classdef AbstractHypersphericalDistribution
                 
                 % hyperspherical coordinates
                 fangles = @(phi1,phi2,phi3) f([ ...
-                r*sin(phi1)*sin(phi2)*sin(phi3); ...
-                r*cos(phi1)*sin(phi2)*sin(phi3); ...
-                r*cos(phi2)*sin(phi3); ...
+                r*sin(phi1).*sin(phi2).*sin(phi3); ...
+                r*cos(phi1).*sin(phi2).*sin(phi3); ...
+                r*cos(phi2).*sin(phi3); ...
                 r*cos(phi3)
                 ]);
 
-                g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) * sin(phi2)*(sin(phi3))^2; % volume correcting term
-                ga = @(phi1,phi2,phi3) arrayfun(g, phi1, phi2, phi3);
+                g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
+                ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
 
                 i = -integral3(ga, 0, 2*pi, 0, pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
             else

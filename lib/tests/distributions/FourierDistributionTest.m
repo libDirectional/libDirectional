@@ -354,5 +354,19 @@ classdef FourierDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(fd1.trigonometricMoment(16),0);
             testCase.verifyEqual(fd2.trigonometricMoment(30),0);
         end
+        function testNormalizationAfterTruncation(testCase)
+            dist=VMDistribution(0,5);
+            fdSqrt=FourierDistribution.fromDistribution(dist,1001,'sqrt');
+            testCase.verifyEqual(integral(@(x)fdSqrt.pdf(x),0,2*pi),1,'RelTol',1E-4);
+            % Perform truncation without normalization
+            fdSqrtManuallyTruncated=fdSqrt;
+            fdSqrtManuallyTruncated.a=fdSqrt.a(1:3);
+            fdSqrtManuallyTruncated.b=fdSqrt.b(1:2);
+            % Verify that this case requires normalization after truncation
+            testCase.verifyTrue(abs(integral(@(x)fdSqrtManuallyTruncated.pdf(x),0,2*pi)-1)>=0.01);
+            fdSqrtTrunc=fdSqrt.truncate(7);
+            % Verify that use of .truncate results in a normalized density
+            testCase.verifyEqual(integral(@(x)fdSqrtTrunc.pdf(x),0,2*pi),1,'RelTol',1E-4);
+        end
     end
 end

@@ -2,7 +2,7 @@ classdef SE2UKF < handle
     % Applies UKF to dual-quaternion-based Estimation on SE(2).
     %
     % A Stochastic Filter for Planar Rigid-Body Motions,
-    % Igor Gilitschenski, Gerhard Kurz, and Uwe D. Hanebeck,
+    % Igor Gilitschenski, Gerhard Kurz, and Uwe D. Hanebeck,
     % Proceedings of the 2015 IEEE International Conference on Multisensor
     % Fusion and Integration for Intelligent Systems (MFI),
     % San Diego, USA, 2015 (submitted)

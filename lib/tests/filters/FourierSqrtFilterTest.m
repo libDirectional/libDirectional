@@ -1,14 +1,11 @@
 classdef FourierSqrtFilterTest < matlab.unittest.TestCase
    
-    properties
-    end
-    
     methods (Test)           
         function testInitialization(testCase)
             filter=FourierSqrtFilter(101);
             testCase.verifyClass(filter.fd, 'FourierDistribution');
-            testCase.verifyEqual(length(filter.fd.a),51);
-            testCase.verifyEqual(length(filter.fd.b),50);
+            testCase.verifyLength(filter.fd.a,51);
+            testCase.verifyLength(filter.fd.b,50);
             testCase.verifyEqual(filter.fd.a(1),sqrt(2/pi),'AbsTol',1E-10);
         end
         
@@ -26,8 +23,8 @@ classdef FourierSqrtFilterTest < matlab.unittest.TestCase
             filter.predictIdentity(vm);
             fd1=FourierDistribution.fromDistribution(CUDistribution(),101,'sqrt');
             fd2=fd1.convolve(FourierDistribution.fromDistribution(vm,101,'sqrt'));
-            testCase.verifyEqual(length(filter.fd.a),51);
-            testCase.verifyEqual(length(filter.fd.b),50);
+            testCase.verifyLength(filter.fd.a,51);
+            testCase.verifyLength(filter.fd.b,50);
             testCase.verifyEqual(filter.fd.a,fd2.a,'AbsTol',1E-8);
             testCase.verifyEqual(filter.fd.b,fd2.b,'AbsTol',1E-8);
         end
@@ -41,8 +38,8 @@ classdef FourierSqrtFilterTest < matlab.unittest.TestCase
             fd1=FourierDistribution.fromDistribution(CUDistribution(),101,'sqrt');
             fd2=fd1.multiply(FourierDistribution.fromDistribution(vmMultiply,101,'sqrt'));
             fd3=fd2.truncate(101);
-            testCase.verifyEqual(length(filter.fd.a),51);
-            testCase.verifyEqual(length(filter.fd.b),50);
+            testCase.verifyLength(filter.fd.a,51);
+            testCase.verifyLength(filter.fd.b,50);
             testCase.verifyEqual(filter.fd.a,fd3.a,'AbsTol',1E-8);
             testCase.verifyEqual(filter.fd.b,fd3.b,'AbsTol',1E-8);
         end

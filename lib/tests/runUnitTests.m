@@ -1,4 +1,10 @@
-function results = runUnitTests()
+function results = runUnitTests(enableExpensiveTests)
+    global enableExpensive
+    if nargin>0
+        enableExpensive=enableExpensiveTests;
+    else
+        enableExpensive=false;
+    end
     % Execute all unit tests.
     
     % switch to path of this file

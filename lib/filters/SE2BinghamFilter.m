@@ -6,7 +6,7 @@ classdef SE2BinghamFilter < handle
     % Proceedings of the 17th International Conference on Information Fusion (Fusion 2014), Salamanca, Spain, July 2014.
     %
     % A Stochastic Filter for Planar Rigid-Body Motions,
-    % Igor Gilitschenski, Gerhard Kurz, and Uwe D. Hanebeck,
+    % Igor Gilitschenski, Gerhard Kurz, and Uwe D. Hanebeck,
     % Proceedings of the 2015 IEEE International Conference on Multisensor
     % Fusion and Integration for Intelligent Systems (MFI),
     % San Diego, USA, 2015 (submitted)    

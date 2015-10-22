@@ -34,8 +34,7 @@ classdef GeneralCircularMixtureTest < matlab.unittest.TestCase
             %% test sampling
             n = 10;
             s = mixture.sample(10);
-            testCase.verifyEqual(size(s,1), 1);
-            testCase.verifyEqual(size(s,2), n);
+            testCase.verifySize(s,[1,n]);
             testCase.verifyGreaterThanOrEqual(s,zeros(size(s)));
             testCase.verifyLessThan(s,2*pi*ones(size(s)));
         end

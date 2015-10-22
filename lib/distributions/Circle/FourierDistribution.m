@@ -158,31 +158,32 @@ classdef FourierDistribution < AbstractCircularDistribution
         
         function f = normalize(this)
             % Normalize Fourier density while taking its type into account
+            % Avoid use of constructor to avoid normalizing twice
+            f=this;
             switch this.transformation
                 case 'sqrt'
                     % Calculate normalization factor and return normalized
                     % result
-                    cSquare=conv(this.c,this.c);
-                    a0=real(cSquare((length(cSquare)+1)/2))*2;
-                    if(abs(a0-1/pi)<1e-4)
-                        f=this;
+                    a0=2*real(conv(this.c,this.c,'valid'));
+                    if a0<0
+                        error('Normalization:negative','a0 is negative, this usually points to a user error');
                     elseif (a0<1e-6)
-                        error('a0 is too close to zero, this usually points to a user error');
-                    else
+                        error('Normalization:almostZero','a0 is too close to zero, this usually points to a user error');
+                    elseif (abs(a0-1/pi)>1e-4)
                         warning('Normalization:notNormalized','Coefficients apparently do not belong to normalized density. Normalizing...');
-                        f=FourierDistribution(this.a/sqrt(a0*pi),this.b/sqrt(a0*pi),this.transformation);
+                        f.a=this.a/sqrt(a0*pi);
+                        f.b=this.b/sqrt(a0*pi);
                     end
                 case 'identity'
                     % Calculate normalization factor and return normalized
                     % result
                     a0=this.a(1);
-                    if (abs(a0-1/pi)<1e-6)
-                        f=this;
-                    elseif (a0<1e-6)
-                        error('a0 is too close to zero, this usually points to a user error');
-                    else
+                    if (a0<1e-6)
+                        error('Normalization:almostZero','a0 is too close to zero, this usually points to a user error');
+                    elseif (abs(a0-1/pi)>1e-4)
                         warning('Normalization:notNormalized','Coefficients apparently do not belong to normalized density. Normalizing...');
-                        f=FourierDistribution(this.a/(a0*pi),this.b/(a0*pi),this.transformation);
+                        f.a=this.a/(a0*pi);
+                        f.b=this.b/(a0*pi);
                     end
                 otherwise
                     warning('Normalization:cannotTest','Unable to test if normalized');
@@ -233,15 +234,25 @@ classdef FourierDistribution < AbstractCircularDistribution
             % Truncates Fourier series. Fills up if there are less coefficients
             % Expects number of complex coefficients (or sum of number of real
             % coefficients)
-        
+            f=this;
             assert((noOfCoefficients-1>0) && (mod(noOfCoefficients-1,2)==0),'Invalid number of coefficients, number has to be odd');
             if ((noOfCoefficients+1)/2)<=length(this.a)
-                f=FourierDistribution(this.a(1:((noOfCoefficients+1)/2)),...
-                this.b(1:((noOfCoefficients-1)/2)),this.transformation);
+                f.a=this.a(1:((noOfCoefficients+1)/2));
+                f.b=this.b(1:((noOfCoefficients-1)/2));
             else 
                 warning('Truncate:TooFewCoefficients','Less coefficients than desired, filling up with zeros')
                 diff=(noOfCoefficients+1)/2-length(this.a);
-                f=FourierDistribution([this.a,zeros(1,diff)],[this.b,zeros(1,diff)],this.transformation);
+                f.a=[this.a,zeros(1,diff)];
+                f.b=[this.b,zeros(1,diff)];
+            end
+            % Truncation can void normalization if transformation is not
+            % identity
+            if ~strcmp(f.transformation,'identity')
+                % Disable warning as we expect normalization to be
+                % necessary
+                warnStruct=warning('off','Normalization:notNormalized');
+                f=f.normalize;
+                warning(warnStruct);
             end
         end
         
@@ -254,18 +265,19 @@ classdef FourierDistribution < AbstractCircularDistribution
                 case 'square'
                     switch this.transformation
                         case 'sqrt'
-                            transformation='identity';
+                            newTrans='identity';
                         case 'identity'
-                            transformation='square';
+                            newTrans='square';
                         otherwise
-                            transformation='multiple';
+                            newTrans='multiple';
                     end
                     c=conv(this.c,this.c);
-                    f=FourierDistribution.fromComplex(c,transformation);
+                    cTrunc=c(max((length(c)+1)/2-(noOfCoefficients-1)/2,1):min((length(c)+1)/2+(noOfCoefficients-1)/2,end));
+                    f=FourierDistribution.fromComplex(cTrunc,newTrans);
                 otherwise
                     error('Desired transformation not supported via coefficients');
             end
-            f=f.truncate(noOfCoefficients); 
+            f=f.truncate(noOfCoefficients);
         end
         
         function f = transformViaFFT(this,desiredTransformation,noOfCoefficients)
@@ -354,8 +366,9 @@ classdef FourierDistribution < AbstractCircularDistribution
             if mod(length(fvals),2)==0 % An additional a_k could be obtained but is discarded
                 transformed(1)=[];
             end
-            ftmp=FourierDistribution.fromComplex(transformed,desiredTransformation);
-            f=ftmp.truncate(noOfCoefficients); 
+            coeffsTruncated=transformed(max((length(transformed)+1)/2-(noOfCoefficients-1)/2,1):min((length(transformed)+1)/2+(noOfCoefficients-1)/2,end));
+            ftmp=FourierDistribution.fromComplex(coeffsTruncated,desiredTransformation);
+            f=ftmp.truncate(noOfCoefficients);
         end
         
         function f=fromDistribution(distribution,noOfCoefficients,desiredTransformation)

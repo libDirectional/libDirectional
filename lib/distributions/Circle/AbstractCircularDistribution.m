@@ -69,7 +69,7 @@ classdef AbstractCircularDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
-            theta = 0:0.05:2*pi;
+            theta = linspace(0,2*pi,128);
             ftheta = this.pdf(theta);
             p = plot(theta, ftheta,varargin{:});
         end
@@ -83,7 +83,7 @@ classdef AbstractCircularDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
-            theta = 0:0.02:2*pi;
+            theta = linspace(0,2*pi,320);
             theta = [theta 0];
             ftheta = this.pdf(theta);
             scale = 1/max(ftheta);
@@ -99,7 +99,7 @@ classdef AbstractCircularDistribution
             % Returns:
             %   p (1 x 2)
             %       plot handles for plot3 and stem3
-            theta = [0:0.05:2*pi, 0];
+            theta = [linspace(0,2*pi,128), 0];
             ftheta = this.pdf(theta);
             p1 = plot3(cos(theta), sin(theta), ftheta, varargin{:});
             if ~ishold
@@ -454,8 +454,7 @@ classdef AbstractCircularDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
-            theta = 0:0.02:2*pi;
-            theta = [theta 0];
+            theta = [linspace(0,2*pi,320),0];
             p = plot(cos(theta),sin(theta),varargin{:});
         end
     end

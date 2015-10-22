@@ -18,7 +18,7 @@ classdef GeneralCircularMixture < AbstractCircularDistribution
                 warning('Mixtures of Fourier distributions can be built by combining the Fourier coefficients so using a mixture may not be necessary');
             end
             if all(cellfun(@(cd)isa(cd,'WDDistribution'),cds))
-                warning('WDDistributions are mixtures by themselves');
+                warning('Mixtures of WDDistributions can usually be combined into one WDDistribution.');
             end
             this.cds = cds;
             this.w = w/sum(w);
@@ -68,8 +68,11 @@ classdef GeneralCircularMixture < AbstractCircularDistribution
             % Sample component first, then sample from the chosen component
             d = discretesample(this.w,n);
             s = zeros(1,n);
-            for i=1:n
-                s(i) = this.cds{d(i)}.sample(1);
+            occurrences=histc(d,1:length(this.cds));
+            count=1;
+            for i=1:length(this.cds)
+                s(count:count+occurrences(i)-1) = this.cds{d(i)}.sample(occurrences(i));
+                count=count+occurrences(i);
             end
         end
     end

@@ -128,6 +128,12 @@ classdef SE2BinghamDistribution
             %       deterministic samples, one per column
             %   weights (1 x n row vector)
             %       weight for each sample
+            %
+            % Igor Gilitschenski, Gerhard Kurz, Uwe D. Hanebeck,
+            % A Stochastic Filter for Planar Rigid-Body Motions
+            % Proceedings of the 2015 IEEE International Conference on 
+            % Multisensor Fusion and Information Integration (MFI 2015), 
+            % San Diego, California, USA, September 2015.
             
             % Generate Sampling of Bingham marginal
             b = this.getBinghamMarginal();
