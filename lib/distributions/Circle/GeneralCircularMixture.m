@@ -71,9 +71,11 @@ classdef GeneralCircularMixture < AbstractCircularDistribution
             occurrences=histc(d,1:length(this.cds));
             count=1;
             for i=1:length(this.cds)
-                s(count:count+occurrences(i)-1) = this.cds{d(i)}.sample(occurrences(i));
+                s(count:count+occurrences(i)-1) = this.cds{i}.sample(occurrences(i));
                 count=count+occurrences(i);
             end
+            [~,order]=sort(d);
+            s(order)=s;
         end
     end
 end
