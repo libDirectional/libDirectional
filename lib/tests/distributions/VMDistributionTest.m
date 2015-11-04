@@ -81,5 +81,15 @@ classdef VMDistributionTest< matlab.unittest.TestCase
             testCase.verifyGreaterThanOrEqual(s,zeros(size(s)));
             testCase.verifyLessThan(s,2*pi*ones(size(s)));
         end
+        
+        function testKld(testCase)
+            rng default
+            for i=1:20
+                vm1 = VMDistribution(2*pi*rand(1), abs(randn(1)));
+                vm2 = VMDistribution(2*pi*rand(1), abs(randn(1)));
+                testCase.verifyEqual(vm1.kld(vm2), vm1.kldNumerical(vm2), 'RelTol', 1E-10);
+                testCase.verifyEqual(vm2.kld(vm1), vm2.kldNumerical(vm1), 'RelTol', 1E-10);
+            end
+        end
     end
 end

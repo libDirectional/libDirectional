@@ -193,6 +193,10 @@ classdef WNDistribution < AbstractCircularDistribution
             s = mod(this.mu + this.sigma * randn(1,n),2*pi);
         end
         
+        function wn=shift(this,angle)
+            wn=WNDistribution(this.mu+angle,this.sigma); % Mod is done in constructor
+        end
+        
         function g = toGaussian(this)
             % Convert to 1D Gaussian distribution 
             % this is a simple conversion that just keeps the parameters

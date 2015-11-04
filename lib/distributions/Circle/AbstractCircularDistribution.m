@@ -351,6 +351,32 @@ classdef AbstractCircularDistribution
             kld = integral(@(x) this.pdf(x).*log(this.pdf(x)./other.pdf(x)), 0, 2*pi);
         end
         
+        function dist=hellingerDistanceNumerical(this, other)
+            % Numerically calculates the hellinger distance to another distribution
+            %
+            % Parameters:
+            %   other (AbstractCircularDistribution)
+            %       distribution to compare to
+            % Returns:
+            %   dist (scalar)
+            %       hellinger distance of this distribution to other distribution
+            assert(isa(other, 'AbstractCircularDistribution'));
+            dist=0.5*integral(@(x)(sqrt(this.pdf(x))-sqrt(other.pdf(x))).^2,0,2*pi);
+        end
+        
+        function dist=totalVariationDistanceNumerical(this, other)
+            % Numerically calculates the total varation distance to another distribution
+            %
+            % Parameters:
+            %   other (AbstractCircularDistribution)
+            %       distribution to compare to
+            % Returns:
+            %   dist (scalar)
+            %       total variation distance of this distribution to other distribution
+            assert(isa(other, 'AbstractCircularDistribution'));
+            dist=0.5*integral(@(x)abs(this.pdf(x)-other.pdf(x)),0,2*pi);
+        end
+        
         function l = logLikelihood(this,samples)
             % Calculates the log-likelihood of the given samples
             %

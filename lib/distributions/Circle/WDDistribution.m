@@ -74,6 +74,10 @@ classdef WDDistribution < AbstractCircularDistribution
             m = sum(exp(1i*n*this.d).*this.w);
         end
         
+        function wd=shift(this,angle)
+            wd=WDDistribution(this.d+angle,this.w); % Mod is done in constructor
+        end
+        
         function m = trigonometricMomentNumerical(this,n)
             % Disable numerical calculation of trigonometric moments since it relies on the pdf
             error('not supported');

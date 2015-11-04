@@ -11,6 +11,9 @@ classdef CUDistribution < AbstractCircularDistribution
             % purpose than to allow users to always work with distribution
             % objects (e.g. for conversion to Fourier representation)
         end
+        function cu=shift(~,~)
+            cu=CUDistribution;
+        end
     end
     
     methods (Static) % Make them accessible via the class as well because they are independent from parameters

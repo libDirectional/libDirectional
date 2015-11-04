@@ -126,6 +126,27 @@ classdef VMDistribution < AbstractCircularDistribution
             result = -this.kappa * besselratio(0, this.kappa) + log(2*pi*besseli(0,this.kappa));
         end
         
+        function vm=shift(this,angle)
+            vm=VMDistribution(this.mu+angle,this.kappa); % Mod is done in constructor
+        end
+        
+        function kld = kld(this, other)
+            % Analytically calculates  the Kullback-Leibler divergence to another VM distribution
+            % Be aware that the kld is not symmetric.
+            %
+            % Parameters:
+            %   other (AbstractCircularDistribution)
+            %       distribution to compare to
+            % Returns:
+            %   kld (scalar)
+            %       kld of this distribution to other distribution
+            assert(isa(other, 'VMDistribution'));
+            m1 = this.trigonometricMoment(1);
+            kld = log(besseli(0,other.kappa)) - log(besseli(0,this.kappa)) ...
+                + this.kappa * real(exp(-1i*this.mu)*m1) ...
+                - other.kappa * real(exp(-1i*other.mu)*m1);
+        end        
+        
         function samples = sample(this, n)
             % Obtain n samples from the distribution
             % 

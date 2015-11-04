@@ -149,7 +149,7 @@ classdef AbstractToroidalDistribution
             % Wiley for the Royal Statistical Society, 1977, 39, 222-229
             C = this.covariance4D();
             % use signed nonsquared version
-            rhoc = sign(det(C(1:2,3:4))) * sqrt(max(eig(inv(C(1:2,1:2)) * C(1:2,3:4) * inv(C(3:4,3:4)) * C(3:4,1:2) )));
+            rhoc = sign(det(C(1:2,3:4))) * sqrt(max(eig(C(1:2,1:2)\C(1:2,3:4)/C(3:4,3:4) * C(3:4,1:2) )));
         end        
         
         function mu = mean4D(this)
