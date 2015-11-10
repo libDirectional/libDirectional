@@ -167,7 +167,7 @@ classdef FourierDistribution < AbstractCircularDistribution
                     a0=2*real(conv(this.c,this.c,'valid'));
                     if a0<0
                         error('Normalization:negative','a0 is negative, this usually points to a user error');
-                    elseif (a0<1e-6)
+                    elseif (a0<1e-200) % Tolerance has to be that low to avoid unnecessary errors on multiply
                         error('Normalization:almostZero','a0 is too close to zero, this usually points to a user error');
                     elseif (abs(a0-1/pi)>1e-4)
                         warning('Normalization:notNormalized','Coefficients apparently do not belong to normalized density. Normalizing...');
@@ -178,16 +178,19 @@ classdef FourierDistribution < AbstractCircularDistribution
                     % Calculate normalization factor and return normalized
                     % result
                     a0=this.a(1);
-                    if (a0<1e-6)
+                    if a0<0
+                        warning('Normalization:negative','a0 is negative. This can either be caused by a user error or due to negativity caused by non-square rooted version');
+                    elseif abs(a0<1e-200) % Tolerance has to be that low to avoid unnecessary errors on multiply
                         error('Normalization:almostZero','a0 is too close to zero, this usually points to a user error');
-                    elseif (abs(a0-1/pi)>1e-4)
+                    elseif (abs(a0-1/pi)>1e-4) 
                         warning('Normalization:notNormalized','Coefficients apparently do not belong to normalized density. Normalizing...');
-                        f.a=this.a/(a0*pi);
-                        f.b=this.b/(a0*pi);
+                    else % Is already normalized, just return original density
+                        return
                     end
+                    f.a=this.a/(a0*pi);
+                    f.b=this.b/(a0*pi);
                 otherwise
                     warning('Normalization:cannotTest','Unable to test if normalized');
-                    f=this;
             end
         end
         
