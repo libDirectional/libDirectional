@@ -1,10 +1,6 @@
-classdef AbstractToroidalDistribution
+classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
     % Abstract base class for distributions on the torus (S1 x S1)
     % The torus is parameterized as [0,2*pi)^2
-    
-    properties
-        
-    end
     
     methods (Abstract)
         % Evaluate pdf at positions stored in xa
@@ -12,22 +8,9 @@ classdef AbstractToroidalDistribution
     end
     
     methods
-        function p = plot(this, varargin)
-            % Create a surface plot of the pdf
-            %
-            % Parameters:
-            %   varargin
-            %       parameters to be passed to surf command
-            % Returns:
-            %   p (scalar)
-            %       plot handle
-            step = 2*pi/100;
-            [alpha,beta] = meshgrid(0:step:2*pi,0:step:2*pi);
-            f = this.pdf([alpha(:)'; beta(:)']);
-            f = reshape(f,size(alpha,1), size(alpha,2));
-            p = surf(alpha, beta, f, varargin{:});
+        function this=AbstractToroidalDistribution
+            this.dim=2;
         end
-        
         function p = plotCylinder(this, varargin)
             % Create a cylinder plot of the pdf
             %
@@ -68,35 +51,6 @@ classdef AbstractToroidalDistribution
             p = surf(X,Y,Z,f, varargin{:});
         end
         
-        function m = trigonometricMoment(this, n)
-            % Calculate n-th trigonometric moment, i.e., 
-            % E([e^(inx_1); e^(inx_2)])
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of moment
-            % Returns:
-            %   m (2x1)
-            %       n-th trigonometric moment (complex vector)             
-            m = trigonometricMomentNumerical(this, n);
-        end
-        
-        function m = trigonometricMomentNumerical(this, n)
-            % Calculate n-th trigonometric moment numerically, i.e., 
-            % E([e^(inx_1); e^(inx_2)])
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of moment
-            % Returns:
-            %   m (2x1)
-            %       n-th trigonometric moment (complex vector)             
-            f1 = @(x,y) reshape(this.pdf([x(:)';y(:)']).*exp(1i*n*x(:)'), size(x,1),size(x,2));
-            f2 = @(x,y) reshape(this.pdf([x(:)';y(:)']).*exp(1i*n*y(:)'), size(x,1),size(x,2));
-            m(1,1) = integral2(f1, 0, 2*pi, 0, 2*pi);
-            m(2,1) = integral2(f2, 0, 2*pi, 0, 2*pi);
-        end
-        
         function pm = angularProductMomentNumerical(this, n)
             % Calculate E(e^inx * e^iny) as used by Jammalamadaka 1988
             %
@@ -109,16 +63,6 @@ classdef AbstractToroidalDistribution
             m = this.circularMean();
             f1 = @(x,y) reshape(this.pdf([x(:)'+m(1);y(:)'+m(2)]).*exp(1i*n*x(:)').*exp(1i*n*y(:)'), size(x,1),size(x,2));
             pm = integral2(f1, 0, 2*pi, 0, 2*pi);
-        end
-        
-        function m = circularMean(this)
-            % Calculate the circular mean
-            %
-            % Returns:
-            %   m (2 x 1)
-            %       circular mean in [0, 2pi)^2
-            a = this.trigonometricMoment(1);
-            m = mod(atan2(imag(a),real(a)), 2*pi);
         end
         
         function rhoc = circularCorrelationJupp(this)
@@ -314,70 +258,7 @@ classdef AbstractToroidalDistribution
             assert(size(samples,2)>=1);
             
             l = sum(log(this.pdf(samples)));
-        end   
-        
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            % use metropolics hastings by default
-            % individual distributions can override this with more
-            % sophisticated solutions
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (2 x n)
-            %       one sample per column
-            s = sampleMetropolisHastings(this, n);
-        end
-                
-        function s = sampleMetropolisHastings(this, n)
-            % Metropolis Hastings sampling algorithm
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (2 x n)
-            %       one sample per column
-            %
-            % Hastings, W. K. 
-            % Monte Carlo Sampling Methods Using Markov Chains and Their Applications 
-            % Biometrika, 1970, 57, 97-109
-            
-            burnin = 10;
-            skipping = 5;
-            
-            totalSamples = burnin+n*skipping;
-            s = zeros(2,totalSamples);
-            x = this.circularMean; % start with mean
-            % A better proposal distribution could be obtained by roughly estimating
-            % the uncertainty of the true distribution.
-            proposal = @(x) mod(x + mvnrnd([0;0],eye(2,2))', 2*pi); 
-            i=1;
-            while i<=totalSamples
-                xNew = proposal(x); %generate new sample
-                a = this.pdf(xNew)/this.pdf(x);
-                if a>1
-                    %keep sample
-                    s(:,i)=xNew;
-                    x = xNew;
-                    i=i+1;
-                else
-                    r = rand(1);
-                    if a > r
-                        %keep sample
-                        s(:,i)=xNew;
-                        x = xNew;
-                        i=i+1;
-                    else
-                        %reject sample
-                    end
-                end
-            end
-            s = s(:,burnin+1:skipping:end);
-        end
+        end         
     end
-    
 end
 

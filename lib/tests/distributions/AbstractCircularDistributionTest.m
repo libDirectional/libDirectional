@@ -70,5 +70,20 @@ classdef AbstractCircularDistributionTest< matlab.unittest.TestCase
                 testCase.verifyEqual(current.pdf(linspace(-2*pi,0,100)),current.pdf(linspace(0,2*pi,100)),'RelTol',1E-10);
             end
         end
+        
+        function testMetropolisHastings(testCase)
+            dist = VMDistribution(1.3,1.8);
+            rng default
+            n = 1000;
+            s = dist.sampleMetropolisHastings(n);
+            testCase.verifyEqual(size(s,1), 1);
+            testCase.verifyEqual(size(s,2), n);
+            testCase.verifyGreaterThanOrEqual(s,zeros(size(s)));
+            testCase.verifyLessThan(s,2*pi*ones(size(s)));
+            wd = WDDistribution(s);
+            dist2 = wd.toVM();
+            testCase.verifyEqual(dist.mu, dist2.mu, 'AbsTol', 0.1);
+            testCase.verifyEqual(dist.kappa, dist2.kappa, 'RelTol', 0.1);
+        end
     end
 end

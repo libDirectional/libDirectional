@@ -30,6 +30,12 @@ classdef ToroidalVMSineDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(tvm.pdf([-3;11]), pdf([-3;11]), 'RelTol', 1E-10);
             testCase.verifyEqual(tvm.pdf([5 1;6 3]), [pdf([5;6]) pdf([1;3])] , 'RelTol', 1E-10);
             
+            %% test conversion to ToroidalVMMatrixDistribution
+            tvmMatrix = tvm.toToroidalVMMatrixDistribution();
+            testCase.verifyClass(tvmMatrix, 'ToroidalVMMatrixDistribution');
+            testpoints = mod([1:20;6:25],2*pi);
+            testCase.verifyEqual(tvm.pdf(testpoints), tvmMatrix.pdf(testpoints), 'RelTol', 1E-3); %error is quite large due to inaccurate normalization constant
+            
             %% test trigonometric moment
             m = tvm.trigonometricMoment(1);
             testCase.verifyEqual(m, tvm.trigonometricMomentNumerical(1), 'RelTol', 1E-9);
@@ -57,6 +63,26 @@ classdef ToroidalVMSineDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(tvm.mu, tvm2.mu, 'RelTol', 1E-5)
             testCase.verifyEqual(tvm.kappa, tvm2.kappa, 'RelTol', 1E-5)
             testCase.verifyEqual(tvm.lambda, tvm2.lambda, 'RelTol', 1E-5)
+            
+            %% test conversion to ToroidalVMMatrixDistribution
+            tvmMatrix = tvm.toToroidalVMMatrixDistribution;
+            testpoints = mod([1:20;6:25],2*pi);
+            testCase.verifyEqual(tvm.pdf(testpoints), tvmMatrix.pdf(testpoints), 'RelTol', 1E-4); %error is quite large due to inaccurate normalization constant
+            
+            %% test marginals
+            for dim =1:2
+                dist(dim) = tvm.marginal(1); %#ok<AGROW>
+                testCase.verifyClass(dist(dim), 'CustomCircularDistribution');
+                testCase.verifyEqual(dist(dim).integral(), 1, 'RelTol', 1E-10);
+            end
+            marginal1Numerical = @(x) integral(@(y) tvm.pdf([repmat(x,1,length(y));y]), 0, 2*pi);
+            testCase.verifyEqual(dist(1).pdf(1), marginal1Numerical(1), 'RelTol', 1E-10);
+            testCase.verifyEqual(dist(1).pdf(3), marginal1Numerical(3), 'RelTol', 1E-10);
+            testCase.verifyEqual(dist(1).pdf(5), marginal1Numerical(5), 'RelTol', 1E-10);
+            marginal2Numerical = @(x) integral(@(y) tvm.pdf([repmat(x,1,length(y));y]), 0, 2*pi);
+            testCase.verifyEqual(dist(2).pdf(1), marginal2Numerical(1), 'RelTol', 1E-10);
+            testCase.verifyEqual(dist(2).pdf(3), marginal2Numerical(3), 'RelTol', 1E-10);
+            testCase.verifyEqual(dist(2).pdf(5), marginal2Numerical(5), 'RelTol', 1E-10);
         end
     end
 end

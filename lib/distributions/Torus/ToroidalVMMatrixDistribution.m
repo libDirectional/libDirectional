@@ -415,7 +415,7 @@ classdef ToroidalVMMatrixDistribution < AbstractToroidalDistribution
             other = 3-dimension;
             alpha = @(x) this.kappa(other) + cos(x - this.mu(dimension)) * this.A(1,1) + sin(x - this.mu(dimension)) * this.A(2,1); 
             beta = @(x) sin(x-this.mu(dimension)) * this.A(2,2) + cos(x-this.mu(dimension)) * this.A(1,2) ;
-            f = @(x) 2*pi * this.C * besseli(0,sqrt(alpha(x)^2 + beta(x)^2 )) * exp(this.kappa(dimension) * cos(x - this.mu(dimension)));
+            f = @(x) 2*pi * this.C * besseli(0,sqrt(alpha(x).^2 + beta(x).^2 )) .* exp(this.kappa(dimension) .* cos(x - this.mu(dimension)));
             dist = CustomCircularDistribution(f);
         end
     end

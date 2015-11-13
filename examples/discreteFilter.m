@@ -4,7 +4,7 @@
 df = DiscreteFilter(100);
 
 % Perform update
-df.updateNonlinear(@(x) exp(-(x-3)^2));
+df.updateNonlinear(@(x) exp(-(x-3).^2));
 clf
 df.wd.plot2d('b');
 hold on

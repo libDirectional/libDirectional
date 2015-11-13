@@ -204,7 +204,7 @@ classdef WNFilter < AbstractCircularFilter
                     warning('progressive update with given threshold impossible')
                     currentLambda = 0.001;
                 end
-                wdNew = wd.reweigh(@(x) likelihood(z,x)^currentLambda);
+                wdNew = wd.reweigh(@(x) likelihood(z,x).^currentLambda);
                 this.wn = wdNew.toWN();
                 lambda = lambda - currentLambda;
                 steps = steps + 1;

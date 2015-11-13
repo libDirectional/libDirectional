@@ -72,6 +72,38 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyClass(twn2, 'ToroidalWNDistribution');
             testCase.verifyEqual(twd.trigonometricMoment(1), twn2.trigonometricMoment(1), 'RelTol', 1E-10);
             testCase.verifyEqual(real(twd.angularProductMoment(1)), twn2.angularProductMomentNumerical(1), 'RelTol', 1E-10);
+            
+            twn3 = twd.toToroidalWNjupp();
+            testCase.verifyClass(twn3, 'ToroidalWNDistribution');
+            testCase.verifyEqual(twd.trigonometricMoment(1), twn3.trigonometricMoment(1), 'RelTol', 1E-10);
+            testCase.verifyEqual(twd.circularCorrelationJupp(), twn3.circularCorrelationJupp(), 'RelTol', 1E-10);
+            
+            twn4 = twd.toToroidalWNmixedMLE();
+            testCase.verifyClass(twn4, 'ToroidalWNDistribution');
+            testCase.verifyEqual(twd.trigonometricMoment(1), twn4.trigonometricMoment(1), 'RelTol', 1E-10);
+            %todo check maximum likelihood property?
+            
+            twn5 = twd.toToroidalWNunwrappingEM();
+            testCase.verifyClass(twn5, 'ToroidalWNDistribution');
+            testCase.verifyEqual(twd.trigonometricMoment(1), twn4.trigonometricMoment(1), 'RelTol', 1E-10);
+            %todo check correlation somehow
+            
+            twn6 = twd.toToroidalWNcovariance();
+            testCase.verifyClass(twn6, 'ToroidalWNDistribution');
+            testCase.verifyEqual(twd.trigonometricMoment(1), twn2.trigonometricMoment(1), 'RelTol', 1E-10);
+            Ctwd = twd.covariance4D();
+            C1 = twn.covariance4D();
+            C2 = twn2.covariance4D();
+            C3 = twn3.covariance4D();
+            C4 = twn4.covariance4D();
+            C5 = twn5.covariance4D();
+            C6 = twn6.covariance4D();
+            frob = @(x) norm(x(:)); % Frobenius norm
+            testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C1(1:2,3:4)));
+            testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C2(1:2,3:4)));
+            testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C3(1:2,3:4)));            
+            testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C4(1:2,3:4)));            
+            testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C5(1:2,3:4)));            
                        
             %% test getMarginal
             wd1 = twd.marginal(1);
@@ -101,7 +133,7 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(twdRew.d, twd.d);
             testCase.verifyEqual(twdRew.w, twd.w);
             
-            f = @(x) x(1);
+            f = @(x) x(1,:);
             twdRew = twd.reweigh(f);
             testCase.verifyClass(twdRew, 'ToroidalWDDistribution');
             testCase.verifyEqual(twdRew.d, twd.d);

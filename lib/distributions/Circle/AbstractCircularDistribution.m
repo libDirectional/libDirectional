@@ -1,11 +1,7 @@
-classdef AbstractCircularDistribution
+classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
     % AbstractCircularDistribution abstract base class for distributions on
     % the circle S1, or equivalently SO(2). The circle is parameterized as
     % [0,2pi).
-    
-    properties
-        
-    end
     
     methods (Abstract)
         % Evaluate pdf at positions stored in xa
@@ -13,6 +9,9 @@ classdef AbstractCircularDistribution
     end
     
     methods
+        function this=AbstractCircularDistribution
+            this.dim=1;
+        end
         function val = cdfNumerical(this, xa, startingPoint)
             % Evaluate cumulative distribution function using numerical integration
             %
@@ -61,7 +60,7 @@ classdef AbstractCircularDistribution
         end
             
         function p = plot2d(this, varargin)
-            % Create a 2D plot of the pdf
+            % Create a 2D plot of the pdf (this function is for backwards compatibility)
             %
             % Parameters:
             %   varargin
@@ -69,9 +68,7 @@ classdef AbstractCircularDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
-            theta = linspace(0,2*pi,128);
-            ftheta = this.pdf(theta);
-            p = plot(theta, ftheta,varargin{:});
+            p=this.plot(varargin{:});
         end
         
         function p = plot2dcircular(this, varargin)
@@ -114,42 +111,7 @@ classdef AbstractCircularDistribution
             end
             p = [p1 p2];
         end
-               
-        function m = trigonometricMomentNumerical(this, n)
-            % Calculate n-th trigonometric moment numerically
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of moment
-            % Returns:
-            %   m (scalar)
-            %       n-th trigonometric moment (complex number)
-            m = integral(@(x) this.pdf(x).*exp(1i*n*x), 0, 2*pi);
-        end
-        
-        function m = trigonometricMoment(this, n)
-            % Calculate n-th trigonometric moment analytically if possible,
-            % fall back to numerical calculation by default
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of moment
-            % Returns:
-            %   m (scalar)
-            %       n-th trigonometric moment (complex number)
-            m = trigonometricMomentNumerical(this, n);
-        end
-        
-        function m = circularMean(this)
-            % Calculate the circular mean
-            %
-            % Returns:
-            %   m (scalar)
-            %       circular mean in [0, 2pi)
-            a = this.trigonometricMoment(1);
-            m = mod(atan2(imag(a),real(a)),2*pi);
-        end
-        
+         
         function v = circularVariance(this)
             % Calculate the circular variance
             %
@@ -220,7 +182,7 @@ classdef AbstractCircularDistribution
             if nargin<2
                 lambda = 0.5;
             else
-                assert(lambda>0 && lambda<1);
+                assert(lambda>=0 && lambda<=1);
             end
             w5min = (4*m1^2 - 4*m1 - m2 + 1)/(4*m1 - m2 - 3);
             w5max = (2*m1^2-m2-1)/(4*m1 - m2 - 3);
@@ -232,11 +194,11 @@ classdef AbstractCircularDistribution
             x1 = c1-x2;
             phi1 = acos(x1);
             phi2 = acos(x2);
-            diracs = [-phi1 -phi2 phi1 phi2 0];   
+            diracs = [-phi1 phi1 -phi2 phi2 0];   
             weights = [w1 w1 w1 w1 w5];
             wd = WDDistribution(diracs+this.circularMean,weights);
         end
-        
+                
         function vm = toVM(this)
             % Convert to von Mises by trigonometric moment matching
             %
@@ -324,89 +286,6 @@ classdef AbstractCircularDistribution
             result = - integral(@(x) this.pdf(x).*log(this.pdf(x)), 0, 2*pi);
         end
         
-        function d = squaredDistanceNumerical(this, other)
-            % Numerically calculates the squared distance to another distribution
-            %
-            % Parameters:
-            %   other (AbstractCircularDistribution)
-            %       distribution to compare to
-            % Returns:
-            %   d (scalar)
-            %       integral over [0,2pi) of squared difference of pdfs
-            assert(isa(other, 'AbstractCircularDistribution'));
-            d = integral(@(x) (this.pdf(x)-other.pdf(x)).^2, 0, 2*pi);
-        end
-        
-        function kld = kldNumerical(this, other)
-            % Numerically calculates  the Kullback-Leibler divergence to another distribution
-            % Be aware that the kld is not symmetric.
-            %
-            % Parameters:
-            %   other (AbstractCircularDistribution)
-            %       distribution to compare to
-            % Returns:
-            %   kld (scalar)
-            %       kld of this distribution to other distribution
-            assert(isa(other, 'AbstractCircularDistribution'));
-            kld = integral(@(x) this.pdf(x).*log(this.pdf(x)./other.pdf(x)), 0, 2*pi);
-        end
-        
-        function dist=hellingerDistanceNumerical(this, other)
-            % Numerically calculates the hellinger distance to another distribution
-            %
-            % Parameters:
-            %   other (AbstractCircularDistribution)
-            %       distribution to compare to
-            % Returns:
-            %   dist (scalar)
-            %       hellinger distance of this distribution to other distribution
-            assert(isa(other, 'AbstractCircularDistribution'));
-            dist=0.5*integral(@(x)(sqrt(this.pdf(x))-sqrt(other.pdf(x))).^2,0,2*pi);
-        end
-        
-        function dist=totalVariationDistanceNumerical(this, other)
-            % Numerically calculates the total varation distance to another distribution
-            %
-            % Parameters:
-            %   other (AbstractCircularDistribution)
-            %       distribution to compare to
-            % Returns:
-            %   dist (scalar)
-            %       total variation distance of this distribution to other distribution
-            assert(isa(other, 'AbstractCircularDistribution'));
-            dist=0.5*integral(@(x)abs(this.pdf(x)-other.pdf(x)),0,2*pi);
-        end
-        
-        function l = logLikelihood(this,samples)
-            % Calculates the log-likelihood of the given samples
-            %
-            % Parameters:
-            %   sampls (1 x n)
-            %       n samples on the circle
-            % Returns:
-            %   l (scalar)
-            %       log-likelihood of obtaining the given samples
-            assert(size(samples,1)==1);
-            assert(size(samples,2)>=1);
-            
-            l = sum(log(this.pdf(samples)));
-        end
-        
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            % use metropolics hastings by default
-            % individual distributions can override this with more
-            % sophisticated solutions
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (1 x n)
-            %       n samples on the circle
-            s = sampleMetropolisHastings(this, n);
-        end
-        
         function s = sampleCdf(this, n)
             % Sampling algorithm based on calculation of the inverse of the 
             % distribution function with numerical integration
@@ -444,25 +323,30 @@ classdef AbstractCircularDistribution
             skipping = 5;
             
             totalSamples = burnin+n*skipping;
-            s = zeros(1,totalSamples);
+            s = zeros(1, totalSamples);
             x = this.circularMean; %start with mean
             wn = WNDistribution.fromMoment(this.trigonometricMoment(1));
+            wn.mu = 0;
             proposal = @(x) mod(x + wn.sample(1), 2*pi);
             i = 1;
+            pdfx = this.pdf(x);
             while i <= totalSamples 
                 xNew = proposal(x); %generate new sample
-                a = this.pdf(xNew)/this.pdf(x);
+                pdfxNew = this.pdf(xNew);
+                a = pdfxNew/pdfx;
                 if a > 1
                     %keep sample
-                    s(i)=xNew;
+                    s(i) = xNew;
                     x = xNew;
-                    i=i+1;
+                    pdfx = pdfxNew;
+                    i = i+1;
                 else
                     r = rand(1);
                     if a > r
                         %keep sample
-                        s(i)=xNew;
+                        s(i) = xNew;
                         x = xNew;
+                        pdfx = pdfxNew;
                         i = i+1;
                     else
                         %reject sample

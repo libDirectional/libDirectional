@@ -1,69 +1,41 @@
-classdef ToroidalWNDistribution < AbstractToroidalDistribution
+classdef ToroidalWNDistribution < AbstractToroidalDistribution & HypertoroidalWNDistribution
     % Bivariate wrapped normal distribution on the torus.
     %
     % see Gerhard Kurz, Igor Gilitschenski, Maxim Dolgov, Uwe D. Hanebeck,
     % Bivariate Angular Estimation Under Consideration of Dependencies Using Directional Statistics
     % Proceedings of the 53rd IEEE Conference on Decision and Control (CDC 2014), Los Angeles, California, USA, December 2014.
     
-    properties
-        mu
-        C
-    end
-    
     methods
         function this = ToroidalWNDistribution (mu_, C_)
             % Constructor
             %
             % Parameters:
-            %   mu_ (d x 1)
+            %   mu_ (2 x 1)
             %       mean vector of Gauss before wrapping
-            %   C_ (d x d)
+            %   C_ (2 x 2)
             %       covariance matrix of Gauss before wrapping
-            
-            % Check parameters
-            assert(all(size(mu_) == [2,1]), 'mu must 2x1'); 
-            assert(all(size(C_) == [2,2]), 'C must be 2x2');
-            assert(all(all(C_ == C_')), 'C must be symmetric');
-            assert(all(eig(C_) > 0), 'C must be positive definite');
-            
-            % Assign parameters
-            this.mu = mod(mu_,2*pi);
-            this.C= C_;
+            assert(size(mu_,1)==2,'mu must be 2 x 1'); % Rest of the conditions are tested in superclass constructor
+            this@HypertoroidalWNDistribution(mu_, C_);
         end
         
         function p = pdf(this, xa, n)
             % Evaluate pdf at each column of xa.
             %
             % Parameters:
-            %   xa (2 x m)
-            %       m locations where to evaluate the pdf
-            %   n (scalar)
-            %       calculate sum from -n to n (optional)
+            %   xa (2 x n)
+            %       n locations where to evaluate the pdf
             % Returns:
-            %   p (1 x m)
+            %   p (1 x n)
             %       value of the pdf at each location
             assert(size(xa, 1) == 2);
             
+            %todo: choose n automatically
             if nargin < 3
                 n=3;
             end
             
             % call c implementation
             p = toroidalwnpdf(xa,n,this.mu,this.C);
-        end
-               
-        function m = trigonometricMoment(this, n)
-            % Calculate n-th trigonometric moment, i.e., 
-            % E([e^(inx_1); e^(inx_2)])
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of moment
-            % Returns:
-            %   m (2x1)
-            %       n-th trigonometric moment (complex vector)
-            m(1,1) = exp(1i*n*this.mu(1) - n^2*this.C(1,1)/2);
-            m(2,1) = exp(1i*n*this.mu(2) - n^2*this.C(2,2)/2);
         end
         
         function mu = mean4D(this)
@@ -176,18 +148,6 @@ classdef ToroidalWNDistribution < AbstractToroidalDistribution
             C_ = this.C + twn2.C;
             twn = ToroidalWNDistribution(mu_, C_);
         end
-        
-        function s = sample(this, n)
-            % Obtain n samples from the distribution.
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (2 x n)
-            %       n samples on the torus
-            s = mod(mvnrnd(this.mu, this.C, n),2*pi)'; % sample multivariate normal distribution, then wrap
-        end
 
         function rho = realCorrelation(this)
             % Get the correlation coefficient from the covariance matrix.
@@ -232,18 +192,6 @@ classdef ToroidalWNDistribution < AbstractToroidalDistribution
             kappa(2,1) = 1/si2squared/(1-rho^2);
             lambda = rho/sqrt(si1squared*si2squared*(rho^2-1)^2);
             tvm = ToroidalVMSineDistribution(this.mu, kappa, lambda);
-        end
-        
-        function gauss = toGaussian(this)
-            % Convert to 2D Gaussian.
-            %
-            % Returns:
-            %   gauss (GaussianDistribution)
-            %       GaussianDistribution with same parameters
-            %
-            % this is a simple conversion that just keeps the parameters
-            % for large uncertanties, better conversions are possible
-            gauss = GaussianDistribution(this.mu, this.C);
         end
         
         function wn = marginal(this, dimension)

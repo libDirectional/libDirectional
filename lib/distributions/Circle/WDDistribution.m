@@ -190,13 +190,11 @@ classdef WDDistribution < AbstractCircularDistribution
             % Parameters:
             %   f (function handle)
             %       function from [0,2*pi) to [0, infinity)
+            %       (needs to support vectorized inputs, i.e., 1 x n vectors)
             % Returns:
             %   wd (WDDistribution)
             %       distribution with new weights and same Dirac locations
-            wNew = zeros(1, length(this.d));
-            for i=1:length(this.d)
-                wNew(i) = f(this.d(i));
-            end
+            wNew = f(this.d);
             wd = WDDistribution(this.d, wNew .* this.w);
         end
         

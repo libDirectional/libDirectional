@@ -1,72 +1,31 @@
-classdef ToroidalWDDistribution < AbstractToroidalDistribution
-    % Wrapped Dirac distribution with dirac positions d and
+classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWDDistribution
+    % Wrapped Dirac distribution on the torus with dirac positions d and
     % weights w.
     %
     % Gerhard Kurz, Igor Gilitschenski, Maxim Dolgov, Uwe D. Hanebeck,
     % Bivariate Angular Estimation Under Consideration of Dependencies Using Directional Statistics
     % Proceedings of the 53rd IEEE Conference on Decision and Control (CDC 2014), Los Angeles, California, USA, December 2014.
     
-    properties
-        d
-        w
-    end
-    
     methods
         function this = ToroidalWDDistribution(d_, w_)
             % Constructor, w_ is optional
             %
             % Parameters:
-            %   d_ (3 x L)
+            %   d_ (2 x L)
             %       Dirac locations in [0,2pi)^2
             %   w_ (1 x L)
-            %       weights for each Dirac            
-            assert(size(d_,1) ==2 );
-            this.d = mod(d_, 2*pi);
-            if (nargin<2)
-                %all diracs have equal weights
-                this.w = ones(1,size(this.d,2))/size(this.d,2);
-            else
-                assert(size(w_,1) == 1 );
-                assert(size(d_,2) == size(w_,2));
-                this.w = w_/sum(w_);
+            %       weights for each Dirac  
+            assert(size(d_,1)==2);
+            if nargin==1
+                w_= ones(1,size(d_,2))/size(d_,2);
             end
-        end
-        
-        function p = pdf(this, xa)
-            % Placeholder, pdf does not exist for wrapped Dirac distributions
-            p = 0; %ToroidalWDDistribution does not have a proper pdf
-            warning('PDF:UNDEFINED', 'pdf is not defined')
-        end
-        
-         function m = trigonometricMoment(this,n)
-            % Calculate n-th trigonometric moment, i.e., 
-            % E([e^(inx_1); e^(inx_2)])
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of moment
-            % Returns:
-            %   m (2x1)
-            %       n-th trigonometric moment (complex vector)  
-            assert(isscalar(n));
-            
-            m(1,1) = sum(exp(1i*n*this.d(1,:)).*this.w);
-            m(2,1) = sum(exp(1i*n*this.d(2,:)).*this.w);
-         end
-        
-        function m = trigonometricMomentNumerical(this,n)
-            % Disable numerical calculation of angular moments since it relies on the pdf
-            error('PDF:UNDEFINED', 'not supported');
+            this@HypertoroidalWDDistribution(d_, w_);
         end
         
         function m = angularProductMomentNumerical(this,n)
             % Disable numerical calculation of angular product moments since it relies on the pdf
             error('PDF:UNDEFINED', 'not supported');
-        end
-        
-        function l = logLikelihood(this, samples)
-            error('PDF:UNDEFINED', 'not supported');
-        end           
+        end    
         
         function pm = angularProductMoment(this, n)
             % Calculate E(e^inx * e^iny) as used by Jammalamadaka 1988
@@ -81,46 +40,6 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution
             
             m = this.circularMean();
             pm = sum(this.w.* exp(1i*n*(this.d(1,:)-m(1))).* exp(1i*n*(this.d(2,:)-m(2))));
-        end
-              
-        function twd = applyFunction(this,f)
-            % Apply a function f(x) to each Dirac component and obtain its new position
-            %
-            % Parameters:
-            %   f (function handle)
-            %       function from [0,2*pi)^2 to [0,2*pi)^2
-            % Returns:
-            %   twd (ToroidalWDDistribution)
-            %       distribution with new Dirac locations (and same
-            %       weights as before)
-            assert(isa(f,'function_handle'));
-            
-            d_ = zeros(size(this.d));
-            for i=1:size(this.d,2)
-                d_(:,i) = f(this.d(:,i));
-            end
-            twd = ToroidalWDDistribution(d_, this.w);
-        end
-        
-        function twd = reweigh(this, f)
-            % Uses a function f(x) to calculate the weight of each Dirac
-            % component. The new weight is given by the product of the old 
-            % weight and the weight obtained with f. Restores normalization
-            % afterwards.
-            %
-            % Parameters:
-            %   f (function handle)
-            %       function from [0,2*pi)^2 to [0, infinity)
-            % Returns:
-            %   twd (ToroidalWDDistribution)
-            %       distribution with new weights and same Dirac locations
-            assert(isa(f,'function_handle'));
-            
-            wNew = zeros(1, length(this.w));
-            for i=1:length(this.d)
-                wNew(i) = f(this.d(:,i));
-            end
-            twd = ToroidalWDDistribution(this.d, wNew .* this.w);
         end
         
         function result = integralNumerical(this, l1, r1, l2, r2)
@@ -211,25 +130,6 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution
             Z = b.*sin(this.d(1,:));
             p = scatter3(X,Y,Z, varargin{:});
         end
-
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (2 x n)
-            %       one sample per column
-            assert(isscalar(n));
-            ids = discretesample(this.w,n);
-            s = this.d(:,ids);
-        end
-               
-        function s = sampleMetropolisHastings(this, n)
-            % Disable sampling algorithm relying on pdf
-            error('PDF:UNDEFINED', 'not supported');
-        end
         
         function rhoc = circularCorrelationJammalamadaka(this)
             % Calculates Jammalamadaka's correlation coefficient
@@ -254,6 +154,11 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution
             %       TWN with same trigonometric moment and same E(e^inx * e^iny)
             %
             % see Jammalamadaka 2001, page 181
+            % and page 357 of:
+            % Jammalamadaka, S. R. & Sarma, Y. 
+            % A Correlation Coefficient for Angular Variables 
+            % Statistical Theory and Data Analysis II, 1988, 349-364
+            %
             % be aware that the formulas given there are for mu = [0;0] only!
             % note that the resulting C may not positive definite, so the conversion may fail 
             mu = this.circularMean();
@@ -270,7 +175,8 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution
         end
         
         function twn = toToroidalWN(this)
-            % Gets the appropriate ToroidalWNDistribution by moment matching
+            % Gets the appropriate ToroidalWNDistribution by moment
+            % matching using Jammalamadaka's correlation coefficient
             %
             % Returns:
             %   twn (ToroidalWNDistribution)
@@ -289,6 +195,7 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution
             ybar = sum( this.w.* cos(this.d(2,:) - mu(2)));
             si1sqared = -2 * log(xbar);
             si2sqared = -2 * log(ybar);
+            
             % obtain si12 by solving equation that matches correlation coefficient 
             a = sum( this.w.* sin(this.d(1,:) - mu(1)).*sin(this.d(2,:) - mu(2)));
             b = sum( this.w.* sin(this.d(1,:) - mu(1)).^2);
@@ -302,6 +209,208 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution
             twn = ToroidalWNDistribution(mu,C);
         end
         
+        function twn = toToroidalWNjupp(this)
+            % Gets the appropriate ToroidalWNDistribution by moment
+            % matching using Jupp's correlation coefficient
+            %
+            % Returns:
+            %   twn (ToroidalWNDistribution)
+            %       TWN with same trigonometric moment and same correlation
+            %       coefficient (Jammalamadaka's coefficient is used)
+            %            
+            % Note that the resulting C may not positive definite, so the conversion may fail 
+            %
+            % Gerhard Kurz, Uwe D. Hanebeck,
+            % Parameter Estimation for the Bivariate Wrapped Normal Distribution
+            % Proceedings of the 54th IEEE Conference on Decision and Control (CDC 2015), Osaka, Japan, December 2015.
+            %
+            % use standard moment matching for everything except correlation
+            mu = this.circularMean();
+            xbar = sum( this.w.* cos(this.d(1,:) - mu(1)));
+            ybar = sum( this.w.* cos(this.d(2,:) - mu(2)));
+            c11 = -2 * log(xbar);
+            c22 = -2 * log(ybar);
+
+            rho = this.circularCorrelationJupp();
+
+            % create preliminary twn to obtain certain entries of second moment
+            C = [c11 0; 0 c22];
+            twn = ToroidalWNDistribution([0;0],C);  
+            C_ = twn.covariance4D();
+
+            % obtain correlation
+            eta = exp(-c11/2-c22/2);
+
+            a = C_(2,2)*C_(4,4) + C_(1,1)*C_(3,3);
+            b = - 2* C_(2,2)*C_(4,4);
+            c =  C_(2,2)*C_(4,4) - C_(1,1)*C_(3,3) - rho^2 * C_(1,1)*C_(2,2)*C_(3,3)*C_(4,4) / eta^2 ;
+            tau = (-b + sqrt(b^2-4*a*c))/(2*a);
+            arccosh = @(x) log(x + sqrt(x^2-1));
+            c12 = sign(rho)*arccosh(tau);
+            
+            %w1 = C_(1,1)*C_(3,3);
+            %w2 = C_(2,2)*C_(4,4);
+            %tau = (w2 + sqrt(w2^2 - (w2+w1)*(w2-w1-rho^2*w1*w2/eta^2)))/(w1+w2);
+            %c12 = sign(rho)*arccosh(tau);
+
+            % create final twn
+            C = [c11 c12; c12 c22];
+            twn = ToroidalWNDistribution(mu,C);
+        end
+        
+        function twn = toToroidalWNcovariance(twd)
+            % Gets the appropriate ToroidalWNDistribution by moment
+            % matching using minimum of the Frobenius norm of the upper right 2x2
+            % submatrix of the covariance
+            %
+            % Returns:
+            %   twn (ToroidalWNDistribution)
+            %       TWN with same trigonometric moment and same correlation
+            %       coefficient (Jammalamadaka's coefficient is used)
+            %            
+            % Note that the resulting C may not positive definite, so the conversion may fail 
+            %
+            % Gerhard Kurz, Uwe D. Hanebeck,
+            % Parameter Estimation for the Bivariate Wrapped Normal Distribution
+            % Proceedings of the 54th IEEE Conference on Decision and Control (CDC 2015), Osaka, Japan, December 2015.
+            %
+            % use standard moment matching for everything except correlation
+            mu = twd.circularMean();
+            xbar = sum( twd.w.* cos(twd.d(1,:) - mu(1)));
+            ybar = sum( twd.w.* cos(twd.d(2,:) - mu(2)));
+            c11 = -2 * log(xbar);
+            c22 = -2 * log(ybar);
+
+            C_ = twd.covariance4D();
+            eta = exp(-c11/2-c22/2);
+            covss = C_(2,4);
+            covcc = C_(1,3);
+
+            c12candidates = ...
+                [log(-(-covcc - covss - eta) / eta / 0.4e1 + sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) / 0.2e1 + sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.2e1 - 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 - (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1) + (-0.2e1 * (covcc - covss + eta) / eta - (-covcc - covss - eta) ^ 3 / eta ^ 3 / 0.4e1) * ((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) ^ (-0.1e1 / 0.2e1)) / 0.2e1)
+                 log(-(-covcc - covss - eta) / eta / 0.4e1 + sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) / 0.2e1 - sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.2e1 - 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 - (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1) + (-0.2e1 * (covcc - covss + eta) / eta - (-covcc - covss - eta) ^ 3 / eta ^ 3 / 0.4e1) * ((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) ^ (-0.1e1 / 0.2e1)) / 0.2e1)
+                 log(-(-covcc - covss - eta) / eta / 0.4e1 - sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) / 0.2e1 + sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.2e1 - 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 - (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1) - (-0.2e1 * (covcc - covss + eta) / eta - (-covcc - covss - eta) ^ 3 / eta ^ 3 / 0.4e1) * ((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) ^ (-0.1e1 / 0.2e1)) / 0.2e1)
+                 log(-(-covcc - covss - eta) / eta / 0.4e1 - sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) / 0.2e1 - sqrt((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.2e1 - 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 - (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1) - (-0.2e1 * (covcc - covss + eta) / eta - (-covcc - covss - eta) ^ 3 / eta ^ 3 / 0.4e1) * ((-covcc - covss - eta) ^ 2 / eta ^ 2 / 0.4e1 + 0.1e1 / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (0.1e1 / 0.3e1) / 0.3e1 + (covcc ^ 2 + 0.2e1 * covcc * eta - covss ^ 2 - 0.3e1 * eta ^ 2) / eta * (-0.54e2 * covcc * covss * eta - 0.54e2 * eta ^ 2 * covss + 0.3e1 * sqrt(-0.3e1 * covcc ^ 6 - 0.18e2 * covcc ^ 5 * eta + 0.9e1 * covcc ^ 4 * covss ^ 2 - 0.9e1 * covcc ^ 4 * eta ^ 2 + 0.36e2 * covcc ^ 3 * covss ^ 2 * eta + 0.84e2 * covcc ^ 3 * eta ^ 3 - 0.9e1 * covcc ^ 2 * covss ^ 4 + 0.306e3 * covcc ^ 2 * covss ^ 2 * eta ^ 2 + 0.27e2 * covcc ^ 2 * eta ^ 4 - 0.18e2 * covcc * covss ^ 4 * eta + 0.540e3 * covcc * covss ^ 2 * eta ^ 3 - 0.162e3 * covcc * eta ^ 5 + 0.3e1 * covss ^ 6 + 0.27e2 * covss ^ 4 * eta ^ 2 + 0.405e3 * covss ^ 2 * eta ^ 4 + 0.81e2 * eta ^ 6)) ^ (-0.1e1 / 0.3e1)) ^ (-0.1e1 / 0.2e1)) / 0.2e1)];
+
+            [~,best] = min(abs(imag(c12candidates))); % find solution with smallest imaginary part
+            %todo check result
+            c12 = real(c12candidates(best));
+            C = [c11 c12; c12 c22];
+            twn = ToroidalWNDistribution(mu,C);
+        end
+        
+        function twn = toToroidalWNmixedMLE(this)
+            % Gets the appropriate ToroidalWNDistribution by moment
+            % matching for everything except the correlation and MLE for
+            % the correlation
+            %
+            % Returns:
+            %   twn (ToroidalWNDistribution)
+            %       TWN with same trigonometric moment and same correlation
+            %       coefficient (Jammalamadaka's coefficient is used)
+            %            
+            % This conversion should always succeed.
+            %
+            % Gerhard Kurz, Uwe D. Hanebeck,
+            % Parameter Estimation for the Bivariate Wrapped Normal Distribution
+            % Proceedings of the 54th IEEE Conference on Decision and Control (CDC 2015), Osaka, Japan, December 2015.
+            %
+            % use standard moment matching for everything except correlation
+            mu = this.circularMean();
+            xbar = sum( this.w.* cos(this.d(1,:) - mu(1)));
+            ybar = sum( this.w.* cos(this.d(2,:) - mu(2)));
+            si1sqared = -2 * log(xbar);
+            si2sqared = -2 * log(ybar);
+            C = [si1sqared 0; 0 si2sqared];
+            twn = ToroidalWNDistribution(mu,C);
+
+            function loglikelihood = calculateLogLikelihood(c12)
+                twn.C(1,2) = c12;
+                twn.C(2,1) = c12;
+                if det(twn.C) > 0
+                    loglikelihood = twn.logLikelihood(this.d);
+                else
+                    loglikelihood = -Inf;
+                end
+            end
+
+            %c12min = -sqrt(twn.C(1,1))*sqrt(twn.C(2,2));
+            %c12max = sqrt(twn.C(1,1))*sqrt(twn.C(2,2));
+
+            %c12opt = fmincon(@(x) -calculateLogLikelihood(x), 0, [], [],[],[],c12min,c12max,[],optimset('display','none'));
+            c12opt = fminsearch(@(x) -calculateLogLikelihood(x), 0, optimset('display','none'));
+
+            twn.C(1,2) = c12opt;
+            twn.C(2,1) = c12opt;
+        end
+        
+        function twn = toToroidalWNunwrappingEM(this)
+            % Gets the appropriate ToroidalWNDistribution by unwrapping
+            % with the EM algorithm
+            %
+            % Returns:
+            %   twn (ToroidalWNDistribution)
+            %       TWN with same trigonometric moment and same correlation
+            %       coefficient (Jammalamadaka's coefficient is used)
+            %            
+            % This conversion should always succeed.
+            %
+            % "Time Series Analysis of Circular Data", N. I. Fisher and A.
+            % J. Lee, Journal of the Royal Statistical Society. Series B (Methodological), 
+            % Vol. 56, No. 2(1994), pp. 327-339
+            %
+            kmax = 1;
+
+            epsilon = 1E-5;  % stopping condition
+            maxIter = 100;% maximum number of iterations
+
+            %start value
+            mu=[0,0];
+            C=eye(2,2);
+
+            for iteration=1:maxIter;
+                samplesX=zeros(length(this.d),2*kmax+1,2*kmax+1);
+                samplesY=zeros(length(this.d),2*kmax+1,2*kmax+1);
+                p=zeros(length(this.d),2*kmax+1,2*kmax+1);
+                
+                % E-Step
+                for i=1:length(this.d)
+                    for k1=-kmax:kmax
+                        for k2=-kmax:kmax
+                            % probability that sample i was wrapped k1 times and k2
+                            samplesX(i,k1+kmax+1,k2+kmax+1) = this.d(1,i)+ 2*pi*k1;
+                            samplesY(i,k1+kmax+1,k2+kmax+1) = this.d(2,i)+ 2*pi*k2;
+                            p(i,k1+kmax+1, k2+kmax+1) = this.w(i)*mvnpdffast([samplesX(i,k1+kmax+1,k2+kmax+1),samplesY(i,k1+kmax+1,k2+kmax+1)], mu, C);
+                        end
+                    end
+                    % normalize per sample
+                    p(i,:,:) =  p(i,:,:)/sum(sum(p(i,:,:)));
+                end
+
+                % M-Step
+                p = p(:)/sum(p(:)); % normalize all
+                muX = sum(p.*samplesX(:));
+                muY = sum(p.*samplesY(:));
+                muNew = [muX, muY];
+                Cnew = [samplesX(:)-muX, samplesY(:)-muY]'*diag(p)*[samplesX(:)-muX, samplesY(:)-muY];
+                
+                % ensure symmetry
+                Cnew = 1/2*(Cnew+Cnew');
+                
+                % check stopping condition
+                if norm(muNew - mu) < epsilon && norm(Cnew(:) - C(:)) < epsilon
+                    mu = muNew;
+                    C = Cnew;    
+                    break;
+                end
+                
+                mu = muNew;
+                C = Cnew;
+            end
+
+            twn = ToroidalWNDistribution(mu',C);
+        end
+        
         function C = covariance4D(this)
             % Calculates 4D covariance of [cos(x1), sin(x1), cos(x2), sin(x2)] 
             %
@@ -312,21 +421,6 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution
             mu = this.w*dbar;
             n = length(this.d);
             C = (dbar-repmat(mu,n,1))'*diag(this.w)*(dbar-repmat(mu,n,1));
-        end
-        
-        function wd = marginal(this,dimension)
-            % Get marginal distribution in first or second dimension, i.e., 
-            % f(x_1) or f(x_2), respectively
-            %
-            % Parameters:
-            %   dimension (scalar)
-            %       the marginal in which dimension to calculate (1 or 2),
-            %       the other dimension is marginalized out
-            % Returns:
-            %   wd (WDDistribution)
-            %       marginal distribution (marginals are WD-distributed)
-            assert(dimension == 1 || dimension == 2);
-            wd = WDDistribution(this.d(dimension,:), this.w);
         end
     end
     

@@ -1,0 +1,67 @@
+classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
+    properties
+    end
+    
+    methods (Test)
+        function testHypertoroidalWDDistribution(testCase)
+            d = [0.5,3,4,6,6;
+                 2,2,5,3,0;
+                 0.5,0.2,5.8,4.3,1.2];
+            w = [0.1 0.1 0.1 0.1 0.6];
+            twd = HypertoroidalWDDistribution(d,w);
+            %% sanity check
+            testCase.verifyClass(twd, 'HypertoroidalWDDistribution');
+            testCase.verifyEqual(twd.d, d);
+            testCase.verifyEqual(twd.w, w);
+            
+            %% test trigonometric moment
+            m = twd.trigonometricMoment(1);
+            m1 = twd.marginal(1).trigonometricMoment(1);
+            m2 = twd.marginal(2).trigonometricMoment(1);
+            testCase.verifyEqual(m(1), m1, 'RelTol', 1E-10);
+            testCase.verifyEqual(m(2), m2, 'RelTol', 1E-10);
+            testCase.verifyEqual(m(1), sum(w.*exp(1i*d(1,:))), 'RelTol', 1E-10);
+            testCase.verifyEqual(m(2), sum(w.*exp(1i*d(2,:))), 'RelTol', 1E-10);
+            
+            %% test sampling
+            nSamples = 5;
+            s = twd.sample(nSamples);
+            testCase.verifySize(s,[size(d,1),nSamples]);
+            testCase.verifyEqual(s, mod(s,2*pi))
+            
+            %% test getMarginal
+            for i=1:size(d,1)
+                wd=twd.marginal(i);
+                testCase.verifyEqual(twd.w, wd.w);
+                testCase.verifyEqual(twd.d(i,:), wd.d);
+            end 
+            
+            %% test apply function 
+            same = twd.applyFunction(@(x) x);
+            testCase.verifyEqual(same.trigonometricMoment(1), twd.trigonometricMoment(1));
+            shiftOffset = [1.4;-0.3;pi];
+            shifted = twd.applyFunction(@(x) x + shiftOffset);
+            testCase.verifyEqual(shifted.trigonometricMoment(1), twd.trigonometricMoment(1) .* exp(1i*shiftOffset), 'RelTol', 1E-10);
+            
+            %% test reweigh
+            f = @(x) sum(x)==3; %only dirac with sum 3 gets weight
+            twdRew = twd.reweigh(f);
+            testCase.verifyClass(twdRew, 'HypertoroidalWDDistribution');
+            testCase.verifyEqual(twdRew.d, twd.d);
+            testCase.verifyEqual(twdRew.w, double(f(twd.d)));
+            
+            f = @(x) 2; %does not change anything because of renormalization
+            twdRew = twd.reweigh(f);
+            testCase.verifyClass(twdRew, 'HypertoroidalWDDistribution');
+            testCase.verifyEqual(twdRew.d, twd.d);
+            testCase.verifyEqual(twdRew.w, twd.w);
+            
+            f = @(x) x(1,:);
+            twdRew = twd.reweigh(f);
+            testCase.verifyClass(twdRew, 'HypertoroidalWDDistribution');
+            testCase.verifyEqual(twdRew.d, twd.d);
+            wNew = twd.d(1,:).*twd.w;
+            testCase.verifyEqual(twdRew.w, wNew/sum(wNew));
+        end
+    end
+end

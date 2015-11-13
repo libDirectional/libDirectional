@@ -6,6 +6,8 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
     
     methods (Test)
         function testBinghamDistribution(testCase)
+            global enableExpensive
+            if ~islogical(enableExpensive), enableExpensive = false; end
             for i=1:4
                 switch i
                     case 1

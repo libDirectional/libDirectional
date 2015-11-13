@@ -36,7 +36,7 @@ classdef ToroidalWNFilterTest < matlab.unittest.TestCase
             
             %% update nonlinear
             z = 0.4;
-            likelihood = LikelihoodFactory.additiveNoiseLikelihood(@(x) x(1)+x(2), WNDistribution(0,1));
+            likelihood = LikelihoodFactory.additiveNoiseLikelihood(@(x) x(1,:)+x(2,:), WNDistribution(0,1));
                         
             rng default
             filter.setState(twn);

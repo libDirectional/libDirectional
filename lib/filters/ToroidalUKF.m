@@ -165,6 +165,9 @@ classdef ToroidalUKF < AbstractToroidalFilter
             state = this.state;
         end
         
+        function mean=getEstimateMean(this)
+            mean=this.state.mu;
+        end
     end
     
 end

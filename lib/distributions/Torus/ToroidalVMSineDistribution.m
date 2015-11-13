@@ -95,7 +95,11 @@ classdef ToroidalVMSineDistribution < AbstractToroidalDistribution
                 m = this.trigonometricMomentNumerical(n);
             end
         end
-                                   
+
+        function tvm = toToroidalVMMatrixDistribution(this)
+            tvm = ToroidalVMMatrixDistribution(this.mu, this.kappa, [0, 0; 0, this.lambda]);
+        end
+        
         function twn = toToroidalWN(this)
             % Convert to ToroidalWNDistribution by method presented in Singh 2002, eq (2.1)
             % 
@@ -111,6 +115,24 @@ classdef ToroidalVMSineDistribution < AbstractToroidalDistribution
             si12 = sqrt(si1squared)*sqrt(si2squared)*rho;
             C_ = [si1squared, si12; si12, si2squared];
             twn = ToroidalWNDistribution(this.mu,C_);
+        end
+        
+        function dist = marginal(this, dimension)
+            % Get marginal distribution in first or second dimension, i.e., 
+            % f(x_1) or f(x_2), respectively.
+            %
+            % Parameters:
+            %   dimension (scalar)
+            %       the marginal in which dimension to calculate (1 or 2),
+            %       the other dimension is marginalized out
+            % Returns:
+            %   dist (CustomCircularDistribution)
+            %       marginal distribution (marginals are NOT VM distributed in general)
+            assert(dimension==1 || dimension==2);
+            %see Singh 2002, eq (2.2)
+            other = 3-dimension;
+            f = @(x) 2*pi * this.C * besseli(0,sqrt(this.kappa(other)^2 + this.lambda^2 *sin(x - this.mu(dimension)).^2 )) .* exp(this.kappa(dimension) .* cos(x - this.mu(dimension)));
+            dist = CustomCircularDistribution(f);
         end
         
     end
