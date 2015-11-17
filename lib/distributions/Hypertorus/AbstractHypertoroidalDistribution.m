@@ -10,7 +10,7 @@ classdef AbstractHypertoroidalDistribution
     
     
     methods
-        function p=plot(this, varargin)
+        function p = plot(this, varargin)
             % Create an appropriate plot of the pdf
             %
             % Parameters:
@@ -30,6 +30,25 @@ classdef AbstractHypertoroidalDistribution
                     f = this.pdf([alpha(:)'; beta(:)']);
                     f = reshape(f,size(alpha,1), size(alpha,2));
                     p = surf(alpha, beta, f, varargin{:});
+                case 3
+                    stepCirc = 0.5;
+                    [X,Y,Z] = sphere(4);
+                    clf 
+                    hold on
+                    color = jet;
+                    [gridx,gridy,gridz]=ndgrid(0:stepCirc:2*pi);
+                    fgrid=reshape(this.pdf([gridx(:)';gridy(:)';gridz(:)']),size(gridx));
+                    fmax=max(fgrid(:));
+                    sizes=0.5*stepCirc*fgrid/fmax;
+                    arrayfun(@(x,y,z,currSize)surf(currSize*X+x,currSize*Y+y,currSize*Z+z, 'facecolor', color(1+floor(currSize*126/stepCirc),:)),...
+                        gridx(sizes>0.01),gridy(sizes>0.01),gridz(sizes>0.01),sizes(sizes>0.01)); % Only use grid points for which size>0.01
+                    hold off
+                    xlabel('x_1')
+                    setupAxisCircular('x','y','z')
+                    ylabel('x_2')
+                    zlabel('x_3')
+                    view(40,20)
+                    grid
                 otherwise
                     error('Plotting for this dimension is currently not supported');
             end

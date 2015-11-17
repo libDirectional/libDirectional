@@ -78,18 +78,18 @@ classdef SE2PWNDistribution
             x3min = this.mu(3)-linSize*sqrt(this.C(3,3));
             x3max = this.mu(3)+linSize*sqrt(this.C(3,3));
             pdfMax = this.pdf(this.mu);
-            [X,Y,Z] = sphere(2);
+            [X,Y,Z] = sphere(4);
             clf 
             hold on
             for x1=0:stepCirc:2*pi
                 for x2=x2min:stepLin:x2max
                     for x3=x3min:stepLin:x3max
                         ratio = this.pdf([x1; x2; x3])/pdfMax;
-                        size = 0.5*ratio;
+                        plotsize = 0.5*ratio;
                         color = jet;
                         color = color(1+floor(ratio*63),:);
-                        if size>0.01
-                            surf(size*X+x1,size*Y+x2,size*Z+x3, 'facecolor', color);
+                        if plotsize>0.01
+                            surf(plotsize*X+x1,plotsize*Y+x2,plotsize*Z+x3, 'facecolor', color);
                         end
                     end
                 end

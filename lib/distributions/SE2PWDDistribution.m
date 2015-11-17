@@ -52,7 +52,7 @@ classdef SE2PWDDistribution
             %   f (function handle)
             %       function from [0,2*pi) x R^2 to [0,2*pi) x R^2
             % Returns:
-            %   pwd (WDDistribution)
+            %   pwd (SE2PWDDistribution)
             %       distribution with new Dirac locations (and same
             %       weights as before)
             d_ = zeros(size(this.d));
