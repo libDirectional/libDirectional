@@ -11,6 +11,7 @@ classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
         function this=AbstractToroidalDistribution
             this.dim=2;
         end
+        
         function p = plotCylinder(this, varargin)
             % Create a cylinder plot of the pdf
             %
@@ -153,22 +154,6 @@ classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
             C = [ c11 c12 c13 c14; c12 c22 c23 c24; c13 c23 c33 c34; c14 c24 c34 c44];
         end        
         
-        function kld = kldNumerical(this, other)
-            % Calculates the Kullback-Leibler divergence between this distribution and another distribution on the Torus
-            % Be aware that the kld is not symmetric.
-            %
-            % Parameters:
-            %   other (AbstractCircularDistribution)
-            %       distribution to compare to
-            % Returns:
-            %   kld (scalar)
-            %       kld of this distribution to other distribution
-            assert(isa(other,'AbstractToroidalDistribution'));
-            g = @(x,y) x.*log(x./y);
-            f = @(x,y) reshape(g(this.pdf([x(:)';y(:)']),other.pdf([x(:)';y(:)'])), size(x,1),size(x,2));
-            kld = integral2(f, 0, 2*pi, 0, 2*pi);
-        end
-        
         function rhoc = circularCorrelationJammalamadaka(this)
             % Calculates Jammalamadaka's correlation coefficient numerically
             % see Jammalamadaka, S. R. & Sarma, Y. 
@@ -200,49 +185,23 @@ classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
             rhoc = EsinAsinB/sqrt(EsinAsquared * EsinBsquared);
         end
 
-        function r = integral(this, l1, r1, l2, r2)
+        function r = integral(this, l, r)
             % Calculates the integral of the pdf from l to r
             %
             % Parameters:
-            %   l1 (scalar)
-            %       left bound of integral in first dimension, default 0
-            %   r1 (scalar)
-            %       right bound of integral in first dimension, default 2*pi          
-            %   l2 (scalar)
-            %       left bound of integral in second dimension, default 0
-            %   r2 (scalar)
-            %       right bound of integral in second dimension, default 2*pi          
+            %   l (2 x 1 column vector)
+            %       left bound of integral in each dimension, default 0
+            %   r (2 x 1 column vector)
+            %       right bound of integral in each dimension, default 2*pi          
             % Returns:
             %   result (scalar)
             %       value of the integral
-            if nargin < 2;  l1 = 0;  end
-            if nargin < 3;  r1 = 2*pi; end
-            if nargin < 4;  l2 = 0; end
-            if nargin < 5;  r2 = 2*pi; end
-            r = this.integralNumerical(l1, r1, l2, r2);
-        end
-        
-        function r = integralNumerical(this, l1, r1, l2, r2)
-            % Calculates the integral of the pdf from l to r
-            %
-            % Parameters:
-            %   l1 (scalar)
-            %       left bound of integral in first dimension, default 0
-            %   r1 (scalar)
-            %       right bound of integral in first dimension, default 2*pi          
-            %   l2 (scalar)
-            %       left bound of integral in second dimension, default 0
-            %   r2 (scalar)
-            %       right bound of integral in second dimension, default 2*pi          
-            % Returns:
-            %   result (scalar)
-            %       value of the integral
-            if nargin < 2;  l1 = 0;  end
-            if nargin < 3;  r1 = 2*pi; end
-            if nargin < 4;  l2 = 0; end
-            if nargin < 5;  r2 = 2*pi; end
-            f = @(x,y) reshape(this.pdf([x(:)';y(:)']), size(x,1),size(x,2));
-            r = integral2(f, l1, r1, l2, r2);
+            if nargin < 2;  l = [0; 0]; end
+            if nargin < 3;  r = [2*pi; 2*pi]; end
+            assert(all(size(l) == [this.dim, 1]));
+            assert(all(size(r) == [this.dim, 1]));
+            
+            r = this.integralNumerical(l, r);
         end
         
         function l = logLikelihood(this, samples)

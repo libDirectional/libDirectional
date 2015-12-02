@@ -1,5 +1,5 @@
 classdef SE2PWDDistribution
-    % Partially wrapped dirac distribution with Dirac positions d and
+    % Partially wrapped Dirac distribution with Dirac positions d and
     % weights w
     % 
     % Gerhard Kurz, Igor Gilitschenski, Uwe D. Hanebeck,

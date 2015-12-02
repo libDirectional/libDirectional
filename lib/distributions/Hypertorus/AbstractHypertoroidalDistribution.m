@@ -1,13 +1,15 @@
 classdef AbstractHypertoroidalDistribution
+    % Base class for distributions on the hypertorus [0,2pi)^dim (Cartesian
+    % product of dim circles)
+    
     properties
-        dim       % Dimension, cart product of dim circles. dim=1 is a circle, dim=2 a torus.
+        dim       % Dimension, dim=1 is a circle, dim=2 a torus.
     end
     
     methods (Abstract)
         % Evaluate pdf at positions stored in xa
         pdf(this, xa);
-    end
-    
+    end 
     
     methods
         function p = plot(this, varargin)
@@ -40,7 +42,7 @@ classdef AbstractHypertoroidalDistribution
                     fgrid=reshape(this.pdf([gridx(:)';gridy(:)';gridz(:)']),size(gridx));
                     fmax=max(fgrid(:));
                     sizes=0.5*stepCirc*fgrid/fmax;
-                    arrayfun(@(x,y,z,currSize)surf(currSize*X+x,currSize*Y+y,currSize*Z+z, 'facecolor', color(1+floor(currSize*126/stepCirc),:)),...
+                    arrayfun(@(x,y,z,currSize) surf(currSize*X+x,currSize*Y+y,currSize*Z+z, 'facecolor', color(1+floor(currSize*126/stepCirc),:)),...
                         gridx(sizes>0.01),gridy(sizes>0.01),gridz(sizes>0.01),sizes(sizes>0.01)); % Only use grid points for which size>0.01
                     hold off
                     xlabel('x_1')
@@ -53,8 +55,9 @@ classdef AbstractHypertoroidalDistribution
                     error('Plotting for this dimension is currently not supported');
             end
         end
+        
         function m = circularMean(this)
-            % Calculate the circular mean
+            % Calculate the (componentwise) circular mean
             %
             % Returns:
             %   m (dim x 1)
@@ -62,6 +65,7 @@ classdef AbstractHypertoroidalDistribution
             a = this.trigonometricMoment(1);
             m = mod(atan2(imag(a),real(a)), 2*pi);
         end
+        
         function m = trigonometricMoment(this, n)
             % Calculate n-th trigonometric moment, i.e., 
             % E([e^(inx_1); e^(inx_2);...^e(inx_d)])
@@ -70,10 +74,54 @@ classdef AbstractHypertoroidalDistribution
             %   n (scalar)
             %       number of moment
             % Returns:
-            %   m (dx1)
+            %   m (d x 1)
             %       n-th trigonometric moment (complex vector)             
             m = trigonometricMomentNumerical(this, n);
         end
+        
+        function result = integral(this, l, r)
+            % Calculates the integral of the pdf from l to r
+            %
+            % Parameters:
+            %   l (dim x 1 column vector)
+            %       left bound of integral in each dimension, default 0
+            %   r (dim x 1 column vector)
+            %       right bound of integral in each dimension, default 2*pi 
+            if nargin < 2;  l = zeros(this.dim,1); end
+            if nargin < 3;  r = 2*pi*ones(this.dim,1); end
+            assert(all(size(l) == [this.dim, 1]));
+            assert(all(size(r) == [this.dim, 1]));                
+            
+            result = this.integralNumerical(l, r);
+        end
+        
+        function result = integralNumerical(this, l, r)
+            % Numerically calculates the integral of the pdf from l to r
+            %
+            % Parameters:
+            %   l (dim x 1 column vector)
+            %       left bound of integral in each dimension, default 0
+            %   r (dim x 1 column vector)
+            %       right bound of integral in each dimension, default 2*pi 
+            if nargin < 2;  l = zeros(this.dim,1); end
+            if nargin < 3;  r = 2*pi*ones(this.dim,1); end
+            assert(all(size(l) == [this.dim, 1]));
+            assert(all(size(r) == [this.dim, 1]));       
+            
+            switch this.dim
+                case 1
+                    result = integral(@(x) this.pdf(x), l, r);
+                case 2
+                    f = @(x,y) reshape(this.pdf([x(:)';y(:)']), size(x));
+                    result = integral2(f, l(1), r(1), l(2), r(2));
+                case 3
+                    f = @(x,y,z) reshape(this.pdf([x(:)';y(:)';z(:)']), size(x));
+                    result = integral3(f, l(1), r(1), l(2), r(2), l(3), r(3));
+                otherwise
+                    error('Numerical moment calculation for this dimension is currently not supported');
+            end
+        end
+        
         function m = trigonometricMomentNumerical(this, n)
             % Calculate n-th trigonometric moment numerically, i.e., 
             % E([e^(inx_1); e^(inx_2);...^e(inx_d)])
@@ -103,14 +151,46 @@ classdef AbstractHypertoroidalDistribution
                     error('Numerical moment calculation for this dimension is currently not supported');
             end
         end
+        
+        function result = entropy(this)
+            % Calculates the entropy analytically if possible, 
+            % fall back to numerical calculation by default
+            %
+            % Returns:
+            %   result (scalar)
+            %       entropy of the distribution
+            result = this.entropyNumerical();
+        end
+        
+        function e = entropyNumerical(this)
+            % Calculates the entropy numerically
+            %
+            % Returns:
+            %   e (scalar)
+            %       entropy of the distribution            
+            switch this.dim
+                case 1
+                    e = -integral(@(x) this.pdf(x).*log(this.pdf(x)), 0, 2*pi);
+                case 2
+                    f = @(x,y) reshape(this.pdf([x(:)';y(:)']).*log(this.pdf([x(:)';y(:)'])) , size(x));
+                    e = -integral2(f, 0, 2*pi, 0, 2*pi);
+                case 3
+                    f = @(x,y,z) reshape(this.pdf([x(:)';y(:)';z(:)']).*log(this.pdf([x(:)';y(:)';z(:)'])), size(x));
+                    e = -integral3(f, 0, 2*pi, 0, 2*pi, 0, 2*pi);
+                otherwise
+                    error('Numerical moment calculation for this dimension is currently not supported');
+            end
+        end
+        
         function mu = mean2dimD(this)
             % Calculates E([cos(x1), sin(x1), cos(x2), sin(x2), ...cos(xd), sin(xd)])
             %
             % Returns:
             %   mu (2*dim x 1)
-            m=this.trigonometricMoment(1);
-            mu=reshape([real(m)';imag(m)'],[],1);
+            m = this.trigonometricMoment(1);
+            mu = reshape([real(m)';imag(m)'],[],1);
         end
+        
         function l = logLikelihood(this,samples)
             % Calculates the log-likelihood of the given samples
             %
@@ -125,6 +205,7 @@ classdef AbstractHypertoroidalDistribution
             
             l = sum(log(this.pdf(samples)));
         end
+        
         function s = sample(this, n)
             % Obtain n samples from the distribution
             % use metropolics hastings by default
@@ -137,8 +218,11 @@ classdef AbstractHypertoroidalDistribution
             % Returns:
             %   s (dim x n)
             %       one sample per column
+            assert(isscalar(n));
+            
             s = sampleMetropolisHastings(this, n);
         end
+        
         function s = sampleMetropolisHastings(this, n)
             % Metropolis Hastings sampling algorithm
             %
@@ -189,12 +273,21 @@ classdef AbstractHypertoroidalDistribution
             end
             s = s(:,burnin+1:skipping:end);
         end
-        function hd=shift(this,shiftAngles)
+        
+        function hd = shift(this, shiftAngles)
             % Shifts the distribution by shiftAngles. If not overloaded,
             % this will return a CustomHypertoroidalDistribution.
+            %
+            % Parameters:
+            %   shiftAngles (dim x 1 column vector)
+            %       angles to shift by
+            % Return:
+            %   hd (CustomHypertoroidalDistribution)
+            %       shifted distribution
             assert(isequal(size(shiftAngles),[this.dim,1]));
-            hd=CustomHypertoroidalDistribution(@(xa)this.pdf(xa-repmat(shiftAngles,[1,size(xa,2)])),this.dim);
+            hd = CustomHypertoroidalDistribution(@(xa) this.pdf(xa-repmat(shiftAngles,[1,size(xa,2)])), this.dim);
         end
+        
         function d = squaredDistanceNumerical(this, other)
             % Numerically calculates the squared distance to another distribution
             %
@@ -203,8 +296,10 @@ classdef AbstractHypertoroidalDistribution
             %       distribution to compare to
             % Returns:
             %   d (scalar)
-            %       integral over [0,2pi) of squared difference of pdfs
+            %       integral over [0,2pi)^dim of squared difference of pdfs
             assert(isa(other, 'AbstractHypertoroidalDistribution'));
+            assert(this.dim==other.dim, 'Cannot compare distributions with different number of dimensions');
+            
             switch this.dim
                 case 1
                     d=integral(@(x) (this.pdf(x)-other.pdf(x)).^2, 0, 2*pi);
@@ -232,7 +327,8 @@ classdef AbstractHypertoroidalDistribution
             %   kld (scalar)
             %       kld of this distribution to other distribution
             assert(isa(other, 'AbstractHypertoroidalDistribution'));
-            assert(this.dim==other.dim,'Cannot compare distributions with differing dimensions');
+            assert(this.dim==other.dim, 'Cannot compare distributions with different number of dimensions');
+            
             switch this.dim
                 case 1
                     kld=integral(@(x) this.pdf(x).*log(this.pdf(x)./other.pdf(x)), 0, 2*pi);
@@ -249,8 +345,9 @@ classdef AbstractHypertoroidalDistribution
             end
         end
         
-        function dist=hellingerDistanceNumerical(this, other)
-            % Numerically calculates the Hellinger distance to another distribution
+        function dist = hellingerDistanceNumerical(this, other)
+            % Numerically calculates the Hellinger distance to another
+            % distribution.
             %
             % Parameters:
             %   other (AbstractCircularDistribution)
@@ -259,7 +356,8 @@ classdef AbstractHypertoroidalDistribution
             %   dist (scalar)
             %       hellinger distance of this distribution to other distribution
             assert(isa(other, 'AbstractHypertoroidalDistribution'));
-            assert(this.dim==other.dim,'Cannot compare distributions with differing dimensions');
+            assert(this.dim==other.dim,'Cannot compare distributions with different number of dimensions');
+            
             switch this.dim
                 case 1
                     dist=0.5*integral(@(x)(sqrt(this.pdf(x))-sqrt(other.pdf(x))).^2,0,2*pi);
@@ -276,7 +374,7 @@ classdef AbstractHypertoroidalDistribution
             end
         end
         
-        function dist=totalVariationDistanceNumerical(this, other)
+        function dist = totalVariationDistanceNumerical(this, other)
             % Numerically calculates the total varation distance to another distribution
             %
             % Parameters:
@@ -286,7 +384,8 @@ classdef AbstractHypertoroidalDistribution
             %   dist (scalar)
             %       total variation distance of this distribution to other distribution
             assert(isa(other, 'AbstractHypertoroidalDistribution'));
-            assert(this.dim==other.dim,'Cannot compare distributions with differing dimensions');
+            assert(this.dim==other.dim, 'Cannot compare distributions with different number of dimensions');
+            
             switch this.dim
                 case 1
                     dist=0.5*integral(@(x)abs(this.pdf(x)-other.pdf(x)),0,2*pi);

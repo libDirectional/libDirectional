@@ -9,8 +9,12 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
     end
     
     methods
-        function this=AbstractCircularDistribution
-            this.dim=1;
+        function this = AbstractCircularDistribution
+            % Constructor
+            %
+            % This is a one-dimensional special case of the
+            % AbstractHypertoroidalDistribution.
+            this.dim = 1;
         end
         function val = cdfNumerical(this, xa, startingPoint)
             % Evaluate cumulative distribution function using numerical integration
@@ -68,7 +72,7 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
-            p=this.plot(varargin{:});
+            p = this.plot(varargin{:});
         end
         
         function p = plot2dcircular(this, varargin)
@@ -266,26 +270,7 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             end
             result = integral(@(x) this.pdf(x), l, r);
         end
-        
-        function result = entropy(this)
-            % Calculates the entropy analytically if possible, 
-            % fall back to numerical calculation by default
-            %
-            % Returns:
-            %   result (scalar)
-            %       entropy of the distribution
-            result = this.entropyNumerical();
-        end
-        
-        function result = entropyNumerical(this)
-            % Calculates the entropy numerically
-            %
-            % Returns:
-            %   result (scalar)
-            %       entropy of the distribution
-            result = - integral(@(x) this.pdf(x).*log(this.pdf(x)), 0, 2*pi);
-        end
-        
+                
         function s = sampleCdf(this, n)
             % Sampling algorithm based on calculation of the inverse of the 
             % distribution function with numerical integration
