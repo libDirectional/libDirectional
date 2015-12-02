@@ -114,6 +114,11 @@ This produces the output
 
 Once again, we obtain the result as a wrapped normal distribution.
 
+Unit Tests
+----------
+
+The unit tests for libDirectional are located in the `tests` subfolder. You can automatically run all unit tests by executing `runLibDirectionalUnitTests`. Tests that are very computationally expensive are skipped by default. You can enable computationally expensive tests by running `runLibDirectionalUnitTests(true)`, which is more thorough but takes much more time.
+
 Externals
 ---------
 
