@@ -29,8 +29,8 @@ else
     % Linux
     cxxFlags = '-std=c++0x -Wall -Wfatal-errors -march=native -fopenmp';
     ldFlags = '-fopenmp';
-    options  = { ['CXXFLAGS=\$CXXFLAGS ' cxxFlags], ...
-                     ['LDFLAGS=\$LDFLAGS ' ldFlags] };
+    options  = { ['CXXFLAGS=$CXXFLAGS ' cxxFlags], ...
+                     ['LDFLAGS=$LDFLAGS ' ldFlags] };
 end   
 
 %options = {'-v', options{:} };
