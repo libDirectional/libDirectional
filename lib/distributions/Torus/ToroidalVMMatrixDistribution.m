@@ -418,6 +418,21 @@ classdef ToroidalVMMatrixDistribution < AbstractToroidalDistribution
             f = @(x) 2*pi * this.C * besseli(0,sqrt(alpha(x).^2 + beta(x).^2 )) .* exp(this.kappa(dimension) .* cos(x - this.mu(dimension)));
             dist = CustomCircularDistribution(f);
         end
+        
+        function tvm = shift(this, shiftAngles)
+            % Shift distribution by the given angles
+            %
+            % Parameters:
+            %   shiftAngles (dim x 1 column vector) 
+            %       angles to shift by
+            % Returns:
+            %   hd (ToroidalVMMatrixDistribution)
+            %       shifted distribution
+            assert(all(size(shiftAngles) == [this.dim, 1]));
+            
+            tvm = this;
+            tvm.mu = mod(this.mu+shiftAngles,2*pi);
+        end
     end
     
     methods (Static)

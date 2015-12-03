@@ -188,5 +188,14 @@ classdef ToroidalVMMatrixDistributionTest< matlab.unittest.TestCase
             tvm.C = 1;
             testCase.verifyEqual(tvm.integral(), 1/tvm.normConstApprox, 'RelTol', 0.02);
         end
+        
+        function testShift(testCase)
+            tvm = ToroidalVMMatrixDistribution([3;5],[0.7; 1.3], ones(2,2));
+            s = [4;2];
+            tvm2 = tvm.shift(s);
+            testCase.verifyClass(tvm2, 'ToroidalVMMatrixDistribution');
+            [xTest,yTest]=meshgrid(linspace(0,2*pi,20));
+            testCase.verifyEqual(tvm2.pdf([xTest(:)';yTest(:)']),tvm.pdf([xTest(:)' - s(1);yTest(:)' - s(2)]),'AbsTol',1E-10);
+        end           
     end
 end

@@ -135,6 +135,20 @@ classdef ToroidalVMSineDistribution < AbstractToroidalDistribution
             dist = CustomCircularDistribution(f);
         end
         
+        function tvm = shift(this, shiftAngles)
+            % Shift distribution by the given angles
+            %
+            % Parameters:
+            %   shiftAngles (dim x 1 column vector) 
+            %       angles to shift by
+            % Returns:
+            %   hd (ToroidalVMSineDistribution)
+            %       shifted distribution
+            assert(all(size(shiftAngles) == [this.dim, 1]));
+            
+            tvm = this;
+            tvm.mu = mod(this.mu+shiftAngles,2*pi);
+        end        
     end
     
 end
