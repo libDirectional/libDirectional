@@ -1,6 +1,6 @@
 classdef DiscreteFilter < AbstractCircularFilter
     % A discrete filter on the circle based on the wrapped
-    % Dirac distribution with equidistant samples.
+    % Dirac distribution with a grid of equidistant samples.
     %
     % mentioned in 
     % Florian Pfaff, Gerhard Kurz, and Uwe D. Hanebeck,

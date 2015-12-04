@@ -1,5 +1,6 @@
 classdef HypertoroidalParticleFilter < AbstractToroidalFilter
-        
+    % SIR particle filter on the hypertorus
+    
     properties
         wd
     end
@@ -11,6 +12,8 @@ classdef HypertoroidalParticleFilter < AbstractToroidalFilter
             % Parameters:
             %   nParticles (integer > 0)
             %       number of particles to use 
+            %   dim (integer >0)
+            %       dimension
             this.wd = HypertoroidalWDDistribution(repmat((0:nParticles-1)/nParticles*2*pi,[dim,1]));
         end
         
@@ -28,6 +31,13 @@ classdef HypertoroidalParticleFilter < AbstractToroidalFilter
         end
         
         function predictIdentity(this, noiseDistribution)
+            % Predicts assuming identity system model, i.e.,
+            % x(k+1) = x(k) + w(k)    mod 2pi,
+            % where w(k) is additive noise given by noiseDistribution.
+            %
+            % Parameters:
+            %   noiseDistribution (AbstractCircularDistribution)
+            %       distribution of additive noise
             this.predictNonlinear(@(x) x, noiseDistribution);
         end
         
@@ -118,7 +128,7 @@ classdef HypertoroidalParticleFilter < AbstractToroidalFilter
             % Return current estimate 
             %
             % Returns:
-            %   wd (WDDistribution)
+            %   wd (HypertoroidalWDDistribution)
             %       current estimate            
             wd = this.wd;
         end

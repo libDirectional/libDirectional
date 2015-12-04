@@ -1,5 +1,6 @@
 classdef ToroidalParticleFilter < AbstractToroidalFilter & HypertoroidalParticleFilter
-        
+    % SIR Particle filter on the torus    
+    
     methods
         function this = ToroidalParticleFilter(nParticles)
             % Constructor
