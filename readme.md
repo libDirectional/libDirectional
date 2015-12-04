@@ -130,7 +130,7 @@ libDrectional relies on the following external libraries, which are also include
   * [Faddeva](http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package) (MIT)
   * [Nonlinear Estimation Toolbox](https://bitbucket.org/nonlinearestimation/toolbox) (GPL v3), only the necessary subset is included in externals folder
 
-Furthermore, we use the script [circVMcdf](http://www.eecs.berkeley.edu/~sburden/matlab/polypedal/doc/polypedal/util/circVMcdf.html) by Shai Revzen (GPLv3). We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in externals folder as only small parts are used.
+Furthermore, we use the script `circVMcdf` by Shai Revzen (GPLv3). We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in the externals folder as only small parts are used.
 
 License
 -------
