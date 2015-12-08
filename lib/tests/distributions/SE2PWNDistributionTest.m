@@ -4,6 +4,8 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
     
     methods (Test)
         function testSE2PWNDistribution(testCase)
+            global enableExpensive
+            if ~islogical(enableExpensive), enableExpensive = false; end            
             mu = [2, 3, 4]';
             si1 = 0.9;
             si2 = 1.5;
@@ -34,7 +36,9 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
             end
 
             %% test integral
-            testCase.verifyEqual(pwn.integral, 1, 'RelTol', 1E-5);
+            if enableExpensive
+                testCase.verifyEqual(pwn.integral, 1, 'RelTol', 1E-5);
+            end
             
             %% test mean and maginalization
             mean = pwn.mean4D();

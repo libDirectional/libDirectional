@@ -12,7 +12,7 @@ classdef SE2BinghamDistributionTest < matlab.unittest.TestCase
             
             C = [C1 C2'; C2 C3];
             
-            %% test constructor
+            % test constructor
             seA = SE2BinghamDistribution(C);
             seB = SE2BinghamDistribution(C1,C2,C3);
             
@@ -40,25 +40,28 @@ classdef SE2BinghamDistributionTest < matlab.unittest.TestCase
         
         function testNormalizationConstant (testCase)
             % Tests whether the pdf integrates to the normalization constant.
+            global enableExpensive
+            if ~islogical(enableExpensive), enableExpensive = false; end            
             
-            C1 = -diag([2 3]);
-            C2 = [0.1 0.2; 0.01 0.3];
-            C3 = -diag([1 2]);
-            
-            C = [C1 C2'; C2 C3];
-            
-            % Unnormalized PDF
-            unPDF = @(al,x,y) ...
-                exp([sin(al); cos(al); x; y]' * C * [sin(al); cos(al); x; y]);
-            pdfIntegrand =  @(al,x,y) arrayfun(unPDF, al, x, y); % As Integrand
-            
-            % Computation of reference value.
-            refVal = integral3(pdfIntegrand, -pi,pi, -50, 50,-50,50);
-            
-            % Computation of the actual value.
-            s = SE2BinghamDistribution(C1, C2, C3);
-                        
-            testCase.verifyEqual(refVal,s.NC, 'RelTol',1E-8);
+            if enableExpensive
+                C1 = -diag([2 3]);
+                C2 = [0.1 0.2; 0.01 0.3];
+                C3 = -diag([1 2]);
+                C = [C1 C2'; C2 C3];
+
+                % Unnormalized PDF
+                unPDF = @(al,x,y) ...
+                    exp([sin(al); cos(al); x; y]' * C * [sin(al); cos(al); x; y]);
+                pdfIntegrand =  @(al,x,y) arrayfun(unPDF, al, x, y); % As Integrand
+
+                % Computation of reference value.
+                refVal = integral3(pdfIntegrand, -pi,pi, -inf,inf,-inf,inf);
+
+                % Computation of the actual value.
+                s = SE2BinghamDistribution(C1, C2, C3);
+
+                testCase.verifyEqual(refVal,s.NC, 'RelTol',1E-10);
+            end
         end
         
         function testDeterministicSampling (testCase)
