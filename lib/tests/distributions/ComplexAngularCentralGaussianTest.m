@@ -9,44 +9,41 @@ classdef ComplexAngularCentralGaussianTest < matlab.unittest.TestCase
     
     methods(TestClassSetup)
         function createSampling(tc)
-            %% Define mean shape (different ideas)
-            %%
-            
+            % Define mean shape (different ideas)            
             C = diag([3 2 1]);
             C = 1/2*(C + C');
             tc.D = 3;
             
-            %% Define concentration parameter
+            % Define concentration parameter
             tc.N = 5000;
             
             tc.cAG = ComplexAngularCentralGaussian(C);
             
-            
-            %% Sampling
-            tc.Z = tc.cAG.sample(tc.N);
-            
+            % Sampling
+            tc.Z = tc.cAG.sample(tc.N);        
         end
     end
+    
     methods (Test)
         function sanityCheck(tc)
-            %% verification
+            % verification
             tc.verifyClass(tc.cAG, 'ComplexAngularCentralGaussian');
         end
+        
         function testIntegral(tc)
-            %% test integral
+            % test integral
             tc.verifyEqual(tc.cAG.integral(), 1, 'RelTol', 0.1);
-            
         end
+        
         function checkSizeOfSampleOutput(tc)
-            %% verification
+            % verification
             verifySize(tc, tc.Z, [tc.D, tc.N]);
         end
+        
         function testFitting(tc)
-            %%
-            
             cAG_fit = ComplexAngularCentralGaussian.fit(tc.Z);
             
-            %% verification
+            % verification
             cAG_fit.C = cAG_fit.C/cAG_fit.C(1);
             tc.cAG.C = tc.cAG.C/tc.cAG.C(1);
             csDiv = ComplexBinghamDistribution.CauchySchwarzDivergence( ...
