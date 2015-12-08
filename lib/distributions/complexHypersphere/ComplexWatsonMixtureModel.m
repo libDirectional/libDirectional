@@ -92,7 +92,6 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
     
     methods (Static)
         function cWMM = fit(K, Z, maxIterations)
-            
             if nargin < 3
                 maxIterations = 100;
             end
@@ -147,10 +146,8 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
         end
         
         function Z_out = normalizedPhase(Z_in)
-            
             phase = angle( Z_in(1, :) );
-            Z_out = bsxfun(@times, Z_in, exp(-1i*phase));
-            
+            Z_out = bsxfun(@times, Z_in, exp(-1i*phase));            
         end
     end
 end

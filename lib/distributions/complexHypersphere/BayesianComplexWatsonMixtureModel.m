@@ -34,7 +34,10 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             bcWMM.B = B_;
             bcWMM.concentrations = concentrations_;
             bcWMM.alpha = alpha_;
-            
+        end
+        
+        function p = pdf(this, xa)
+            error('not implemented yet');
         end
     end
     
@@ -45,6 +48,7 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             bcWMM = BayesianComplexWatsonMixtureModel(...
                 posterior.B, posterior.kappa, posterior.alpha);
         end
+        
         function posterior = estimatePosterior(Z, parameters)
             % This is a quick and dirty implementation of a complex Watson mixture model
             % with a complex Bingham prior for the mode vectors and a Dirichlet prior
