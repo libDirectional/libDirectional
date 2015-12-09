@@ -31,7 +31,7 @@ classdef WNDistribution < AbstractCircularDistribution
             p = wnpdf(xa, this.mu, this.sigma);
         end
         
-        function val=cdf(this,xa,startingPoint,n)
+        function val = cdf(this, xa, startingPoint, n)
             % Evaluate cumulative distribution function 
             %
             % Parameters:
@@ -47,17 +47,17 @@ classdef WNDistribution < AbstractCircularDistribution
                 startingPoint = 0; 
             end
             if nargin<=3 %Use n for predefined number of runs to use vectorization
-                n=10; 
+                n = 10; 
             end
-            startingPoint=mod(startingPoint,2*pi);
-            xa=mod(xa,2*pi);
+            startingPoint = mod(startingPoint,2*pi);
+            xa = mod(xa,2*pi);
 
-            ncdf=@(from,to)1/2*(erf((this.mu-from)/(sqrt(2)*this.sigma))-erf((this.mu-to)/(sqrt(2)*this.sigma)));
-            val=ncdf(startingPoint,xa);
+            ncdf = @(from,to) 1/2*(erf((this.mu-from)/(sqrt(2)*this.sigma))-erf((this.mu-to)/(sqrt(2)*this.sigma)));
+            val = ncdf(startingPoint,xa);
             for i=1:n
-                val=val+ncdf(startingPoint+2*pi*i,xa+2*pi*i)+ncdf(startingPoint-2*pi*i,xa-2*pi*i);
+                val = val+ncdf(startingPoint+2*pi*i,xa+2*pi*i)+ncdf(startingPoint-2*pi*i,xa-2*pi*i);
             end
-            val=(xa<startingPoint)+val; %1+int(a,b) if a>b, otherweise int(a,b)
+            val = (xa<startingPoint)+val; %1+int(a,b) if a>b, otherweise int(a,b)
         end
                                
         function m = trigonometricMoment(this, n)
@@ -69,6 +69,8 @@ classdef WNDistribution < AbstractCircularDistribution
             % Returns:
             %   m (scalar)
             %       n-th trigonometric moment (complex number)
+            assert(isscalar(n));
+            
             m = exp(1i*n*this.mu - n^2*this.sigma^2/2);
         end
                
@@ -193,8 +195,17 @@ classdef WNDistribution < AbstractCircularDistribution
             s = mod(this.mu + this.sigma * randn(1,n),2*pi);
         end
         
-        function wn=shift(this,angle)
-            wn=WNDistribution(this.mu+angle,this.sigma); % Mod is done in constructor
+        function wn = shift(this, angle)
+            % Shift distribution by the given angle
+            %
+            % Parameters:
+            %   shiftAngles (scalar) 
+            %       angle to shift by
+            % Returns:
+            %   hd (WNDistribution)
+            %       shifted distribution
+            assert(isscalar (angle));
+            wn = WNDistribution(this.mu+angle,this.sigma); % Mod is done in constructor
         end
         
         function g = toGaussian(this)

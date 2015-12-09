@@ -94,8 +94,17 @@ classdef WCDistribution < AbstractCircularDistribution
             result = log(2*pi * (1-exp(-2*this.gamma)));
         end
         
-        function wc=shift(this,angle)
-            wc=WCDistribution(this.mu+angle,this.gamma); % Mod is done in constructor
+        function wc = shift(this,angle)
+            % Shift distribution by the given angle
+            %
+            % Parameters:
+            %   shiftAngles (scalar) 
+            %       angle to shift by
+            % Returns:
+            %   hd (WCDistribution)
+            %       shifted distribution
+            assert(isscalar (angle));
+            wc = WCDistribution(this.mu+angle,this.gamma); % Mod is done in constructor
         end
         
         function s = sample(this, n)

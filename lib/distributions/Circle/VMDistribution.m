@@ -126,8 +126,17 @@ classdef VMDistribution < AbstractCircularDistribution
             result = -this.kappa * besselratio(0, this.kappa) + log(2*pi*besseli(0,this.kappa));
         end
         
-        function vm=shift(this,angle)
-            vm=VMDistribution(this.mu+angle,this.kappa); % Mod is done in constructor
+        function vm = shift(this, angle)
+            % Shift distribution by the given angle
+            %
+            % Parameters:
+            %   shiftAngles (scalar) 
+            %       angle to shift by
+            % Returns:
+            %   hd (VMDistribution)
+            %       shifted distribution
+            assert(isscalar (angle));
+            vm = VMDistribution(this.mu+angle, this.kappa); % Mod is done in constructor
         end
         
         function kld = kld(this, other)
