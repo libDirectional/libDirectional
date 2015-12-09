@@ -124,5 +124,14 @@ classdef ToroidalWNDistributionTest < matlab.unittest.TestCase
             l2 = sum(log(twn.pdf(samples)));
             testCase.verifyEqual(l, l2, 'RelTol', 1E-10);
         end
+        
+        function testShift(testCase)
+            twn = ToroidalWNDistribution([3;5],eye(2));
+            s = [4;2];
+            twn2 = twn.shift(s);
+            testCase.verifyClass(twn2, 'ToroidalWNDistribution');
+            [xTest,yTest]=meshgrid(linspace(0,2*pi,20));
+            testCase.verifyEqual(twn2.pdf([xTest(:)';yTest(:)']),twn.pdf([xTest(:)' - s(1);yTest(:)' - s(2)]),'AbsTol',1E-10);
+        end        
     end
 end
