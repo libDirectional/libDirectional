@@ -4,12 +4,12 @@ classdef AbstractAxialFilter < handle
     properties
         compositionOperator % denoted by "\oplus" in our papers
         compositionOperatorDerivative
-        d %dimension (d=2 -> circle/complex numbers, d=4 -> quaternions)
+        dim %dimension (dim=2 -> circle/complex numbers, dim=4 -> quaternions)
     end
     
     methods ( Access = protected )
         function setCompositionOperator(this)
-            switch this.d
+            switch this.dim
                 case 2
                     this.compositionOperator = @(a,b) complexMultiplication(a,b);
                     this.compositionOperatorDerivative = ...

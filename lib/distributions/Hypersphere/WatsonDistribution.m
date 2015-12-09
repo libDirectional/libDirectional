@@ -29,8 +29,8 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             W.mu = mu_;
             W.kappa = kappa_;
             
-            W.d = size(mu_,1);
-            W.C = gamma(W.d/2)/2/pi^(W.d/2)/hypergeom(1/2, W.d/2, W.kappa);
+            W.dim = size(mu_,1);
+            W.C = gamma(W.dim/2)/2/pi^(W.dim/2)/hypergeom(1/2, W.dim/2, W.kappa);
         end
         
         function p = pdf(this, xa)
@@ -61,15 +61,15 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
                 error ('conversion to Bingham is not implemented yet for kappa<0');
             end
             
-            M = repmat(this.mu, 1, this.d);
+            M = repmat(this.mu, 1, this.dim);
             % make vectors in M linear independent
-            E = eye(this.d, this.d); 
+            E = eye(this.dim, this.dim); 
             E(1,1)=0;
             M = M + E;
             % make vectors in M orthogonal
             [Q,~] = qr(M);
             M = [Q(:,2:end)  Q(:,1)]; % put mu at in the last column
-            Z = [repmat(-this.kappa,this.d-1,1); 0];
+            Z = [repmat(-this.kappa,this.dim-1,1); 0];
             B = BinghamDistribution(Z,M);
         end
         

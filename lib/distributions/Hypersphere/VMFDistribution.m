@@ -30,8 +30,8 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             VFM.mu = mu_;
             VFM.kappa = kappa_;
             
-            VFM.d = size(mu_,1);
-            VFM.C = kappa_^(VFM.d/2-1)/ ( (2*pi)^(VFM.d/2) * besseli(VFM.d/2-1, kappa_));
+            VFM.dim = size(mu_,1);
+            VFM.C = kappa_^(VFM.dim/2-1)/ ( (2*pi)^(VFM.dim/2) * besseli(VFM.dim/2-1, kappa_));
         end
         
         function p = pdf(this, xa)
@@ -58,7 +58,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Gerhard Kurz, Uwe D. Hanebeck,
             % Stochastic Sampling of the Hyperspherical von Mises-Fisher Distribution Without Rejection Methods
             % Proceedings of the IEEE ISIF Workshop on Sensor Data Fusion: Trends, Solutions, Applications (SDF 2015), Bonn, Germany, October 2015
-            M = zeros(this.d,this.d);
+            M = zeros(this.dim,this.dim);
             M(:,1) = this.mu; 
             [Q,R] = qr(M);
             if R(1,1)<0
@@ -67,6 +67,14 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Q may have det -1, but we ignore that for now because the
             % distribution does not change when mirrored
         end
+        
+        function m = mode(this)
+            % Calculate the mode of a VMF distribution
+            % Returns:
+            %   m (column vector)
+            %       mode of the distribution
+            m = this.mu;
+        end        
         
         function vmf = multiply(this, other)
             % Multiplies this density with another VMF density (exact).
@@ -107,7 +115,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             %       the vmf distribution of the renormalized product.            
             assert(isa(other, 'VMFDistribution'));
             assert(all(size(this.mu) == size(other.mu)));
-            d = this.d;
+            d = this.dim;
             
             mu_ = this.mu;
             kappa_ = VMFDistribution.AdInverse(d, VMFDistribution.Ad(d, this.kappa)*VMFDistribution.Ad(d, other.kappa));
@@ -122,7 +130,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   vm (VMDistribution)
             %       the corresponding VM distribution
-            assert(this.d==2, 'Conversion only possible in two dimensions.')
+            assert(this.dim==2, 'Conversion only possible in two dimensions.')
             mu_ = mod(atan2(this.mu(2), this.mu(1)),2*pi);
             vm = VMDistribution(mu_, this.kappa);
         end
@@ -151,12 +159,12 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             %   X (d x n matrix)
             %       generated samples (one sample per column)
             
-            if this.d == 2
+            if this.dim == 2
                 s = this.toVM().sample(n);
                 s = [cos(s);sin(s)];
-            elseif this.d == 3
+            elseif this.dim == 3
                 s = this.sampleJakob(n);
-            elseif this.d == 5 || this.d == 7
+            elseif this.dim == 5 || this.dim == 7
                 s = this.sampleCdfVectorized(n);
             else
                 s = this.sampleWood(n);
@@ -182,7 +190,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Generating von Mises--Fisher Distribution on the Unit Sphere (S2) 
             % 2009
 
-            assert(this.d==3, 'This method only works in three dimensions.');
+            assert(this.dim==3, 'This method only works in three dimensions.');
             
             Q = this.getRotationMatrix();
             
@@ -216,7 +224,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Works for an arbitrary number of dimensions.
 
             lambda = this.kappa;
-            m = this.d;
+            m = this.dim;
             s = zeros(m,n);
             Q = this.getRotationMatrix();
 
@@ -266,12 +274,12 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Stochastic Sampling of the Hyperspherical von Mises-Fisher Distribution Without Rejection Methods
             % Proceedings of the IEEE ISIF Workshop on Sensor Data Fusion: Trends, Solutions, Applications (SDF 2015), Bonn, Germany, October 2015
             
-            s = zeros(this.d,n);
+            s = zeros(this.dim,n);
             Q = this.getRotationMatrix();
             k = this.kappa;
-            pdf = @(x) exp(this.kappa*cos(x)).*sin(x).^(this.d-2);
+            pdf = @(x) exp(this.kappa*cos(x)).*sin(x).^(this.dim-2);
 
-            switch this.d
+            switch this.dim
                 % use 
                 % d = 3; syms k x y; int(exp(k*cos(x)).*sin(x).^(d-2), x, 0, y) 
                 % to obtain solution for a certain (odd) dimension
@@ -311,7 +319,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
                 W = cos(phi);                
                 
                 % Step 3 from Wood
-                V = mvnrnd(zeros(this.d-1,1), eye(this.d-1,this.d-1));
+                V = mvnrnd(zeros(this.dim-1,1), eye(this.dim-1,this.dim-1));
                 V = V'/norm(V);
                 % we differ from Wood's algorithm here and sample a
                 % distribution with mu = [1,0,...,0] rather than mu =
@@ -337,12 +345,12 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Stochastic Sampling of the Hyperspherical von Mises-Fisher Distribution Without Rejection Methods
             % Proceedings of the IEEE ISIF Workshop on Sensor Data Fusion: Trends, Solutions, Applications (SDF 2015), Bonn, Germany, October 2015
             
-            s = zeros(this.d,n);
+            s = zeros(this.dim,n);
             Q = this.getRotationMatrix();
             k = this.kappa;
-            pdf = @(x) exp(this.kappa*cos(x)).*sin(x).^(this.d-2);
+            pdf = @(x) exp(this.kappa*cos(x)).*sin(x).^(this.dim-2);
 
-            switch this.d
+            switch this.dim
                 % use 
                 % d = 3; syms k x y; int(exp(k*cos(x)).*sin(x).^(d-2), x, 0, y) 
                 % to obtain solution for a certain (odd) dimension
@@ -375,7 +383,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             W = cos(phi);
             for i=1:n
                 % Step 3 from Wood
-                V = mvnrnd(zeros(this.d-1,1), eye(this.d-1,this.d-1));
+                V = mvnrnd(zeros(this.dim-1,1), eye(this.dim-1,this.dim-1));
                 V = V'/norm(V);
                 % we differ from Wood's algorithm here and sample a
                 % distribution with mu = [1,0,...,0] rather than mu =
@@ -393,7 +401,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   e (scalar)
             %       the computed entropy
-            p = this.d;
+            p = this.dim;
             % https://www.wolframalpha.com/input/?i=diff%281%2F%28kappa%5E%28p%2F2-1%29%2F%282*pi%29%5E%28p%2F2%29%2Fbesseli%28p%2F2-1%2C+kappa%29%29%2C+kappa%29
             Cinvdiff = 2^(p/2-1) *pi^(p/2)* this.kappa^(1-p/2) * (besseli(p/2-2,this.kappa)+besseli(p/2,this.kappa))+(1-p/2)*(2*pi)^(p/2)* this.kappa^(-p/2) *besseli(p/2-1,this.kappa);
             e = -log(this.C) - this.kappa * this.C * Cinvdiff;

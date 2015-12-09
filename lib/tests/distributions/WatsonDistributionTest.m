@@ -14,7 +14,7 @@ classdef WatsonDistributionTest< matlab.unittest.TestCase
             testCase.verifyClass(w, 'WatsonDistribution');
             testCase.verifyEqual(w.mu, mu);
             testCase.verifyEqual(w.kappa, kappa);
-            testCase.verifyEqual(w.d, length(mu));
+            testCase.verifyEqual(w.dim, length(mu));
 
             %% test integral
             testCase.verifyEqual(w.integral(), 1, 'RelTol', 1E-5);
@@ -52,7 +52,7 @@ classdef WatsonDistributionTest< matlab.unittest.TestCase
             testCase.verifyClass(w, 'WatsonDistribution');
             testCase.verifyEqual(w.mu, mu);
             testCase.verifyEqual(w.kappa, kappa);
-            testCase.verifyEqual(w.d, length(mu));
+            testCase.verifyEqual(w.dim, length(mu));
 
             %% test integral
             testCase.verifyEqual(w.integral(), 1, 'RelTol', 1E-5);

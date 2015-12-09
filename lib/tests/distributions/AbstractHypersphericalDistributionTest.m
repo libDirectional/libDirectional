@@ -3,7 +3,7 @@ classdef AbstractHypersphericalDistributionTest< matlab.unittest.TestCase
     end
     
     methods (Test)
-        function testAbstractHypersphericalDistribution(testCase)           
+        function testIntegral(testCase)           
             %% integral 2d
             alpha = 0.3;
             mu = [cos(alpha), sin(alpha)]';
@@ -26,15 +26,17 @@ classdef AbstractHypersphericalDistributionTest< matlab.unittest.TestCase
             mu = [cos(alpha), sin(alpha), 0, 0, 0]';
             vmf = VMFDistribution(mu,kappa);
             testCase.verifyEqual(vmf.integral, 1, 'RelTol', 1E-2);
+        end
 
-            %% unit sphere surface area
+        function testUnitSphereSurface(testCase)
+            % unit sphere surface area
             testCase.verifyEqual(AbstractHypersphericalDistribution.computeUnitSphereSurface(2), 2*pi, 'RelTol', 1E-10);
             testCase.verifyEqual(AbstractHypersphericalDistribution.computeUnitSphereSurface(3), 4*pi, 'RelTol', 1E-10);
             testCase.verifyEqual(AbstractHypersphericalDistribution.computeUnitSphereSurface(4), 2*pi^2, 'RelTol', 1E-10);
         end
         
         function testEntropyNumerical(testCase)
-            %% 2D
+            % 2D
             vmf = VMFDistribution([1 0]', 2);
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.entropy(), 'RelTol', 1E-10);
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.toVM().entropy(), 'RelTol', 1E-10);
@@ -42,15 +44,27 @@ classdef AbstractHypersphericalDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.entropy(), 'RelTol', 1E-10);
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.toVM().entropy(), 'RelTol', 1E-10);
             
-            %% 3D
+            % 3D
             vmf = VMFDistribution([0 0 1]', 2);
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.entropy(), 'RelTol', 1E-7);
             vmf = VMFDistribution([0 1 0]', 0.4);
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.entropy(), 'RelTol', 1E-7);
             
-            %% 4D
+            % 4D
             vmf = VMFDistribution([0 0 0 1]', 2);
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.entropy(), 'RelTol', 1E-7);
+        end
+        
+        function testSampleMetropolisHastings(testCase)
+            vmf = VMFDistribution([1 0]', 2);
+            n = 10;
+            s = vmf.sampleMetropolisHastings(n);
+            testCase.verifySize(s, [vmf.dim, n]);
+            testCase.verifyEqual(sum(s.^2,1), ones(1,n), 'RelTol', 1E-10);
+            
+            s2 = vmf.sample(n);
+            testCase.verifySize(s2, [vmf.dim, n]);
+            testCase.verifyEqual(sum(s2.^2,1), ones(1,n), 'RelTol', 1E-10);
         end
     end
 end

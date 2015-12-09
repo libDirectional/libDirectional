@@ -1,5 +1,5 @@
 classdef BinghamDistributionTest < matlab.unittest.TestCase
-    %BINGHAMDISTRIBUTIONTEST Contains tests for the Bingham Distribution
+    % Contains tests for the Bingham Distribution
     
     properties
     end
@@ -31,7 +31,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 
                 %% test pdf
                 rng default
-                testpoints = rand(B.d, 20);
+                testpoints = rand(B.dim, 20);
                 testpoints = bsxfun(@rdivide,testpoints, sum(testpoints));
                 for j=1:size(testpoints,2);
                     testCase.verifyEqual(B.pdf(testpoints(:,j)), 1/B.F*exp(testpoints(:,j)'*M*diag(Z)*M'*testpoints(:,j)), 'RelTol', 1E-10);
@@ -41,10 +41,12 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 testCase.verifyClass(B, 'BinghamDistribution');
                 testCase.verifyEqual(B.M, M);
                 testCase.verifyEqual(B.Z, Z);
-                testCase.verifyEqual(B.d, length(Z));
+                testCase.verifyEqual(B.dim, length(Z));
 
                 %% test integral
-                testCase.verifyEqual(B.integral(), 1, 'RelTol', 1E-1);
+                if B.dim < 4 || enableExpensive
+                    testCase.verifyEqual(B.integral(), 1, 'RelTol', 1E-1);
+                end
 
                 %% test multiplication
                 Bmul = B.multiply(B);
@@ -85,7 +87,14 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 rng default
                 n = 1000;
                 samples = B.sample(n);
-                testCase.verifySize(samples, [B.d, n]);
+                testCase.verifySize(samples, [B.dim, n]);
+                testCase.verifyEqual(sum(samples.*samples), ones(1,n), 'RelTol', 1E-10);                
+                Bfitted = BinghamDistribution.fit(samples);
+                testCase.verifyEqual(Bfitted.Z, B.Z, 'RelTol', 0.2); % this can be quite imprecise
+                testCase.verifyEqual(abs(Bfitted.M), abs(B.M), 'AbsTol', 0.2); % this can be quite imprecise
+                
+                samples = B.sampleKent(n);
+                testCase.verifySize(samples, [B.dim, n]);
                 testCase.verifyEqual(sum(samples.*samples), ones(1,n), 'RelTol', 1E-10);                
                 Bfitted = BinghamDistribution.fit(samples);
                 testCase.verifyEqual(Bfitted.Z, B.Z, 'RelTol', 0.2); % this can be quite imprecise
@@ -95,8 +104,8 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 S = B.moment();
                 % compare to Glover's method for calculating the scatter
                 % matrix
-                S2 = zeros(B.d, B.d);
-                for j=1:B.d
+                S2 = zeros(B.dim, B.dim);
+                for j=1:B.dim
                     sigma = B.dF(j)/B.F;
                     v = B.M(:,j);
                     S2 = S2 + sigma*(v*v');
@@ -110,7 +119,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 %% test sampleWeighted
                 n = 10;
                 [s,w] = B.sampleWeighted(n);
-                testCase.verifyEqual(size(s,1),B.d);
+                testCase.verifyEqual(size(s,1),B.dim);
                 testCase.verifyEqual(size(s,2),n);
                 testCase.verifyEqual(size(w,1),1);
                 testCase.verifyEqual(size(w,2),n);
@@ -118,7 +127,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 testCase.verifyEqual(sum(w),1, 'RelTol', 1E-10);
                 
                 %% test bounds for d=2
-                if B.d == 2
+                if B.dim == 2
                     for p = 0.1:0.1:0.9;
                         alpha = B.bounds(p);
                         f = @(phi) B.pdf([cos(phi); sin(phi)]);
@@ -130,9 +139,9 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 
                 %% test covariance
                 C = B.gaussianCovariance();
-                testCase.verifySize(C, [B.d B.d]);
+                testCase.verifySize(C, [B.dim B.dim]);
                 testCase.verifyEqual(C,C');
-                testCase.verifyGreaterThanOrEqual(eig(C), zeros(B.d,1));
+                testCase.verifyGreaterThanOrEqual(eig(C), zeros(B.dim,1));
             end
         end
         

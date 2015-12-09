@@ -7,7 +7,10 @@ classdef BinghamFilter < AbstractAxialFilter
     % Gerhard Kurz, Igor Gilitschenski, Simon Julier, Uwe D. Hanebeck,
     % Recursive Bingham Filter for Directional Estimation Involving 180 Degree Symmetry
     % Journal of Advances in Information Fusion, 9(2):90 - 105, December 2014.
-    
+    %
+    % Igor Gilitschenski, Gerhard Kurz, Simon J. Julier, Uwe D. Hanebeck,
+    % Unscented Orientation Estimation Based on the Bingham Distribution (accepted)
+    % IEEE Transactions on Automatic Control, January 2016.
     
     properties
         B % state as Bingham distribution
@@ -20,7 +23,7 @@ classdef BinghamFilter < AbstractAxialFilter
             this.setState(B_);
         end
         
-        function setState(this,B_)
+        function setState(this, B_)
             % Sets the current system state
             %
             % Parameters:
@@ -28,14 +31,14 @@ classdef BinghamFilter < AbstractAxialFilter
             %       new state
             assert(isa(B_, 'BinghamDistribution'));
             this.B = B_;
-            this.d = B_.d;
-            assert (this.d==2 || this.d==4, 'Only 2D and 4D distributions are supported)')
+            this.dim = B_.dim;
+            assert (this.dim==2 || this.dim==4, 'Only 2D and 4D distributions are supported)')
             this.setCompositionOperator();
         end
         
         function predictIdentity(this, Bw)
             % Predicts assuming identity system model, i.e.,
-            % x(k+1) = x(k) (+) w(k)    mod 2pi,
+            % x(k+1) = x(k) (+) w(k)    
             % where w(k) is noise given by Bw.
             % The composition operator (+) refers to a complex or quaternion
             % multiplication.
@@ -87,15 +90,15 @@ classdef BinghamFilter < AbstractAxialFilter
             % Parameters:
             %   Bv (BinghamDistribution)
             %       distribution of additive noise
-            %   z (d x 1 vector)
+            %   z (dim x 1 vector)
             %       measurement on the unit hypersphere
             assert(isa(Bv, 'BinghamDistribution'));
-            assert(Bv.d == this.B.d);
-            assert(all(size(z) == [this.B.d, 1]));
+            assert(Bv.dim == this.B.dim);
+            assert(all(size(z) == [this.B.dim, 1]));
             assert(norm(z) == 1);
             
             conjugate = @(q) [q(1); -q(2:end)];
-            for i=1:this.B.d
+            for i=1:this.B.dim
                 %Bv.M(:,i) = this.compositionOperator(conjugate(Bv.M(:,i)), z');
                 Bv.M(:,i) = this.compositionOperator(z,conjugate(Bv.M(:,i)));
             end
@@ -109,7 +112,9 @@ classdef BinghamFilter < AbstractAxialFilter
             %   B (BinghamDistribution)
             %       current estimate
             B = this.B;
-        end  
+        end
+            
     end
+    
 end
 

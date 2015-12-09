@@ -2,7 +2,7 @@ classdef AbstractHypersphericalDistribution
     % Abstract base class for distributions on the hypershere (Sd)
     
     properties
-        d       % Dimension  (d=2 => circle, d=3 => sphere, ...)
+        dim       % Dimension  (d=2 => circle, d=3 => sphere, ...)
     end
     
     methods (Abstract)
@@ -12,12 +12,14 @@ classdef AbstractHypersphericalDistribution
     
     methods
         function plot(this, faces, gridFaces)
-        % Plots pdf of hyperspherical Distribution
-        %   Parameters:
-        %       faces - Number of faces for 3D Plot (default 100).
-        %       gridFaces - Number of grid faces for 3D Plot (default 20, 0 to disable).
-        
-            switch this.d
+            % Plots the pdf of a hyperspherical distribution
+            %
+            % Parameters:
+            %   faces (scalar)
+            %       Number of faces for 3D Plot (default 100).
+            %   gridFaces (scalar)
+            %       Number of grid faces for 3D Plot (default 20, 0 to disable).
+            switch this.dim
                 case 2
                     % use polar coordinates, plot angle->pdf(angle)
                     phi = linspace(0,2*pi,320);
@@ -71,11 +73,11 @@ classdef AbstractHypersphericalDistribution
             %   i (scalar)
             %       integral over hypersphere surface of pdf (uses
             %       approximation, not very accurate for higher dimensions)
-            if this.d==2
+            if this.dim==2
                 %use matlab integration
                 f = @(phi) this.pdf([cos(phi); sin(phi)]);
                 i = integral(f,0,2*pi, 'AbsTol', 0.01);
-            elseif this.d ==3
+            elseif this.dim ==3
                 % use matlab integration
                 f = @(x) this.pdf(x);
                 r=1;
@@ -90,7 +92,7 @@ classdef AbstractHypersphericalDistribution
                 g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
 
                 i = integral2(g, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-            elseif this.d==4     
+            elseif this.dim==4     
                 % use matlab integration
                 f = @(x) this.pdf(x);
                 r=1;
@@ -110,20 +112,35 @@ classdef AbstractHypersphericalDistribution
             else
                 % use monte carlo integration
                 n = 10000; % number of samples for integration
-                r = randn(this.d,n); % normal distribution
-                r = r./repmat(sqrt(sum(r.^2)),this.d,1); % normalize on unit sphere
+                r = randn(this.dim,n); % normal distribution
+                r = r./repmat(sqrt(sum(r.^2)),this.dim,1); % normalize on unit sphere
                 p = this.pdf(r);
-                Sd = AbstractHypersphericalDistribution.computeUnitSphereSurface(this.d);
+                Sd = AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
                 i = sum(p)/n * Sd; % average value of pdf times surface area of unit sphere
             end
         end
         
+        function result = entropy(this)
+            % Calculates the entropy analytically if possible, 
+            % fall back to numerical calculation by default
+            %
+            % Returns:
+            %   result (scalar)
+            %       entropy of the distribution
+            result = this.entropyNumerical();
+        end        
+        
         function i = entropyNumerical(this)
-            if this.d==2
+            % Calculates the entropy numerically
+            %
+            % Returns:
+            %   i (scalar)
+            %       entropy of the distribution
+            if this.dim==2
                 %use matlab integration
                 f = @(phi) this.pdf([cos(phi); sin(phi)]).*log(this.pdf([cos(phi); sin(phi)]));
                 i = -integral(f,0,2*pi, 'AbsTol', 0.01);
-            elseif this.d ==3
+            elseif this.dim ==3
                 % use matlab integration
                 f = @(x) this.pdf(x).*log(this.pdf(x));
                 r=1;
@@ -139,7 +156,7 @@ classdef AbstractHypersphericalDistribution
                 ga = @(phi1,phi2) reshape(g(phi1(:)', phi2(:)'), size(phi1));
 
                 i = -integral2(ga, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-            elseif this.d==4     
+            elseif this.dim==4     
                 % use matlab integration
                 f = @(x) this.pdf(x).*log(this.pdf(x));
                 r=1;
@@ -160,6 +177,74 @@ classdef AbstractHypersphericalDistribution
                 error('not supported')
             end
         end
+        
+        function s = sample(this, n)
+            % Stocahastic sampling
+            % Fall back to Metropolis Hastings by default
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of samples
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column            
+            s = sampleMetropolisHastings(this, n);
+        end
+        
+        function s = sampleMetropolisHastings(this, n)
+            % Metropolis Hastings sampling algorithm
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of samples
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column
+            %
+            % Hastings, W. K. 
+            % Monte Carlo Sampling Methods Using Markov Chains and Their Applications 
+            % Biometrika, 1970, 57, 97-109
+            assert(isscalar(n));
+            assert(n>0);
+            
+            burnin = 10;
+            skipping = 5;
+            
+            totalSamples = burnin+n*skipping;
+            s = zeros(this.dim,totalSamples);
+            x = this.mode; 
+            % A better proposal distribution could be obtained by roughly estimating
+            % the uncertainty of the true distribution.
+            normalize = @(x) x/norm(x);
+            proposal = @(x) normalize(x + mvnrnd(zeros(this.dim,1),eye(this.dim))'); 
+            i=1;
+            pdfx = this.pdf(x);
+            while i<=totalSamples
+                xNew = proposal(x); %generate new sample
+                pdfxNew = this.pdf(xNew);
+                a = pdfxNew/pdfx;
+                if a>1
+                    %keep sample
+                    s(:,i)=xNew;
+                    x = xNew;
+                    pdfx = pdfxNew;
+                    i=i+1;
+                else
+                    r = rand(1);
+                    if a > r
+                        %keep sample
+                        s(:,i)=xNew;
+                        x = xNew;
+                        pdfx = pdfxNew;
+                        i=i+1;
+                    else
+                        %reject sample
+                    end
+                end
+            end
+            %todo handle bimodality
+            s = s(:,burnin+1:skipping:end);
+        end        
         
     end
     

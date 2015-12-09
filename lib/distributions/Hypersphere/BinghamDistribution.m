@@ -35,22 +35,22 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   B (BinghamDistribution)
             %       an object representing the constructed distribution
         
-            B.d = size(M_,1);
+            B.dim = size(M_,1);
             
             % Check Dimensions
-            assert(size(M_,2) == B.d, 'M is not square');
-            assert(size(Z_,1) == B.d, 'Z has wrong number of rows');
+            assert(size(M_,2) == B.dim, 'M is not square');
+            assert(size(Z_,1) == B.dim, 'Z has wrong number of rows');
             assert(size(Z_,2) == 1, 'Z needs to be column vector');
             
             % Enforce last entry of Z to be zero
-            assert(Z_(B.d, 1) == 0, 'last entry of Z needs to be zero');
+            assert(Z_(B.dim, 1) == 0, 'last entry of Z needs to be zero');
             
             % Enforce z1<=z2<=...<=z(d-1)<=0=z(d)
             assert(all(Z_(1:end-1) <= Z_(2:end)), 'values in Z have to be ascending');
             
             %enforce that M is orthogonal
             epsilon = 0.001;
-            assert (max(max(M_*M_' - eye(B.d,B.d))) < epsilon, 'M is not orthogonal');  
+            assert (max(max(M_*M_' - eye(B.dim,B.dim))) < epsilon, 'M is not orthogonal');  
             
             B.Z = Z_; 
             B.M = M_;
@@ -67,7 +67,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   p (1 x n row vector)
             %       values of the pdf at each column of xa
-            assert(size(xa,1) == this.d);
+            assert(size(xa,1) == this.dim);
         
             p = zeros(1, size(xa,2));
             C = this.M * diag(this.Z) * this.M';
@@ -92,7 +92,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %       Bingham distribution representing this*B2 (after
             %       renormalization)
             assert(isa(B2, 'BinghamDistribution'));
-            if this.d == B2.d
+            if this.dim == B2.dim
                 C = this.M * diag(this.Z) * this.M' + B2.M * diag(B2.Z) * B2.M'; % new exponent
                 
                 C = 0.5*(C+C'); % Ensure symmetry of C, asymmetry may arise as a consequence of a numerical instability earlier.
@@ -125,7 +125,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             B1=this;
             B1S = B1.moment();
             B2S = B2.moment();
-            if this.d==2 && B2.d==2
+            if this.dim==2 && B2.dim==2
                 % for complex numbers
                 % derived from complex multiplication
                 % Gerhard Kurz, Igor Gilitschenski, Simon Julier, Uwe D. Hanebeck,
@@ -144,7 +144,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 S(2,2) = a11*b22 + 2*a12*b12 + a22*b11;
                 
                 B = BinghamDistribution.fitToMoment(S);
-            elseif this.d==4 && B2.d==4
+            elseif this.dim==4 && B2.dim==4
                 % adapted from Glover's C code in libBingham, see also
                 % Glover, J. & Kaelbling, L. P. 
                 % Tracking 3-D Rotations with the Quaternion Bingham Filter 
@@ -195,48 +195,98 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 error('unsupported dimension');
             end
         end
+        
+        function s = sample(this, n)
+            % Stocahastic sampling
+            % Fall back to Glover's method by default
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of samples
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column            
+            s = sampleGlover(this, n);
+        end        
+        
+        function s = sampleKent(this, n)
+            % Generate samples from Bingham distribution using rejection
+            % sampling based on a angular central Gaussian
+            %
+            % Kent, J. T.; Ganeiber, A. M. & Mardia, K. V. 
+            % A New Method to Simulate the Bingham and Related Distributions in Directional Data Analysis with Applications 
+            % arXiv preprint arXiv:1310.8110, 2013
+            
+            % todo: check for Bugs!
+
+            s = zeros(this.dim, n);
+            i = 1;
+            A = - this.M * diag(this.Z) * this.M'; % Kent uses a minus sign here!
+            q = this.dim;
+            % compute b
+            bfun = @(b) sum(1./(b-2*this.Z)) - 1; % use a minus sign before  2*this.z because Kent's matrix is negative
+            b = fsolve(bfun, 1);
+            Omega = eye(this.dim) + 2*A/b;
+            %efficiency = 1/(exp(-(q-b)/2) * (q/b)^(q/2))
+            %Mb = 1/this.F * exp(-(q-b)/2) * (q/b)^(q/2) * det(Omega)^(-1/2);
+            Mbstar = exp(-(q-b)/2) * (q/b)^(q/2);
+            nReject = 0;
+            fbingstar = @(x) exp(-x' * A * x);
+            facgstar = @(x) (x' * Omega * x)^(-q/2);
+            while(i<=n)
+                % draw x from angular central Gaussian
+                y = mvnrnd(zeros(this.dim,1), inv(Omega))';
+                x = y/norm(y);                
+                % check rejection
+                W = rand(1);
+                if W < fbingstar(x) /(Mbstar * facgstar(x));
+                    s(:,i) = x; 
+                    i = i + 1;
+                else
+                    nReject = nReject + 1;
+                end
+            end
+            %nReject
+        end
                 
-        function X = sample(this, n)
+        function X = sampleGlover(this, n)
             % Generate samples from Bingham distribution
-            % based on bingham library
+            % based on Glover's implementation in libBingham
             % uses Metropolis-Hastings
             % see http://en.wikipedia.org/wiki/Metropolis-Hastings_algorithm
+            %
+            % The implementation has a bug because it just repeats the
+            % previos sample if a sample is rejected.
             %
             % Parameters:
             %   n (scalar)
             %       number of samples to generate
             % Returns:
-            %   X (d x n matrix)
+            %   X (dimx n matrix)
             %       generated samples (one sample per column)
-        
-            % based on Glover's implementation in libBingham
+            
             burnin = 5;
             samplerate = 10; 
 
             x = this.mode();
             z = sqrt(-1./(this.Z - 1));
 
-            t = this.pdf(x);  % target
-            p = acgpdf_pcs(x', z, this.M);  % proposal
+            target = this.pdf(x);  % target
+            proposal = acgpdf_pcs(x', z, this.M);  % proposal
 
-            X2 = acgrnd_pcs(z, this.M, n*samplerate+burnin);
-            T2 = this.pdf(X2');
-            P2 = acgpdf_pcs(X2, z, this.M);
+            X2 = (randn(n*samplerate+burnin,this.dim).*repmat(z',[n*samplerate+burnin,1]))*this.M'; % sample Gaussian
+            X2 = X2 ./ repmat(sqrt(sum(X2.^2,2)), [1 this.dim]); % normalize
+            
+            Target2 = this.pdf(X2');
+            Proposal2 = acgpdf_pcs(X2, z, this.M);
 
             nAccepts = 0;
             for i=1:n*samplerate+burnin
-                x2 = X2(i,:);
-
-                x2 = x2/norm(x2);
-                t2 = T2(i);
-                p2 = P2(i); 
-                a1 = t2 / t;
-                a2 = p / p2;
-                a = a1*a2;
+                a = Target2(i) / target * proposal / Proposal2(i);
                 if a > rand()
-                    x = x2;
-                    p = p2;
-                    t = t2;
+                    x = X2(i,:);
+                    proposal = Proposal2(i);
+                    target =  Target2(i);
                     nAccepts = nAccepts + 1;
                 end
                 X(i,:) = x;
@@ -296,13 +346,13 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   weights (1 x ... vector)
             %     weight > 0 for each sample (weights sum to one)
             if nargin < 2 % default value for lambda
-                if this.d == 2 
+                if this.dim == 2 
                     lambda = 'uniform';
                 else
                     lambda = 0.5;
                 end
             end
-            if strcmp(lambda,'uniform') && this.d == 2
+            if strcmp(lambda,'uniform') && this.dim == 2
                 % uniform weights can only be guaranteed for d=2
                 B = BinghamDistribution(this.Z, eye(2,2));
                 S = B.moment();
@@ -314,15 +364,15 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 weights = [1/3, 1/3, 1/3];
             else
                 assert (lambda>=0 && lambda <=1);
-                B = BinghamDistribution(this.Z, eye(this.d,this.d));
+                B = BinghamDistribution(this.Z, eye(this.dim,this.dim));
                 S = B.moment(); 
-                samples = zeros(2*this.d-1,this.d);
-                weights = zeros(1, 2*this.d-1);
-                p = zeros(1, this.d-1);
-                alpha = zeros(1, this.d-1);
+                samples = zeros(2*this.dim-1,this.dim);
+                weights = zeros(1, 2*this.dim-1);
+                p = zeros(1, this.dim-1);
+                alpha = zeros(1, this.dim-1);
                 samples(1,end) = 1; %sample at mode
-                for i=1:this.d-1
-                    p(i) = S(i,i) + (1-lambda)*(S(end,end)/(this.d-1));
+                for i=1:this.dim-1
+                    p(i) = S(i,i) + (1-lambda)*(S(end,end)/(this.dim-1));
                     alpha(i) = asin(sqrt(S(i,i)/p(i)));
                     samples(2*i,end) = cos(alpha(i));
                     samples(2*i+1,end) = cos(alpha(i));
@@ -350,8 +400,8 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   samples (d x n  matrix)
             %     generated samples (one sample per column)
             %   weights (1 x n vector)            
-            s = mvnrnd(zeros(1,this.d), eye(this.d), n)';
-            s = s./repmat(sqrt(sum(s.^2,1)),this.d, 1);
+            s = mvnrnd(zeros(1,this.dim), eye(this.dim), n)';
+            s = s./repmat(sqrt(sum(s.^2,1)),this.dim, 1);
             
             w = this.pdf(s);
             w = w/sum(w); % normalize weights
@@ -367,7 +417,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   alpha (scalar)
             %       the confidence interval ranges from mode-alpha to
             %       mode+alpha
-            if this.d==2
+            if this.dim==2
                 assert(p>0)
                 assert(p<1)
                 f = @(phi) this.pdf([cos(phi); sin(phi)]);
@@ -393,7 +443,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 angle = false;
             end
             if angle
-                assert(this.d==2)
+                assert(this.dim==2)
                 m = this.mode();
                 mAngle = atan2(m(2),m(1));
                 
@@ -406,7 +456,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 % numerical-integration-based solution
                 P = 2*integral(@(phi) this.pdf([cos(mAngle+phi);sin(mAngle+phi)]).*phi.^2, -pi/2, +pi/2);
             else
-                if this.d==2
+                if this.dim==2
                     % numerical-integration-based solution:
                     m = this.mode();
                     mAngle = atan2(m(2),m(1));
@@ -812,23 +862,14 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
     end  
 end
 
-function P = acgpdf_pcs(X,z,V) %taken from libBingham
-    %P = acgpdf_pcs(X,z,V) -- z and V are the sqrt(eigenvalues) and
+function P = acgpdf_pcs(X,z,M) %taken from libBingham
+    %P = acgpdf_pcs(X,z,;) -- z and M are the sqrt(eigenvalues) and
     %eigenvectors of the covariance matrix; x's are in the rows of X
 
-    S_inv = V*diag(1./(z.^2))*V';
+    S_inv = M*diag(1./(z.^2))*M';
 
     d = size(X,2);
     P = repmat(1 / (prod(z) * BinghamDistribution.computeUnitSphereSurface(d)), [size(X,1),1]);
     md = sum((X*S_inv).*X, 2);  % mahalanobis distance
     P = P .* md.^(-d/2);
-end
-
-function X = acgrnd_pcs(z,V,n) %taken from libBingham
-    %X = acgrnd_pcs(z,V,n) -- z and V are the sqrt(eigenvalues) and
-    %eigenvectors of the covariance matrix
-
-    d = length(z);
-    X = (randn(n,d).*repmat(z',[n,1]))*V';
-    X = X ./ repmat(sqrt(sum(X.^2,2)), [1 d]);
 end

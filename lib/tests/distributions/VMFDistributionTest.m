@@ -14,7 +14,7 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyClass(vmf, 'VMFDistribution');
             testCase.verifyEqual(vmf.mu, mu);
             testCase.verifyEqual(vmf.kappa, kappa);
-            testCase.verifyEqual(vmf.d, length(mu));
+            testCase.verifyEqual(vmf.dim, length(mu));
             
             %% test pdf
             x = 0:6;
@@ -75,7 +75,7 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyClass(vmf, 'VMFDistribution');
             testCase.verifyEqual(vmf.mu, mu);
             testCase.verifyEqual(vmf.kappa, kappa);
-            testCase.verifyEqual(vmf.d, length(mu));
+            testCase.verifyEqual(vmf.dim, length(mu));
 
             %% test integral
             testCase.verifyEqual(vmf.integral(), 1, 'RelTol', 1E-5);
@@ -131,7 +131,7 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyClass(vmf, 'VMFDistribution');
             testCase.verifyEqual(vmf.mu, mu);
             testCase.verifyEqual(vmf.kappa, kappa);
-            testCase.verifyEqual(vmf.d, length(mu));
+            testCase.verifyEqual(vmf.dim, length(mu));
 
             %% test integral
             testCase.verifyEqual(vmf.integral(), 1, 'RelTol', 1E-5);
