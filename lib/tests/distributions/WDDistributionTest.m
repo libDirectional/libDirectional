@@ -57,6 +57,7 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(same.trigonometricMoment(1), wd.trigonometricMoment(1));
             shiftOffset = 1.4;
             shifted = wd.applyFunction(@(x) x + shiftOffset);
+            testCase.verifyClass(shifted, 'WDDistribution');
             shiftedMu = shifted.toWN().mu;
             originalMu = wnMoment.mu;
             testCase.verifyEqual(shiftOffset, abs(shiftedMu - originalMu), 'RelTol', 1E-10);
@@ -72,6 +73,12 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             %% Kuiper's test
             t = wd.kuiperTest(wnMoment);
             testCase.verifyGreaterThan(t,0);
+            
+            %% toPWC
+            n = 10;
+            pwc = wd.toPWC(n);
+            testCase.verifyClass(pwc, 'PWCDistribution');
+            testCase.verifySize(pwc.w, [1,n]);
             
             %% unwrapping EM
             wnUnwrap = wd.toWNunwrappingEM();
@@ -114,5 +121,16 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             warning('on','ENTROPY:DISCRETE');
             testCase.verifyGreaterThanOrEqual(e, 0);
         end
+        
+        function testShift(testCase)
+            d = [0.5,3,4,6,6];
+            w = [0.1 0.1 0.1 0.1 0.6];
+            twd = WDDistribution(d,w);
+            s = 6;
+            twdShifted = twd.shift(s);
+            testCase.verifyClass(twdShifted, 'WDDistribution');
+            testCase.verifyEqual(twd.w, twdShifted.w);
+            testCase.verifyEqual(twd.d, mod(twdShifted.d - repmat(s,1,size(d,2)),2*pi), 'RelTol', 1E-10);
+        end        
     end
 end

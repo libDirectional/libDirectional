@@ -21,7 +21,7 @@ classdef FourierSqrtFilterTest < matlab.unittest.TestCase
             filter=FourierSqrtFilter(101);
             vm=VMDistribution(3,2);
             filter.predictIdentity(vm);
-            fd1=FourierDistribution.fromDistribution(CUDistribution(),101,'sqrt');
+            fd1=FourierDistribution.fromDistribution(CircularUniformDistribution(),101,'sqrt');
             fd2=fd1.convolve(FourierDistribution.fromDistribution(vm,101,'sqrt'));
             testCase.verifyLength(filter.fd.a,51);
             testCase.verifyLength(filter.fd.b,50);
@@ -35,7 +35,7 @@ classdef FourierSqrtFilterTest < matlab.unittest.TestCase
             vmMultiply=VMDistribution(3,2);
             vmFilter=VMDistribution(0,2);
             filter.updateIdentity(vmFilter,3);
-            fd1=FourierDistribution.fromDistribution(CUDistribution(),101,'sqrt');
+            fd1=FourierDistribution.fromDistribution(CircularUniformDistribution(),101,'sqrt');
             fd2=fd1.multiply(FourierDistribution.fromDistribution(vmMultiply,101,'sqrt'));
             fd3=fd2.truncate(101);
             testCase.verifyLength(filter.fd.a,51);

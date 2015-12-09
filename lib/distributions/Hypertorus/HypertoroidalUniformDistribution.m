@@ -6,8 +6,16 @@ classdef HypertoroidalUniformDistribution < AbstractHypertoroidalDistribution
             this.dim = dim;
         end
         
-        function vals = pdf(this,xa)
-            vals = 1/(2*pi)^this.dim*ones(1,size(xa,2));
+        function p = pdf(this,xa)
+            % Evaluate pdf at each column of xa.
+            %
+            % Parameters:
+            %   xa (dim x n)
+            %       n locations where to evaluate the pdf
+            % Returns:
+            %   p (1 x n)
+            %       value of the pdf at each location            
+            p = 1/(2*pi)^this.dim*ones(1,size(xa,2));
         end
         
         function m = trigonometricMoment(this, n)
@@ -29,7 +37,7 @@ classdef HypertoroidalUniformDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   result (scalar)
             %       entropy of the distribution
-            result = log(2*pi);
+            result = this.dim * log(2*pi);
         end
         
         function m = circularMean(this)
@@ -52,6 +60,39 @@ classdef HypertoroidalUniformDistribution < AbstractHypertoroidalDistribution
             %   s (dim x n)
             %       n samples on the hypertorus
             s = 2*pi*rand(this.dim,n);
-        end        
+        end
+        
+        function hu = shift(this, shiftAngles)
+            % Shift distribution by the given angles
+            %
+            % Parameters:
+            %   shiftAngles (dim x 1 column vector) 
+            %       angles to shift by
+            % Returns:
+            %   hd (HypertoroidalUniformDistribution)
+            %       shifted distribution
+            assert(all(size(shiftAngles) == [this.dim, 1]));
+            
+            hu = this;
+        end
+    end
+       
+    methods (Sealed)
+        function r = integral(this, l, r)
+            % Calculates the integral of the pdf from l to r
+            %
+            % Parameters:
+            %   l (dim x 1 column vector)
+            %       left bound of integral in each dimension, default 0
+            %   r (dim x 1 column vector)
+            %       right bound of integral in each dimension, default 2*pi      
+            if nargin < 2;  l = zeros(this.dim,1); end
+            if nargin < 3;  r = 2*pi*ones(this.dim,1); end
+            assert(all(size(l) == [this.dim, 1]));
+            assert(all(size(r) == [this.dim, 1]));     
+            
+            volume = prod(r - l);
+            r = 1/(2*pi)^this.dim * volume;
+        end
     end 
 end

@@ -1,9 +1,9 @@
-classdef GeneralCircularMixtureTest < matlab.unittest.TestCase
+classdef CircularMixtureTest < matlab.unittest.TestCase
     properties
     end
     
     methods (Test)                                
-        function testGeneralCircularMixture(testCase)
+        function testCircularMixture(testCase)
             mu1 = 3;
             sigma = 1.5;
             wn = WNDistribution(mu1,sigma);
@@ -12,8 +12,10 @@ classdef GeneralCircularMixtureTest < matlab.unittest.TestCase
             vm = VMDistribution(mu2,kappa);
             w1 = 0.3;
             w2 = 1-w1;
-            mixture = GeneralCircularMixture({wn, vm},[w1, w2]);
-            
+            mixture = CircularMixture({wn, vm},[w1, w2]);
+            testCase.verifyClass(mixture.dists,'cell');
+            testCase.verifyNumElements(mixture.dists,2);
+            testCase.verifyTrue(isa(mixture.dists{1},'AbstractCircularDistribution'));
             %% test pdf
             for x= 0:1:2*pi
                 testCase.verifyEqual(mixture.pdf(x), w1*wn.pdf(x)+w2*vm.pdf(x), 'RelTol', 1E-10);

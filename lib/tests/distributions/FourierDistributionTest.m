@@ -105,25 +105,25 @@ classdef FourierDistributionTest< matlab.unittest.TestCase
             end
             warning(warningSettings);
         end
-        function testCUToFourierId(testCase)
-            dist=CUDistribution();
+        function testCircularUniformToFourierId(testCase)
+            dist=CircularUniformDistribution();
             FourierDistributionTest.testFourierConversion(testCase,dist,101,'identity',1E-8);
         end
-        function testCUToFourierSqrt(testCase)
-            dist=CUDistribution();
+        function testCircularUniformToFourierSqrt(testCase)
+            dist=CircularUniformDistribution();
             FourierDistributionTest.testFourierConversion(testCase,dist,101,'sqrt',1E-8);
         end
         function testGCMToFourierId(testCase)
             vm=VMDistribution(1,2);
             wn=WNDistribution(2,1);
-            dist=GeneralCircularMixture({vm,wn},[0.3,0.7]);
+            dist=CircularMixture({vm,wn},[0.3,0.7]);
             FourierDistributionTest.testFourierConversion(testCase,dist,101,'identity',1E-8);
         end
         function testGCMToFourierSqrt(testCase)
             warningSettings=warning('off','Conversion:NoFormulaSqrt');
             vm=VMDistribution(1,2);
             wn=WNDistribution(2,1);
-            dist=GeneralCircularMixture({vm,wn},[0.3,0.7]);
+            dist=CircularMixture({vm,wn},[0.3,0.7]);
             FourierDistributionTest.testFourierConversion(testCase,dist,101,'sqrt',1E-8);
             warning(warningSettings);
         end

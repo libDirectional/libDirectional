@@ -1,4 +1,4 @@
-classdef WDDistribution < AbstractCircularDistribution
+classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribution
     % Wrapped Dirac distribution (i.e., discrete distribution)
     % with Dirac positions d and weights w
     %
@@ -7,8 +7,7 @@ classdef WDDistribution < AbstractCircularDistribution
     % Proceedings of the 2013 American Control Conference (ACC 2013), Washington D. C., USA, June 2013
     
     properties
-        d
-        w
+
     end
     
     methods
@@ -21,25 +20,15 @@ classdef WDDistribution < AbstractCircularDistribution
             %   w_ (1 x L)
             %       weights for each Dirac            
             assert(all(size(d_,1)==1), 'd must be a row vector');
-            this.d = mod(d_,2*pi);
-            if (nargin<2)
-                %all diracs have equal weights
-                this.w = ones(size(this.d))/length(this.d);
+            if nargin<2
+                args = {d_};
             else
-                assert(all(size(d_)==size(w_)), 'sizes of d_ and w_ must match');
-                assert(all(w_ >=0), 'weights must be non-negative');
-                assert(sum(w_)>0, 'sum of weights must be larger than zero');
-                this.w = w_/sum(w_);
+                args = {d_, w_};
             end
+            this@HypertoroidalWDDistribution(args{:});
         end
         
-        function p = pdf(this, xa)
-            % Placeholder, pdf does not exist for wrapped Dirac distributions
-            p = 0; %WD does not have a proper pdf
-            warning('PDF:UNDEFINED', 'pdf is not defined')
-        end
-        
-        function val=cdf(this,xa,startingPoint)
+        function val = cdf(this, xa, startingPoint)
             % Evaluate cumulative distribution function 
             %
             % Parameters:
@@ -56,10 +45,10 @@ classdef WDDistribution < AbstractCircularDistribution
             end
             % shift d and xa so that startingPoint is beginning of the 2pi
             % interval
-            dshifted=this.d+(this.d<startingPoint)*2*pi;
-            xamod=mod(xa,2*pi);
-            xamodshift=xamod+(xamod<startingPoint)*2*pi; 
-            val=arrayfun(@(xi)sum(this.w(dshifted<=xi)),xamodshift);
+            dshifted = this.d+(this.d<startingPoint)*2*pi;
+            xamod = mod(xa,2*pi);
+            xamodshift = xamod+(xamod<startingPoint)*2*pi; 
+            val = arrayfun(@(xi)sum(this.w(dshifted<=xi)),xamodshift);
         end
                 
         function m = trigonometricMoment(this,n)
@@ -73,24 +62,7 @@ classdef WDDistribution < AbstractCircularDistribution
             %       n-th trigonometric moment (complex number)
             m = sum(exp(1i*n*this.d).*this.w);
         end
-        
-        function wd=shift(this,angle)
-            wd=WDDistribution(this.d+angle,this.w); % Mod is done in constructor
-        end
-        
-        function m = trigonometricMomentNumerical(this,n)
-            % Disable numerical calculation of trigonometric moments since it relies on the pdf
-            error('not supported');
-        end
-        
-        function d = squaredDistanceNumerical(this, other)
-            error('not supported');
-        end
-        
-        function kld = kldNumerical(this, other)
-            error('not supported');
-        end
-        
+                               
         function v = kuiperTest(this, other)
             % Evaluate Kuiper's test
             %
@@ -117,6 +89,28 @@ classdef WDDistribution < AbstractCircularDistribution
             v = dplus + dminus;
         end
                         
+        
+        function pwc = toPWC(this, n)
+            % Approximate the WD distribution using a piecewise constant
+            % (PWC) distribution
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of intervals to use
+            % Returns:
+            %   pwc (PWCDistribution)
+            %       resulting approximation
+            assert(isscalar(n) && n>=1)
+            
+            wpwc = zeros(1,n);
+            for i=1:n
+                l = PWCDistribution.leftBorder(i,n);
+                r = PWCDistribution.rightBorder(i,n);
+                wpwc(i) = sum(this.w(this.d >= l & this.d < r));
+            end
+            pwc = PWCDistribution(wpwc);
+        end
+                
         function wn = toWNunwrappingEM(this)
             % Obtain a WN by unwrapping and EM
             %
@@ -198,10 +192,6 @@ classdef WDDistribution < AbstractCircularDistribution
             wd = WDDistribution(this.d, wNew .* this.w);
         end
         
-        function result = integralNumerical(this, l, r)
-            error('not supported');
-        end
-        
         function result = integral(this, l, r)
             % Calculates the integral of the pdf from l to r analytically
             %
@@ -243,7 +233,7 @@ classdef WDDistribution < AbstractCircularDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
-            h = stem(this.d, this.w, varargin{:});
+            h = this.plot(varargin{:});
         end
         
         function h = plot2dcircular(this, varargin)
@@ -285,12 +275,7 @@ classdef WDDistribution < AbstractCircularDistribution
         
         function s = sampleCdf(this, n)
             % Disable sampling algorithm relying on cdf
-            error('not supported');
-        end
-        
-        function s = sampleMetropolisHastings(this, n)
-            % Disable sampling algorithm relying on pdf
-            error('not supported');
+            error('PDF:UNDEFINED', 'not supported');
         end
         
         function wd = convolve(this, wd2)
@@ -321,34 +306,6 @@ classdef WDDistribution < AbstractCircularDistribution
             warning('entropy is not defined in a continous sense')
             result = 0;
         end
-        
-        function result = entropy(this)
-            % Calculates the entropy analytically 
-            %
-            % Returns:
-            %   result (scalar)
-            %       entropy of the distribution
-            warning('ENTROPY:DISCRETE','entropy is not defined in a continous sense')
-            % return discrete entropy
-            % The entropy only depends on the weights!
-            result = -sum(this.w.*log(this.w));
-        end
-        
-        function l = logLikelihood(this,samples)
-            % Calculates the log-likelihood of the given samples
-            %
-            % Parameters:
-            %   sampls (1 x n)
-            %       n samples on the circle
-            % Returns:
-            %   l (scalar)
-            %       log-likelihood of obtaining the given samples
-            assert(size(samples,1)>=1);
-            assert(size(samples,2)==1);
-            
-            error('unsupported')
-        end
-    end
-    
+    end   
 end
 

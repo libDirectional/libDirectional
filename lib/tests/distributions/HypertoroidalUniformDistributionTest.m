@@ -16,10 +16,10 @@ classdef HypertoroidalUniformDistributionTest< matlab.unittest.TestCase
                 hud = HypertoroidalUniformDistribution(dim);
                 x = repmat([1 2 3 4 5 6], dim, 1);
 
-                %% test pdf
+                % test pdf
                 testCase.verifyEqual(hud.pdf(x), 1/(2*pi)^dim*ones(1,size(x,2)));
 
-                %% test trigonometric moments
+                % test trigonometric moments
                 testCase.verifyEqual(hud.trigonometricMoment(0),hud.trigonometricMomentNumerical(0),'AbsTol', 1E-10);
                 testCase.verifyEqual(hud.trigonometricMoment(0),ones(dim,1),'RelTol', 1E-10);
 
@@ -32,19 +32,26 @@ classdef HypertoroidalUniformDistributionTest< matlab.unittest.TestCase
                 testCase.verifyEqual(hud.trigonometricMoment(3),hud.trigonometricMomentNumerical(3),'AbsTol', 1E-10);
                 testCase.verifyEqual(hud.trigonometricMoment(3),zeros(dim,1),'RelTol', 1E-10);
 
-                %% test mean
+                % test mean
                 testCase.verifyWarning(@hud.circularMean,'MEAN:UNDEFINED');
 
-                %% test entropy
-                %testCase.verifyEqual(hud.entropy(), hud.entropyNumerical(), 'RelTol', 1E-10);
+                % test entropy
+                testCase.verifyEqual(hud.entropy(), hud.entropyNumerical(), 'RelTol', 1E-10);
 
-                %% test sampling
+                % test sampling
                 n = 10;
                 s = hud.sample(n);
                 testCase.verifyEqual(size(s,1), dim);
                 testCase.verifyEqual(size(s,2), n);
                 testCase.verifyGreaterThanOrEqual(s(:),zeros(size(s(:))));
                 testCase.verifyLessThan(s(:),2*pi*ones(size(s(:))));
+                
+                % test integral 
+                testCase.verifyEqual(hud.integral(), 1,'RelTol', 1E-10);
+                testCase.verifyEqual(hud.integral(zeros(dim,1), 2*pi*ones(dim,1)), 1,'RelTol', 1E-10);
+                testCase.verifyEqual(hud.integral(zeros(dim,1), 6*pi*ones(dim,1)), 3^dim,'RelTol', 1E-10);
+                testCase.verifyEqual(hud.integral(2*pi*ones(dim,1), zeros(dim,1)), (-1)^dim,'RelTol', 1E-10);
+                testCase.verifyEqual(hud.integral((1:dim)', ((1:dim).^2)'),hud.integralNumerical((1:dim)', ((1:dim).^2)'),'RelTol', 1E-10);
             end
         end
     end

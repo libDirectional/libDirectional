@@ -17,7 +17,7 @@ classdef FourierSqrtFilter < AbstractCircularFilter
             % Parameters:
             %   noOfCoefficients (integer > 0)
             %       number of Fourier coefficients to use
-            this.fd=FourierDistribution.fromDistribution(CUDistribution(),noOfCoefficients,'sqrt');
+            this.fd = FourierDistribution.fromDistribution(CircularUniformDistribution(),noOfCoefficients,'sqrt');
         end
         
         function setState(this, fd_)

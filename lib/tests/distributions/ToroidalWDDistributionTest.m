@@ -12,12 +12,14 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
             %% integral
             testCase.verifyError(@twd.integralNumerical, 'PDF:UNDEFINED');
             testCase.verifyEqual(twd.integral, 1, 'RelTol', 1E-10)
-            testCase.verifyEqual(twd.integral(0, 2*pi, 0, pi) + twd.integral(0, 2*pi, pi, 2*pi), 1, 'RelTol', 1E-10)
-            testCase.verifyEqual(twd.integral(0, 2*pi, 0, pi) + twd.integral(2*pi, 0, 2*pi, pi), 1, 'RelTol', 1E-10)
-            testCase.verifyEqual(twd.integral(0, 2*pi, 0, pi) + twd.integral(0, 2*pi, pi, 0), 0, 'RelTol', 1E-10)
-            testCase.verifyEqual(twd.integral(0, pi, 0, pi) + twd.integral(0, pi, pi, 2*pi) + twd.integral(pi, 2*pi, 0, pi) + twd.integral(pi, 2*pi, pi, 2*pi), 1, 'RelTol', 1E-10)
+            testCase.verifyEqual(twd.integral([0;0], [pi;2*pi]) + twd.integral([pi;0], [2*pi; 2*pi]), 1, 'RelTol', 1E-10)
+            testCase.verifyEqual(twd.integral([0;0], [2*pi;pi]) + twd.integral([0;pi], [2*pi; 2*pi]), 1, 'RelTol', 1E-10)
+            testCase.verifyEqual(twd.integral([0;0], [2*pi;pi]) + twd.integral([0;pi], [2*pi; 0]), 0, 'RelTol', 1E-10)
+            testCase.verifyEqual(twd.integral([0;0], [pi;pi]) + twd.integral([0; pi], [pi;2*pi]) + twd.integral([pi;0], [2*pi;pi]) + twd.integral([pi;pi],[2*pi;2*pi]), 1, 'RelTol', 1E-10)
+            testCase.verifyEqual(twd.integral([0;0], [d(1,3);2*pi]) + twd.integral([d(1,3);0], [2*pi; 2*pi]), 1, 'RelTol', 1E-10) % check integration border on Dirac
+            testCase.verifyEqual(twd.integral([0;0], [2*pi;d(2,3)]) + twd.integral([0;d(2,3)], [2*pi; 2*pi]), 1, 'RelTol', 1E-10) % check integration border on Dirac
             for i=1:size(d,2)
-                testCase.verifyEqual(twd.integral(d(1,i), d(1,i)+0.1, d(2,i), d(2,i)+0.1), w(i));
+                testCase.verifyEqual(twd.integral([d(1,i);d(2,i)],[d(1,i)+0.1; d(2,i)+0.1]), w(i));
             end
             
             %% sanity check
@@ -140,5 +142,17 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
             wNew = twd.d(1,:).*twd.w;
             testCase.verifyEqual(twdRew.w, wNew/sum(wNew));
         end
+        
+        function testShift(testCase)
+            d = [0.5,3,4,6,6;
+                 2,2,5,3,0];
+            w = [0.1 0.1 0.1 0.1 0.6];
+            twd = ToroidalWDDistribution(d,w);
+            s = [-3; 6];
+            twdShifted = twd.shift(s);
+            testCase.verifyClass(twdShifted, 'ToroidalWDDistribution');
+            testCase.verifyEqual(twd.w, twdShifted.w);
+            testCase.verifyEqual(twd.d, mod(twdShifted.d - repmat(s,1,size(d,2)),2*pi), 'RelTol', 1E-10);
+        end        
     end
 end

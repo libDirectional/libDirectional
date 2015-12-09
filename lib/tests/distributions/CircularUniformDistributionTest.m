@@ -1,10 +1,10 @@
-classdef CUDistributionTest< matlab.unittest.TestCase    
+classdef CircularUniformDistributionTest< matlab.unittest.TestCase    
     properties
     end
     
     methods (Test)
-        function testCUDistribution(testCase)
-            cu = CUDistribution();
+        function testCircularUniformDistribution(testCase)
+            cu = CircularUniformDistribution();
             x = [1 2 3 4 5 6];
             
             %% test pdf

@@ -55,6 +55,11 @@ classdef AbstractToroidalDistributionTest< matlab.unittest.TestCase
            %% test integral numerical
            testCase.verifyEqual(twn.integral, 1, 'RelTol', 1E-9);
            testCase.verifyEqual(twn.integralNumerical, 1, 'RelTol', 1E-9);
+           i1 = twn.integralNumerical([0;0],[1;2]);
+           i2 = twn.integralNumerical([1;0],[2*pi;2]);
+           i3 = twn.integralNumerical([0;2],[1;2*pi]);
+           i4 = twn.integralNumerical([1;2],[2*pi;2*pi]);
+           testCase.verifyEqual(i1+i2+i3+i4 , 1, 'RelTol', 1E-9);
            
            %% test sampling
            n = 10;

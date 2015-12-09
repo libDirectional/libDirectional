@@ -63,5 +63,44 @@ classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
             wNew = twd.d(1,:).*twd.w;
             testCase.verifyEqual(twdRew.w, wNew/sum(wNew));
         end
+        
+        function testShift(testCase)
+            d = [0.5,3,4,6,6;
+                 2,2,5,3,0;
+                 0.5,0.2,5.8,4.3,1.2];
+            w = [0.1 0.1 0.1 0.1 0.6];
+            twd = HypertoroidalWDDistribution(d,w);
+            s = [1; -3; 6];
+            twdShifted = twd.shift(s);
+            testCase.verifyClass(twdShifted, 'HypertoroidalWDDistribution');
+            testCase.verifyEqual(twd.w, twdShifted.w);
+            testCase.verifyEqual(twd.d, mod(twdShifted.d - repmat(s,1,size(d,2)),2*pi), 'RelTol', 1E-10);
+        end
+        
+        function testToWD(testCase)
+            rng default
+            n = 20;
+            d = 2*pi*rand(1,n);
+            w = rand(1,n);
+            hwd = HypertoroidalWDDistribution(d,w);
+            wd1 = WDDistribution(d,w);
+            wd2 = hwd.toWD();
+            testCase.verifyClass(wd2, 'WDDistribution');
+            testCase.verifyEqual(wd1.d, wd2.d, 'RelTol', 1E-10);
+            testCase.verifyEqual(wd1.w, wd2.w, 'RelTol', 1E-10);
+        end
+        
+        function testToToroidalWD(testCase)
+            rng default
+            n = 20;
+            d = 2*pi*rand(2,n);
+            w = rand(1,n);
+            hwd = HypertoroidalWDDistribution(d,w);
+            twd1 = ToroidalWDDistribution(d,w);
+            twd2 = hwd.toToroidalWD();
+            testCase.verifyClass(twd2, 'ToroidalWDDistribution');
+            testCase.verifyEqual(twd1.d, twd2.d, 'RelTol', 1E-10);
+            testCase.verifyEqual(twd1.w, twd2.w, 'RelTol', 1E-10);
+        end        
     end
 end

@@ -1,14 +1,14 @@
-classdef GeneralHypertoroidalMixture < AbstractHypertoroidalDistribution
-    % Mixture of multiple circular distributions. The distributions may belong
+classdef HypertoroidalMixture < AbstractHypertoroidalDistribution
+    % Mixture of multiple hypertoroidal distributions. The distributions may belong
     % to different classes.
     
     properties
         dists     % Cell array of hypertoroidal distributions
-        w       % Weights
+        w         % Weights
     end
     
     methods
-        function this = GeneralHypertoroidalMixture(dists, w)
+        function this = HypertoroidalMixture(dists, w)
             % Constructor
             assert(isa(dists,'cell') && all(cellfun(@(dist)isa(dist,'AbstractHypertoroidalDistribution'),dists)),...
                 'dists must be a cell array of hypertoroidal distributions');
@@ -52,6 +52,30 @@ classdef GeneralHypertoroidalMixture < AbstractHypertoroidalDistribution
                 m = m + this.w(i)*this.dists{i}.trigonometricMoment(n); % Calculate moments using moments of each component
             end
         end
+        
+        function cm = toCircularMixture(this)
+            % Convert to a circular mixture (only in 1D case)
+            %
+            % Returns:
+            %   cm (CircularMixture)
+            %       CircularMixture with same parameters
+            assert(this.dim == 1);
+            % This also requires that all mixture components are circular
+            % distributions rather than hypertoroidal distributions!
+            cm = CircularMixture(this.dists, this.w);
+        end
+        
+        function tm = toToroidalMixture(this)
+            % Convert to a toroidal mixture (only in 2D case)
+            %
+            % Returns:
+            %   tm (ToroidalMixture)
+            %       ToroidalMixture with same parameters
+            assert(this.dim == 2);
+            % This also requires that all mixture components are toroidal
+            % distributions rather than hypertoroidal distributions!
+            tm = ToroidalMixture(this.dists, this.w);
+        end            
     end
     methods (Sealed)
         function s = sample(this, n)

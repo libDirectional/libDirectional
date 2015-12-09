@@ -15,7 +15,7 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             %       Dirac locations in [0,2pi)^2
             %   w_ (1 x L)
             %       weights for each Dirac  
-            assert(size(d_,1)==2);
+            assert(size(d_,1)==2, 'Size of d incorrect');
             if nargin==1
                 w_= ones(1,size(d_,2))/size(d_,2);
             end
@@ -41,64 +41,43 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             m = this.circularMean();
             pm = sum(this.w.* exp(1i*n*(this.d(1,:)-m(1))).* exp(1i*n*(this.d(2,:)-m(2))));
         end
-        
-        function result = integralNumerical(this, l1, r1, l2, r2)
-            error('PDF:UNDEFINED', 'not supported')
-        end
-        
+                
         function covariance4DNumerical(this)
             error('PDF:UNDEFINED', 'not supported')
         end
         
-        function result = integral(this, l1, r1, l2, r2)
+        function result = integral(this, l, r)
             % Calculates the integral of the pdf from l to r
             %
             % Parameters:
-            %   l1 (scalar)
-            %       left bound of integral in first dimension, default 0
-            %   r1 (scalar)
-            %       right bound of integral in first dimension, default 2*pi          
-            %   l2 (scalar)
-            %       left bound of integral in second dimension, default 0
-            %   r2 (scalar)
-            %       right bound of integral in second dimension, default 2*pi          
+            %   l (2 x 1 column vector)
+            %       left bound of integral in each dimension, default 0
+            %   r (2 x 1 column vector)
+            %       right bound of integral in each dimension, default 2*pi           
             % Returns:
             %   result (scalar)
             %       value of the integral
-            
-            if nargin < 2;  l1 = 0;  end
-            if nargin < 3;  r1 = 2*pi; end
-            if nargin < 4;  l2 = 0; end
-            if nargin < 5;  r2 = 2*pi; end
+            if nargin < 2;  l = [0; 0]; end
+            if nargin < 3;  r = [2*pi; 2*pi]; end
+            assert(all(size(l) == [this.dim, 1]));
+            assert(all(size(r) == [this.dim, 1]));
             
             % todo handle case where [l,r] spans more than 2pi
-            assert(l1>=0 && l1<=2*pi);
-            assert(r1>=0 && r1<=2*pi);
-            assert(l2>=0 && l2<=2*pi);
-            assert(r2>=0 && r2<=2*pi);
+            assert(l(1)>=0 && l(1)<=2*pi);
+            assert(r(1)>=0 && r(1)<=2*pi);
+            assert(l(2)>=0 && l(2)<=2*pi);
+            assert(r(2)>=0 && r(2)<=2*pi);
             
-            if r1 < l1
-               result = -this.integral(r1,l1, l2, r2); %swap l1 and r1
-            elseif r2 < l2 
-                result = -this.integral(l1,r1, r2, l2); %swap l2 and r2
+            if r(1) < l(1)
+                result = -this.integral([r(1); l(2)], [l(1); r(2)]); %swap l1 and r1
+            elseif r(2) < l(2) 
+                result = -this.integral([l(1); r(2)], [r(1); l(2)]); %swap l2 and r2
             else
                 %now we can guarantee l1<=r1 and l2<=r2
-                result =  sum(this.w(this.d(1,:)>=l1 & this.d(1,:)<=r1 & this.d(2,:)>=l2 & this.d(2,:)<=r2 ));
+                result =  sum(this.w(this.d(1,:)>=l(1) & this.d(1,:)<r(1) & this.d(2,:)>=l(2) & this.d(2,:)<r(2) ));
             end
         end
-        
-        function h = plot(this, varargin)
-            % Create a R^2->R plot 
-            %
-            % Parameters:
-            %   varargin
-            %       parameters to be passed to stem command
-            % Returns:
-            %   p (scalar)
-            %       plot handle
-            h = stem3(this.d(1,:),this.d(2,:), this.w, varargin{:});
-        end
-        
+                
         function p = plotCylinder(this, varargin)
             % Create a cylinder plot 
             %

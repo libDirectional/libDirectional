@@ -316,10 +316,18 @@ classdef FourierDistribution < AbstractCircularDistribution
         end
         
         function f = shift(this, angle)
-            % Returns Fourier Distribution which is shifted (towards positivity) by a given angle
-            anew=[this.a(1),arrayfun(@(k)this.a(k+1)*cos(-k*angle)+this.b(k)*sin(-k*angle),1:length(this.b))];
-            bnew=arrayfun(@(k)this.b(k)*cos(-k*angle)-this.a(k+1)*sin(-k*angle),1:length(this.b));
-            f=FourierDistribution(anew,bnew,this.transformation);
+            % Shift distribution by the given angle
+            %
+            % Parameters:
+            %   shiftAngles (scalar) 
+            %       angle to shift by
+            % Returns:
+            %   hd (FourierDistribution)
+            %       shifted distribution
+            assert(isscalar (angle));
+            anew = [this.a(1),arrayfun(@(k)this.a(k+1)*cos(-k*angle)+this.b(k)*sin(-k*angle),1:length(this.b))];
+            bnew = arrayfun(@(k)this.b(k)*cos(-k*angle)-this.a(k+1)*sin(-k*angle),1:length(this.b));
+            f = FourierDistribution(anew, bnew, this.transformation);
         end
     end
     
@@ -491,7 +499,7 @@ classdef FourierDistribution < AbstractCircularDistribution
                         otherwise 
                             error('Transformation not recognized or unsupported');
                     end
-                case 'CUDistribution'
+                case 'CircularUniformDistribution'
                     switch desiredTransformation
                         case 'sqrt'
                             a=[sqrt(2/pi),zeros(1,lastk)];
@@ -519,7 +527,7 @@ classdef FourierDistribution < AbstractCircularDistribution
                         otherwise 
                             error('Transformation not recognized or unsupported');
                     end
-                case 'GeneralCircularMixture'
+                case 'CircularMixture'
                     switch desiredTransformation
                         case 'sqrt'
                             warning('Conversion:NoFormulaSqrt','No explicit formula available, using FFT to get sqrt');
@@ -527,8 +535,8 @@ classdef FourierDistribution < AbstractCircularDistribution
                         case 'identity'
                             a=zeros(1,lastk+1);
                             b=zeros(1,lastk);
-                            for i=1:length(distribution.cds)
-                                fCurr=FourierDistribution.fromDistribution(distribution.cds{i},noOfCoefficients,desiredTransformation);
+                            for i=1:length(distribution.dists)
+                                fCurr=FourierDistribution.fromDistribution(distribution.dists{i},noOfCoefficients,desiredTransformation);
                                 a=a+fCurr.a*distribution.w(i);
                                 b=b+fCurr.b*distribution.w(i);
                             end
