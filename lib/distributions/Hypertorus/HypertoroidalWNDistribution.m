@@ -96,6 +96,26 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             gauss = GaussianDistribution(this.mu, this.C);
         end
         
+        function wn = toWN(this)
+            % Convert to a WN distribution (only in 1D case)
+            %
+            % Returns:
+            %   wn (WNDistribution)
+            %       WNDistribution with same parameters
+            assert(this.dim == 1);
+            wn = WNDistribution(this.mu, sqrt(this.C));
+        end
+        
+        function twn = toToroidalWN(this)
+            % Convert to a toroidal WN distribution (only in 2D case)
+            %
+            % Returns:
+            %   twn (ToroidalWNDistribution)
+            %       ToroidalWNDistribution with same parameters
+            assert(this.dim == 2);
+            twn = ToroidalWNDistribution(this.mu, this.C);
+        end
+        
         function hd = shift(this, shiftAngles)
             % Shift distribution by the given angles
             %
@@ -105,7 +125,7 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   hd (HypertoroidalWNDistribution)
             %       shifted distribution
-            assert(all(size(shiftAngles) == size(this.mu)));
+            assert(all(size(shiftAngles) == [this.dim, 1]));
             
             hd = this;
             hd.mu = mod(this.mu+shiftAngles,2*pi);
