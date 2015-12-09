@@ -80,6 +80,7 @@ classdef BayesianComplexWatsonMixtureModelTest < matlab.unittest.TestCase
                 tc.verifyEqual(abs(WSetEstimated(:, k)' * tc.W(:, k))^2, 1, 'AbsTol', 0.1);
             end
         end
+        
         function em_algorithm_test_convergence(tc)
             
             B_init = eye(tc.D) + (tc.W(:, 1) * tc.W(:, 1)' + ...
@@ -120,6 +121,14 @@ classdef BayesianComplexWatsonMixtureModelTest < matlab.unittest.TestCase
                 WSetEstimated(:, k) = eigenVectors(:, index);
                 tc.verifyEqual(abs(WSetEstimated(:, k)' * tc.W(:, k))^2, 1, 'AbsTol', 0.1);
             end
+        end
+        
+        function testInstantiation(testCase)
+            B = 2;
+            concentrations = 3;
+            alpha = 4;
+            bcWMM = BayesianComplexWatsonMixtureModel(B, concentrations, alpha);
+            testCase.verifyClass(bcWMM, 'BayesianComplexWatsonMixtureModel');
         end
     end
 end
