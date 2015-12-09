@@ -1,5 +1,5 @@
-classdef CircularParticleFilter < AbstractCircularFilter
-    % A particle filter on the circle based on the wrapped Dirac
+classdef CircularParticleFilter < AbstractCircularFilter & HypertoroidalParticleFilter
+    % A SIR particle filter on the circle based on the wrapped Dirac
     % distribution.
     %
     % Gerhard Kurz, Igor Gilitschenski, Uwe D. Hanebeck,
@@ -7,7 +7,6 @@ classdef CircularParticleFilter < AbstractCircularFilter
     % arXiv preprint: Systems and Control (cs.SY), January 2015.
         
     properties
-        wd
     end
     
     methods
@@ -16,7 +15,10 @@ classdef CircularParticleFilter < AbstractCircularFilter
             %
             % Parameters:
             %   nParticles (integer > 0)
-            %       number of particles to use            
+            %       number of particles to use         
+            assert(isscalar(nParticles));
+            assert(nParticles >= 1);
+            this@HypertoroidalParticleFilter(nParticles, 1);
             wd_ = WDDistribution((0:nParticles-1)/nParticles*2*pi);
             this.setState(wd_)
         end
@@ -35,6 +37,14 @@ classdef CircularParticleFilter < AbstractCircularFilter
         end
         
         function predictIdentity(this, noiseDistribution)
+            % Predicts assuming identity system model, i.e.,
+            % x(k+1) = x(k) + w(k)    mod 2pi,
+            % where w(k) is additive noise given by noiseDistribution.
+            %
+            % Parameters:
+            %   noiseDistribution (AbstractCircularDistribution)
+            %       distribution of additive noise
+            assert (isa (noiseDistribution, 'AbstractCircularDistribution'));
             this.predictNonlinear(@(x) x, noiseDistribution);
         end
         
@@ -49,7 +59,7 @@ classdef CircularParticleFilter < AbstractCircularFilter
             %   noiseDistribution (AbstractCircularDistribution)
             %       distribution of additive noise
             
-            assert (isa (noiseDistribution, 'AbstractCircularDistribution'));
+            assert(isa (noiseDistribution, 'AbstractCircularDistribution'));
             assert(isa(f,'function_handle'));
             %apply f
             wdF = this.wd.applyFunction(f);           
@@ -93,6 +103,17 @@ classdef CircularParticleFilter < AbstractCircularFilter
         end
         
         function updateIdentity(this, noiseDistribution, z)
+            % Updates assuming identity measurement model, i.e.,
+            % z(k) = x(k) + v(k)    mod 2pi,
+            % where v(k) is additive noise given by noiseDistribution.
+            %
+            % Parameters:
+            %   noiseDistribution (AbstractCircularDistribution)
+            %       distribution of additive noise
+            %   z (scalar)
+            %       measurement in [0, 2pi)
+            assert(isa(noiseDistribution, 'AbstractCircularDistribution'));
+            assert(isscalar(z));
             this.updateNonlinear(LikelihoodFactory.additiveNoiseLikelihood(@(x) x, noiseDistribution), z);
         end
         
@@ -118,15 +139,6 @@ classdef CircularParticleFilter < AbstractCircularFilter
                 this.wd = this.wd.reweigh(@(x) likelihood(z,x));
             end
             this.wd = WDDistribution(this.wd.sample(length(this.wd.d))); %use SIR.
-        end
-        
-        function wd = getEstimate(this)
-            % Return current estimate 
-            %
-            % Returns:
-            %   wd (WDDistribution)
-            %       current estimate            
-            wd = this.wd;
         end
     end
     

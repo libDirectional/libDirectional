@@ -1,13 +1,6 @@
-classdef AbstractCircularFilter < handle
+classdef AbstractCircularFilter < AbstractHypertoroidalFilter
     % Abstract base class for filters on the circle (S1, SO(2))
-    
-    properties
-    end
-    
-    methods (Abstract)
-        setState(this, state)
-        est = getEstimate(this)
-    end
-    
+    % parameterized as [0, 2pi)
+        
 end
 
