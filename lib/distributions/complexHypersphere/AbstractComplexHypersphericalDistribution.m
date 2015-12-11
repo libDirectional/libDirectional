@@ -49,7 +49,7 @@ classdef AbstractComplexHypersphericalDistribution
             surfaceArea = 2*pi^dimension / factorial(dimension-1);
         end
         
-        function scatter(Z, labels, normalized)
+        function scatter(Z, labels, normalized, varargin)
             if normalized
                 Z = bsxfun(@times, Z, exp(-1i * angle(Z(1, :))));
             end
@@ -66,8 +66,8 @@ classdef AbstractComplexHypersphericalDistribution
                 else
                     color = colors(mod(labels(i) - 1, size(colors, 1)) + 1, :);
                 end
-                plot(real(Z(:, i)), imag(Z(:, i)), 'color', color);
-                plot(real(Z(1, i)), imag(Z(1, i)), 'o', 'color', color);
+                plot(real(Z(:, i)), imag(Z(:, i)), 'color', color, varargin{:});
+                plot(real(Z(1, i)), imag(Z(1, i)), 'o', 'color', color, varargin{:});
             end
             
             axis equal; grid on; hold off; box on;
