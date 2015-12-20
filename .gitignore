@@ -4,6 +4,8 @@ output
 *.mexa64
 *.mexmaci64
 
+.DS_Store
+
 cBinghamNorm?.m
 cBinghamGradLogNorm?.m
 cBinghamGradNormDividedByNorm?.m
