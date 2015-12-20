@@ -433,7 +433,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             assert(size(weights,2)==n, 'number of weights and samples needs to match');
             assert(abs(sum(weights)-1) < 0.001, 'weights must sum to 1'); %check normalization
             
-            vecSum = sum(samples*diag(weights),2);
+            vecSum = sum(samples.*repmat(weights,d,1),2);
             mu_ = vecSum/norm(vecSum);
             Rbar = norm(vecSum);
             kappa_= VMFDistribution.AdInverse(d, Rbar);
