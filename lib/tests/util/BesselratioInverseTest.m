@@ -16,6 +16,7 @@ classdef BesselratioInverseTest < matlab.unittest.TestCase
                 testCase.verifyEqual(besselratioInverse(0, b0, 'matlabfsolve'), kappa, 'RelTol', 1E-10);
                 testCase.verifyEqual(besselratioInverse(0, b0, 'sra'), kappa, 'RelTol', 1E-10);
                 testCase.verifyEqual(besselratioInverse(0, b0, 'sraamos'), kappa, 'RelTol', 1E-10);
+                testCase.verifyEqual(besselratioInverse(0, b0), kappa, 'RelTol', 1E-10);
                 % v = 1
                 testCase.verifyEqual(besselratioInverse(1, b1, 'amosfsolve'), kappa, 'RelTol', 1E-10);
                 testCase.verifyEqual(besselratioInverse(1, b1, 'matlabfsolve'), kappa, 'RelTol', 1E-10);
@@ -34,6 +35,7 @@ classdef BesselratioInverseTest < matlab.unittest.TestCase
                 % v = 0
                 testCase.verifyEqual(besselratioInverse(0, b0, 'fisher'), kappa, 'RelTol', 1E-2);
                 testCase.verifyEqual(besselratioInverse(0, b0, 'sraamos'), kappa, 'RelTol', 1E-10);
+                testCase.verifyEqual(besselratioInverse(0, b0), kappa, 'RelTol', 1E-10);
                 % v = 1
                 testCase.verifyEqual(besselratioInverse(1, b1, 'sra'), kappa, 'RelTol', 1E-10);
                 % v = 2

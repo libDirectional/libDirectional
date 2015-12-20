@@ -11,17 +11,17 @@ classdef SE2PWDDistributionTest< matlab.unittest.TestCase
             w = w/sum(w);
             pwd = SE2PWDDistribution(d,w);
             
-            %% test mean and maginalization
+            % test mean and maginalization
             mean = pwd.mean4D();
             wd = pwd.marginalizeLinear();
             testCase.verifyEqual(mean(1), real(wd.trigonometricMoment(1)), 'RelTol', 1E-10);
             testCase.verifyEqual(mean(2), imag(wd.trigonometricMoment(1)), 'RelTol', 1E-10);
             
-            %% test covariance
+            % test covariance
             C = pwd.covariance4D;
             testCase.verifyEqual(size(C), [4 4]);
             
-            %% test apply function 
+            % test apply function 
             same = pwd.applyFunction(@(x) x);
             testCase.verifyEqual(pwd.d, same.d);
             testCase.verifyEqual(pwd.w, same.w);
@@ -29,7 +29,7 @@ classdef SE2PWDDistributionTest< matlab.unittest.TestCase
             shifted = pwd.applyFunction(@(x) x + shiftOffset);
             testCase.verifyEqual(shifted.marginalizeLinear.trigonometricMoment(1), pwd.marginalizeLinear.trigonometricMoment(1) .* exp(1i*shiftOffset(1)), 'RelTol', 1E-10);
             
-            %% reweigh
+            % reweigh
             f = @(x) sum(x)==3; %only dirac with sum 3 gets weight
             pwdRew = pwd.reweigh(f);
             testCase.verifyClass(pwdRew, 'SE2PWDDistribution');
@@ -49,7 +49,7 @@ classdef SE2PWDDistributionTest< matlab.unittest.TestCase
             wNew = pwd.d(1,:).*pwd.w;
             testCase.verifyEqual(pwdRew.w, wNew/sum(wNew));
                         
-            %% test sampling
+            % test sampling
             rng default
             n = 10;
             s = pwd.sample(n);

@@ -18,7 +18,7 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
                 si1*si3*rho13, si2*si3*rho23, si3^2];
             pwn = SE2PWNDistribution(mu,C);
             
-            %% test pdf
+            % test pdf
             function p = truePdf(x)
                 p = 0;
                 for k = -20:20
@@ -35,12 +35,12 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
                 testCase.verifyEqual(pwnLargeUncertainty.pdf(mu), pwnLargeUncertainty.pdf(mu + [t,0,0]'), 'RelTol', 1E-10);
             end
 
-            %% test integral
+            % test integral
             if enableExpensive
                 testCase.verifyEqual(pwn.integral, 1, 'RelTol', 1E-5);
             end
             
-            %% test mean and maginalization
+            % test mean and maginalization
             mean = pwn.mean4D();
             wn = pwn.marginalizeLinear();
             gauss = pwn.marginalizeCircular();
@@ -48,17 +48,23 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(mean(2), imag(wn.trigonometricMoment(1)), 'RelTol', 1E-10);
             testCase.verifyEqual(mean(3:4), gauss.mu, 'RelTol', 1E-10);
             
-            %% test covariance
+            % test covariance
             rng default %fix rng to get deterministic test
             testCase.verifyEqual(pwn.covariance4D, pwn.covariance4DNumerical, 'RelTol', 0.3);
             
-            %% test convolution
+            % test convolution
             pwnConv = pwn.convolve(pwn);
             testCase.verifyClass(pwnConv, 'SE2PWNDistribution');
             testCase.verifyEqual(pwnConv.mu, pwn.mu + pwn.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(pwnConv.C, pwn.C + pwn.C, 'RelTol', 1E-10);
             
-            %% test sampling
+            % test toGaussian
+            g = pwn.toGaussian();
+            testCase.verifyClass(g, 'GaussianDistribution');
+            testCase.verifyEqual(g.mu, pwn.mu);
+            testCase.verifyEqual(g.C, pwn.C);            
+            
+            % test sampling
             rng default
             n = 10;
             s = pwn.sample(n);
