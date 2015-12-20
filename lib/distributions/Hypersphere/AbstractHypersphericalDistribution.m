@@ -1,5 +1,5 @@
 classdef AbstractHypersphericalDistribution
-    % Abstract base class for distributions on the hypershere (Sd)
+    % Abstract base class for distributions on the hypershere (S^d)
     
     properties
         dim       % Dimension  (d=2 => circle, d=3 => sphere, ...)
@@ -67,6 +67,16 @@ classdef AbstractHypersphericalDistribution
         end
         
         function i = integral(this)
+            % Calculate integral of pdf to check normalization
+            % (should always be 1)
+            % Returns:
+            %   i (scalar)
+            %       integral over hypersphere surface of pdf (uses
+            %       approximation, not very accurate for higher dimensions)
+            i = this.integralNumerical();
+        end
+        
+        function i = integralNumerical(this)
             % Calculate integral of pdf to check normalization
             % (should always be 1)
             % Returns:

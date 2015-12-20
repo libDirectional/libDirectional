@@ -78,7 +78,7 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             %   m (dim x 1)
             %       n-th trigonometric moment (complex vector)  
             assert(isscalar(n));
-            m=arrayfun(@(i)sum(exp(1i*n*this.d(i,:)).*this.w),1:size(this.d,1)).';
+            m = arrayfun(@(i)sum(exp(1i*n*this.d(i,:)).*this.w),1:size(this.d,1)).';
         end
                 
         function hdd = applyFunction(this,f)
@@ -98,10 +98,10 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
                 d_(:,i) = f(this.d(:,i));
             end
             % check normalization
-            assert ( max(abs(sum(d_.^2)) - ones(1, size(d_,2))) < 1E-5);
+            assert(max(abs(sum(d_.^2)) - ones(1, size(d_,2))) < 1E-5);
             
-            hdd=this;
-            hdd.d=d_;
+            hdd = this;
+            hdd.d = d_;
         end
         
         function hdd = reweigh(this, f)
@@ -123,9 +123,9 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             assert(all(wNew >= 0));
             assert(sum(wNew) > 0);
             
-            hdd=this;
-            hdd.w=wNew.*this.w;
-            hdd.w=hdd.w/sum(hdd.w);
+            hdd = this;
+            hdd.w = wNew.*this.w;
+            hdd.w = hdd.w/sum(hdd.w);
         end
 
         function s = sample(this, n)

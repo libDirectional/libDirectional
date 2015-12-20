@@ -217,15 +217,17 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % A New Method to Simulate the Bingham and Related Distributions in Directional Data Analysis with Applications 
             % arXiv preprint arXiv:1310.8110, 2013
             
-            % todo: check for Bugs!
-
+            assert(isscalar(n));
+            assert(n>0);            
+            
             s = zeros(this.dim, n);
             i = 1;
             A = - this.M * diag(this.Z) * this.M'; % Kent uses a minus sign here!
             q = this.dim;
+            
             % compute b
             bfun = @(b) sum(1./(b-2*this.Z)) - 1; % use a minus sign before  2*this.z because Kent's matrix is negative
-            b = fsolve(bfun, 1);
+            b = fsolve(bfun, 1, optimset('display', 'none'));
             Omega = eye(this.dim) + 2*A/b;
             %efficiency = 1/(exp(-(q-b)/2) * (q/b)^(q/2))
             %Mb = 1/this.F * exp(-(q-b)/2) * (q/b)^(q/2) * det(Omega)^(-1/2);
@@ -264,6 +266,9 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   X (dimx n matrix)
             %       generated samples (one sample per column)
+            
+            assert(isscalar(n));
+            assert(n>0);            
             
             burnin = 5;
             samplerate = 10; 
