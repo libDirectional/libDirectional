@@ -52,7 +52,7 @@ function compare(samples, distribution, titlestr)
     %llRatioWN = calculateLikelihoodRatio(samples, distribution, distribution.toWN())
     %llRatioVM = calculateLikelihoodRatio(samples, distribution, distribution.toVM())
     %llRatioWC = calculateLikelihoodRatio(samples, distribution, distribution.toWC())
-    %llRatioUniform = calculateLikelihoodRatio(samples, distribution, CUDistribution)
+    %llRatioUniform = calculateLikelihoodRatio(samples, distribution, CircularUniformDistribution)
 end
 
 function lr = calculateLikelihoodRatio(samples, distribution1, distribution2)
