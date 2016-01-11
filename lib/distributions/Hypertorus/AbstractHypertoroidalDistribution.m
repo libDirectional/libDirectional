@@ -321,7 +321,7 @@ classdef AbstractHypertoroidalDistribution
             % Be aware that the kld is not symmetric.
             %
             % Parameters:
-            %   other (AbstractCircularDistribution)
+            %   other (AbstractHypertoroidalDistribution)
             %       distribution to compare to
             % Returns:
             %   kld (scalar)
@@ -350,7 +350,7 @@ classdef AbstractHypertoroidalDistribution
             % distribution.
             %
             % Parameters:
-            %   other (AbstractCircularDistribution)
+            %   other (AbstractHypertoroidalDistribution)
             %       distribution to compare to
             % Returns:
             %   dist (scalar)
@@ -378,7 +378,7 @@ classdef AbstractHypertoroidalDistribution
             % Numerically calculates the total varation distance to another distribution
             %
             % Parameters:
-            %   other (AbstractCircularDistribution)
+            %   other (AbstractHypertoroidalDistribution)
             %       distribution to compare to
             % Returns:
             %   dist (scalar)

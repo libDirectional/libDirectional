@@ -1,6 +1,6 @@
 classdef CircularParticleFilter < AbstractCircularFilter & HypertoroidalParticleFilter
-    % A SIR particle filter on the circle based on the wrapped Dirac
-    % distribution.
+    % A sequential importance resampling (SIR) particle filter on the circle 
+    % based on the wrapped Dirac distribution.
     %
     % Gerhard Kurz, Igor Gilitschenski, Uwe D. Hanebeck,
     % Recursive Bayesian Filtering in Circular State Spaces

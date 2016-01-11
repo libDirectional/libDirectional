@@ -16,6 +16,7 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             % AbstractHypertoroidalDistribution.
             this.dim = 1;
         end
+        
         function val = cdfNumerical(this, xa, startingPoint)
             % Evaluate cumulative distribution function using numerical integration
             %

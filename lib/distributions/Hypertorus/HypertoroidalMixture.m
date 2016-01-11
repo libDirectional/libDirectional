@@ -14,6 +14,7 @@ classdef HypertoroidalMixture < AbstractHypertoroidalDistribution
                 'dists must be a cell array of hypertoroidal distributions');
             assert(all(size(dists) == size(w)),'size of cds and w must be equal');
             assert(all(dists{1}.dim==cellfun(@(dist)dist.dim,dists))); % Ensure equal dimensions
+            assert(all(w >= 0), 'weights must be nonnegative');
             if all(cellfun(@(cd)isa(cd,'HypertoroidalFourierDistribution'),dists))
                 warning('Mixtures of HypertoroidalFourierDistributions can be built by combining the Fourier coefficients so using a mixture may not be necessary.');
             end

@@ -1,8 +1,8 @@
 classdef AbstractHypersphericalDistribution
-    % Abstract base class for distributions on the hypershere (S^d)
+    % Abstract base class for distributions on the hypershere (S^dim)
     
     properties
-        dim       % Dimension  (d=2 => circle, d=3 => sphere, ...)
+        dim       % Dimension  (dim=2 => circle, dim=3 => sphere, ...)
     end
     
     methods (Abstract)
@@ -255,6 +255,111 @@ classdef AbstractHypersphericalDistribution
             %todo handle bimodality
             s = s(:,burnin+1:skipping:end);
         end        
+        
+        function dist = hellingerDistanceNumerical(this, other)
+            % Numerically calculates the Hellinger distance to another
+            % distribution.
+            %
+            % Parameters:
+            %   other (AbstractHypersphericalDistribution)
+            %       distribution to compare to
+            % Returns:
+            %   dist (scalar)
+            %       hellinger distance of this distribution to other distribution
+            assert(isa(other, 'AbstractHypersphericalDistribution'));
+            assert(this.dim==other.dim,'Cannot compare distributions with different number of dimensions');
+            
+            % Implementation is always performed using matlab integration
+            % (Implementation is similar to .integral)
+            switch this.dim
+                case 2
+                    f = @(phi) (sqrt(this.pdf([cos(phi); sin(phi)]))-sqrt(other.pdf([cos(phi); sin(phi)]))).^2;
+                    dist = 0.5*integral(f,0,2*pi, 'AbsTol', 0.01);
+                case 3
+                    f = @(x) (sqrt(this.pdf(x))-sqrt(other.pdf(x))).^2;
+                    r=1;
+
+                    % spherical coordinates
+                    fangles = @(phi1,phi2) f([ ...
+                    r.*sin(phi1).*sin(phi2); ...
+                    r.*cos(phi1).*sin(phi2); ...
+                    r.*cos(phi2); ...
+                    ]);
+
+                    g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
+
+                    dist = 0.5*integral2(g, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                case 4
+                    f = @(x) (sqrt(this.pdf(x))-sqrt(other.pdf(x))).^2;
+                    r=1;
+
+                    % hyperspherical coordinates
+                    fangles = @(phi1,phi2,phi3) f([ ...
+                    r.*sin(phi1).*sin(phi2).*sin(phi3); ...
+                    r.*cos(phi1).*sin(phi2).*sin(phi3); ...
+                    r.*cos(phi2).*sin(phi3); ...
+                    r.*cos(phi3)
+                    ]);
+
+                    g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
+                    ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
+
+                    dist = 0.5*integral3(ga, 0, 2*pi, 0, pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                otherwise
+                    error('Numerical calculation of Hellinger distance is currently not supported for this dimension.')
+            end
+        end
+        
+        function dist = totalVariationDistanceNumerical(this, other)
+            % Numerically calculates the total varation distance to another distribution
+            %
+            % Parameters:
+            %   other (AbstractHypersphericalDistribution)
+            %       distribution to compare to
+            % Returns:
+            %   dist (scalar)
+            %       total variation distance of this distribution to other distribution
+            assert(isa(other, 'AbstractHypersphericalDistribution'));
+            assert(this.dim==other.dim, 'Cannot compare distributions with different number of dimensions');
+            
+            switch this.dim
+                case 2
+                    f = @(phi) abs(this.pdf([cos(phi); sin(phi)])-other.pdf([cos(phi); sin(phi)]));
+                    dist = 0.5*integral(f,0,2*pi, 'AbsTol', 0.01);
+                case 3
+                    f = @(x) abs(this.pdf(x)-other.pdf(x));
+                    r=1;
+
+                    % spherical coordinates
+                    fangles = @(phi1,phi2) f([ ...
+                    r.*sin(phi1).*sin(phi2); ...
+                    r.*cos(phi1).*sin(phi2); ...
+                    r.*cos(phi2); ...
+                    ]);
+
+                    g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
+
+                    dist = 0.5*integral2(g, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                case 4
+                    f = @(x) abs(this.pdf(x)-other.pdf(x));
+                    r=1;
+
+                    % hyperspherical coordinates
+                    fangles = @(phi1,phi2,phi3) f([ ...
+                    r.*sin(phi1).*sin(phi2).*sin(phi3); ...
+                    r.*cos(phi1).*sin(phi2).*sin(phi3); ...
+                    r.*cos(phi2).*sin(phi3); ...
+                    r.*cos(phi3)
+                    ]);
+
+                    g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
+                    ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
+
+                    dist = 0.5*integral3(ga, 0, 2*pi, 0, pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                otherwise
+                    error('Numerical calculation of total variation distance is currently not supported for this dimension.')
+            end
+        end
         
     end
     
