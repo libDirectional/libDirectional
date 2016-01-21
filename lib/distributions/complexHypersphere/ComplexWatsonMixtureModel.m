@@ -91,7 +91,7 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
     end
     
     methods (Static)
-        function cWMM = fit(K, Z, maxIterations)
+        function [cWMM, gamma, gamma_kmean] = fit(K, Z, maxIterations)
             if nargin < 3
                 maxIterations = 100;
             end
@@ -115,6 +115,12 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
             
             InitModeSet = zeros(D, K);
             InitConcentrations = zeros(K, 1);
+
+%           I = randperm(N, K);
+%           InitModeSet = Z(:, I, :);
+%           InitMixtureWeights = zeros(K, 1) + 1 / K;
+%           InitConcentrations = zeros(K, 1) + 20;
+
             for k = 1:K
                 [InitModeSet(:, k), InitConcentrations(k)] = ...
                     ComplexWatsonDistribution.estimateParameters( ...
@@ -142,6 +148,13 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
                         Z, gamma(k, :));
                 end
                 
+            end
+
+            if nargout > 1
+                gamma = gamma';
+            end
+            if nargout > 2
+                gamma_kmean = gamma_kmean';
             end
         end
         
