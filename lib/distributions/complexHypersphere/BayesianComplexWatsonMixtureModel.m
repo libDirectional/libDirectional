@@ -42,13 +42,43 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
     end
     
     methods (Static)
-        function bcWMM = fit(Z, parameters)
+        function [bcWMM, posterior] = fit(Z, parameters)
             
-            posterior = estimatePosterior(Z, parameters);
+            posterior = BayesianComplexWatsonMixtureModel.estimatePosterior(Z, parameters);
             bcWMM = BayesianComplexWatsonMixtureModel(...
                 posterior.B, posterior.kappa, posterior.alpha);
         end
         
+        function [bcWMM, posterior] = fitDefault(Z, K)
+            % :param Z: Complex observations with dimensions N times D.
+            % :param K: Number of mixture components
+            % assume, that the observation vector has fewer than 100 components. 
+            assert(size(Z, 1) < 100) 
+            
+            D = size(Z, 1);
+            parameters = BayesianComplexWatsonMixtureModel.parametersDefault(D, K);
+
+            [bcWMM, posterior] = BayesianComplexWatsonMixtureModel.fit(Z, parameters);
+            
+        end
+
+    function [parameters] = parametersDefault(D, K)
+            % :param D:
+            % :param K: Number of mixture components
+            % assume, that the observation vector has fewer than 100 components.
+
+            parameters = struct();
+            parameters.initial = struct();
+            parameters.initial.B = rand(D, D, K);
+            parameters.initial.B = conj(parameters.initial.B) .* permute(parameters.initial.B, [2 1 3]);
+            parameters.initial.kappa = 1;
+            parameters.initial.alpha = ones(K, 1) / K;
+            parameters.prior = struct();
+            parameters.prior.B = zeros(D, D, K);
+            parameters.prior.alpha = ones(K, 1) / K;
+            parameters.I = 40;
+        end
+
         function posterior = estimatePosterior(Z, parameters)
             % This is a quick and dirty implementation of a complex Watson mixture model
             % with a complex Bingham prior for the mode vectors and a Dirichlet prior
@@ -207,9 +237,9 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
                 % Covariance matrix with rotation
                 covarianceMatrix = U * C * U';
                 
-                for n = 1:N
-                    E(n, k) = real(trace(dyadicProducts(:, :, n) * covarianceMatrix));
-                end
+                % E(n, k) = real(trace(dyadicProducts(:, :, n) * covarianceMatrix));
+                % http://stackoverflow.com/questions/8031628/octave-matlab-efficient-calc-of-frobenius-inner-product
+                E(:, k) = real(sum(sum(bsxfun(@times, dyadicProducts, covarianceMatrix.'))));
             end
         end
         
