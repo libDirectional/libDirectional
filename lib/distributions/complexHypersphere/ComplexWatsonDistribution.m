@@ -174,9 +174,8 @@ classdef ComplexWatsonDistribution < AbstractComplexHypersphericalDistribution
             % force S to be hermitian
             S = 1/2*(S+S');
             
-            [V, D] = eig(S);
+            [V, lambda] = eig(S, 'Vector');
             
-            lambda = diag(D);
             assert(all(lambda > 0));
             % Sort eigenvalues in descending order and arrange corresponding
             % eigenvectors
