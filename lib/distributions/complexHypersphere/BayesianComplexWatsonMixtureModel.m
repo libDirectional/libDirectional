@@ -69,14 +69,18 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
 
             parameters = struct();
             parameters.initial = struct();
-            parameters.initial.B = rand(D, D, K);
-            parameters.initial.B = conj(parameters.initial.B) .* permute(parameters.initial.B, [2 1 3]);
-            parameters.initial.kappa = 1;
-            parameters.initial.alpha = ones(K, 1) / K;
+            parameters.initial.B = zeros(D, D, K);
+            % Alternative: parameters.initial.B = rand(D, D, K);
+            %              parameters.initial.B = conj(parameters.initial.B) .* permute(parameters.initial.B, [2 1 3]);
+            parameters.initial.kappa = 20;
+            parameters.initial.alpha = 1/K + linspace(-0.14/K, 0.14/K, K)';
+            % Alternative: parameters.initial.alpha = ones(K, 1) / K;
             parameters.prior = struct();
             parameters.prior.B = zeros(D, D, K);
             parameters.prior.alpha = ones(K, 1) / K;
+            parameters.prior.saliencies = 1;
             parameters.I = 40;
+            parameters.uniformComponent = false;
         end
 
         function posterior = estimatePosterior(Z, parameters)
@@ -85,7 +89,13 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             % for the mixture weights.
             %
             % :param Z: Complex observations with dimensions N times D.
+            % :param uniformComponent: If true, estimate the last component as
+            %    uniform (means kappa(conzentration is zero). Example usecase: One component is noise.
             
+            if ~ isfield(parameters, 'uniformComponent')
+                parameters.uniformComponent = false;
+            end
+                        
             assert(isfield(parameters, 'initial'));
             assert(isfield(parameters.initial, 'B'));
             assert(isfield(parameters.initial, 'alpha'));
@@ -117,9 +127,19 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             % Transmute equals exchange the first and second dimension
             dyadicProducts = conj(dyadicProducts) .* permute(dyadicProducts, [2 1 3 ]);
             
+            ZZ = reshape(bsxfun(@times, permute(Z, [1, 3, 2]), permute(conj(Z), [3 1 2])), D*D, N);
+            
+            ln_saliencies = log(max(parameters.prior.saliencies, 1e-7));
+            
+            if size(ln_saliencies, 1) == N && size(ln_saliencies, 2) == 1
+                ln_saliencies = repmat(ln_saliencies, 1, K_);
+            end
+            
             for i = 1:parameters.I
                 %% E-step
                 % Contribution due to the observations
+                posterior.gamma = ln_saliencies;
+                
                 posterior.gamma = posterior.gamma + bsxfun(@times, ...
                     posterior.kappa.', ...
                     BayesianComplexWatsonMixtureModel.quadraticExpectation( ...
@@ -166,13 +186,16 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
                     numberOfObservationsPerClass.';
                 
                 concentrationMax = 500;
-                covarianceMatrix = zeros(D, D, K_);
-                for k = 1:K_
-                    
-                    weights = permute(posterior.gamma(:, k), [3 1 2]);
-                    covarianceMatrix(:, :, k) = ...
-                        bsxfun(@times,weights ,Z) *Z'/sum(weights);
-                end
+                % covarianceMatrix = zeros(D, D, K_);
+                % for k = 1:K_
+                    % weights = permute(posterior.gamma(:, k), [3 1 2]);
+                    % weights = repmat(weights / sum(weights), D, 1);
+                    % covarianceMatrix(:, :, k) = (weights .* Z) *Z';
+                % end               
+                
+                covarianceMatrix = reshape(...
+                    bsxfun(@rdivide, ZZ * posterior.gamma, sum(posterior.gamma)), ...
+                    [D, D, K_]);
                 
                 posterior.B = bsxfun(@times, ...
                     permute( posterior.kappa .* ...
@@ -192,9 +215,13 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
                 
                 posterior.kappa = ...
                     hypergeometricRatioInverse(quadraticExpectation, D, concentrationMax);
+                
+                if parameters.uniformComponent
+                    posterior.kappa(end) = 0;
+                end
             end
         end
-        function [E, W_principal] = quadraticExpectation(dyadicProducts, B)
+        function E = quadraticExpectation(dyadicProducts, B)
             % This function calculates the quadratic estimate E{X^H B X} and
             % E{tr(Phi_XX B)}.
             %
@@ -208,23 +235,19 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             D = size(B, 1);
             K_ = size(B, 3);
             E = zeros(N, K_);
-            W_principal = zeros(D, K_);
+            
+            dyadicProductsReshape = reshape(dyadicProducts, [], N);
             
             D = size(B, 1);
             evalString = sprintf('@(x) cBinghamGradNormDividedByNorm%d(transpose(x))', D);
             firstOrderMoments = str2func(evalString);
             
             for k = 1:K_
-                [U, Lambda] = eig(B(:, :, k));
-                Lambda = diag(Lambda);
+                [U, Lambda] = eig(B(:, :, k), 'Vector');
                 
                 assert(isreal(Lambda), ...
                     'all Eigenvalues of B have to be real, since B is hermitian')
-                
-                [~, iMax] = max(Lambda);
-                
-                W_principal(:, k) = U(:, iMax);
-                
+    
                 %% Calculate first order moments roughly
                 % Covariance matrix without rotation
                 if sum(Lambda > 1)
@@ -239,7 +262,9 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
                 
                 % E(n, k) = real(trace(dyadicProducts(:, :, n) * covarianceMatrix));
                 % http://stackoverflow.com/questions/8031628/octave-matlab-efficient-calc-of-frobenius-inner-product
-                E(:, k) = real(sum(sum(bsxfun(@times, dyadicProducts, covarianceMatrix.'))));
+%               E(:, k) = real(sum(sum(bsxfun(@times, dyadicProducts, covarianceMatrix.'))));
+                E(:, k) = real(dyadicProductsReshape.' * conj(covarianceMatrix(:)));
+
             end
         end
         
