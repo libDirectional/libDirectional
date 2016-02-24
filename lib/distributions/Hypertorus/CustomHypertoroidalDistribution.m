@@ -16,8 +16,8 @@ classdef CustomHypertoroidalDistribution < AbstractHypertoroidalDistribution
             %       pdf of the distribution
             %   dim_ (scalar)
             %       dimension of the hypertorus
-            assert(isa(f_, 'function_handle'));
-            assert(isscalar(dim_) && dim_>=1);
+            assert(isa(f_, 'function_handle'),'f must be given as a function handle');
+            assert(isscalar(dim_) && dim_>=1,'Dimension must be a scalar greater or equal to 1.');
             this.dim = dim_;
             this.f = f_;
         end

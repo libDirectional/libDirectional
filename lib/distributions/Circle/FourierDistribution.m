@@ -1,3 +1,4 @@
+
 classdef FourierDistribution < AbstractCircularDistribution
     % Used to represent circular densities with Fourier
     % series
@@ -114,7 +115,8 @@ classdef FourierDistribution < AbstractCircularDistribution
                         atmp=this.a;
                         btmp=this.b;
                     otherwise
-                        error('Transformation not recognized or unsupported');
+                        m=trigonometricMomentNumerical(this, n);
+                        return
                 end
                 if n>length(btmp)
                     m=0;
@@ -334,6 +336,7 @@ classdef FourierDistribution < AbstractCircularDistribution
     methods (Static)
         function f = fromComplex(c,transformation)
             % Create density from complex coefficients
+            assert(size(c,2)>=size(c,1),'c is expected to be a row vector');
             assert(abs(c((length(c)+1)/2))>0,'c0 is zero, cannot normalize to valid density.')
             % Using flipping to neither favor negative nor positive
             % indicies (although c_k=conj(c_-k) should hold)

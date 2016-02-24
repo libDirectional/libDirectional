@@ -59,6 +59,8 @@ classdef AbstractHypertoroidalDistribution
         function m = circularMean(this)
             % Calculate the (componentwise) circular mean
             %
+            % Warning: atan2(0,0) returns 0, not NaN!
+            %
             % Returns:
             %   m (dim x 1)
             %       circular mean in [0, 2pi)^2
