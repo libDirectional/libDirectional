@@ -47,6 +47,10 @@ void mexFunction (
     v=(int)(*vp);
     x=*xp;
     
+    if (x==0){ //special case, ratio is zero
+        return;
+    }
+    
     //Ensure faster convergence
     if (v<10){
         ord=10;

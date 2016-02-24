@@ -66,6 +66,11 @@ classdef VMDistribution < AbstractCircularDistribution
             % Returns:
             %   m (scalar)
             %       n-th trigonometric moment (complex number)
+            if this.kappa == 0
+                m = 0;
+                return
+            end
+            
             if n==1
                 m = besselratio(0, this.kappa)*exp(1i * n * this.mu);
             elseif n==2
@@ -176,6 +181,13 @@ classdef VMDistribution < AbstractCircularDistribution
             % Returns:
             %   samples (1 x n)
             %       n samples on the circle
+            assert(isscalar(n));
+            if this.kappa == 0 % the method by Best does not work is kappa is zero
+                cu = CircularUniformDistribution();
+                samples = cu.sample(n);
+                return
+            end
+            
             samples = zeros(1,n);
             
             r = 1 + sqrt(1+4*this.kappa^2); %tau in Best's paper

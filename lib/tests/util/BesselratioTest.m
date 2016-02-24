@@ -5,6 +5,11 @@ classdef BesselratioTest < matlab.unittest.TestCase
     
     methods (Test)
         function testBesselratio(testCase)
+            %% compare to quotient of besseli for kappa=0
+            testCase.verifyEqual(besselratio(0,0), 0, 'RelTol', 1E-10);
+            testCase.verifyEqual(besselratio(1,0), 0, 'RelTol', 1E-10);
+            testCase.verifyEqual(besselratio(2,0), 0, 'RelTol', 1E-10);
+                
             %% compare to quotient of besseli for small kappa
             for kappa = [0.001 0.01 0.1 1 2 3 10 20 50 100 200 300 400 500 600, 650];
                 testCase.verifyEqual(besselratio(0,kappa), besseli(1,kappa)/besseli(0,kappa), 'RelTol', 1E-10);

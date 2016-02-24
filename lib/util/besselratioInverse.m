@@ -14,6 +14,11 @@ function kappa = besselratioInverse(v, x, type)
         type='sraamos';
     end  
     
+    if x == 0
+        kappa = 0;
+        return
+    end
+    
     if strcmp(type,'sraamos')
         assert (v==0);
         kappa = besselInverseSraAmos(x);

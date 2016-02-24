@@ -5,8 +5,8 @@ classdef BesselratioInverseTest < matlab.unittest.TestCase
     
     methods (Test)
         function testBesselratio(testCase)
-            %% calculate bessselratio and invert (small kappa)
-            for kappa = [0.001 0.01 0.1 1 2 3 10 20 50 100 200 300 400 500 600, 650];
+            % calculate bessselratio and invert (small kappa)
+            for kappa = [0 0.001 0.01 0.1 1 2 3 10 20 50 100 200 300 400 500 600, 650];
                 b0 = besselratio(0,kappa);
                 b1 = besselratio(1,kappa);
                 b2 = besselratio(2,kappa);
@@ -27,7 +27,7 @@ classdef BesselratioInverseTest < matlab.unittest.TestCase
                 testCase.verifyEqual(besselratioInverse(2, b2, 'sra'), kappa, 'RelTol', 1E-10);
             end
             
-            %% large kappa
+            % large kappa
             for kappa = [1E3 1E4 1E5];
                 b0 = besselratio(0,kappa);
                 b1 = besselratio(1,kappa);
