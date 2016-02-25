@@ -36,7 +36,7 @@ classdef HypertoroidalParticleFilter < AbstractToroidalFilter
             % where w(k) is additive noise given by noiseDistribution.
             %
             % Parameters:
-            %   noiseDistribution (AbstractCircularDistribution)
+            %   noiseDistribution (AbstractHypertoroidalDistribution)
             %       distribution of additive noise
             this.predictNonlinear(@(x) x, noiseDistribution);
         end
@@ -49,7 +49,7 @@ classdef HypertoroidalParticleFilter < AbstractToroidalFilter
             % Parameters:
             %   f (function handle)
             %       system function
-            %   noiseDistribution (AbstractCircularDistribution)
+            %   noiseDistribution (AbstractHypertoroidalDistribution)
             %       distribution of additive noise
             
             assert (isa (noiseDistribution, 'AbstractHypertoroidalDistribution'));

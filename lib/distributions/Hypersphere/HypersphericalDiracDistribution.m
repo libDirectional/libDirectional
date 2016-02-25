@@ -47,7 +47,7 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
                     p = stem(atan2(this.d(2,:), this.d(1,:)), this.w, varargin{:});
                 case 3
                     % plot points on sphere
-                    p = scatter3(this.d(1,:),this.d(2,:), this.w, varargin{:});
+                    p = scatter3(this.d(1,:),this.d(2,:),this.d(3,:), this.w*size(this.d,2)*20, varargin{:});
                 otherwise
                     error('Plotting for this dimension is currently not supported');
             end                        
@@ -65,20 +65,6 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
         
         function result = integralNumerical(this, varargin)
             error('PDF:UNDEFINED', 'not supported');
-        end
-        
-        function m = trigonometricMoment(this,n)
-            % Calculate n-th trigonometric moment, i.e., 
-            % E([e^(inx_1); e^(inx_2); ...; e^(inx_dim)])
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of moment
-            % Returns:
-            %   m (dim x 1)
-            %       n-th trigonometric moment (complex vector)  
-            assert(isscalar(n));
-            m = arrayfun(@(i)sum(exp(1i*n*this.d(i,:)).*this.w),1:size(this.d,1)).';
         end
                 
         function hdd = applyFunction(this,f)

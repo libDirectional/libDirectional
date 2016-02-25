@@ -80,7 +80,7 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             %   n (scalar)
             %       number of samples to generate
             % Returns:
-            %   X (d x n matrix)
+            %   s (d x n matrix)
             %       generated samples (one sample per column)
             s = this.toBingham.sample(n); % use Bingham sampling
         end
