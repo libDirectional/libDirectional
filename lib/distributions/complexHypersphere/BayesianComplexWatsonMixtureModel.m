@@ -129,7 +129,11 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             
             ZZ = reshape(bsxfun(@times, permute(Z, [1, 3, 2]), permute(conj(Z), [3 1 2])), D*D, N);
             
-            ln_saliencies = log(max(parameters.prior.saliencies, 1e-7));
+            if isfield (parameters.prior, 'saliencies')
+                ln_saliencies = log(max(parameters.prior.saliencies, 1e-7));
+            else
+                ln_saliencies = log(1e-7);
+            end
             
             if size(ln_saliencies, 1) == N && size(ln_saliencies, 2) == 1
                 ln_saliencies = repmat(ln_saliencies, 1, K_);
