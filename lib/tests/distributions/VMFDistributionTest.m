@@ -36,6 +36,18 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual([cos(vmFitted.mu);sin(vmFitted.mu)], vmfFitted.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmFitted.kappa, vmfFitted.kappa, 'RelTol', 1E-10);
             
+            %% test deterministic sampling
+            s = vmf.sampleDeterministic();
+            testCase.verifyEqual(size(s,1), vmf.dim);
+            testCase.verifyEqual(size(s,2), 2*vmf.dim-1);
+            sVM = vmSame.toDirac3().d;
+            %testCase.verifyEqual(s, [cos(sVM); sin(sVM)], 'RelTol',
+            %1E-10); %this test fails for now, because VM and VMF return
+            %the samples in a different order
+            vmfFitted2 = VMFDistribution.fit(s);
+            testCase.verifyEqual(vmf.mu, vmfFitted2.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmf.kappa, vmfFitted2.kappa, 'RelTol', 1E-10);
+            
             %% test multiplication
             other = VMFDistribution([cos(2*phi); sin(2*phi)], kappa/3);
             vmfMul = vmf.multiply(other);
@@ -79,6 +91,14 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
 
             %% test integral
             testCase.verifyEqual(vmf.integral(), 1, 'RelTol', 1E-5);
+                        
+            %% test deterministic sampling
+            s = vmf.sampleDeterministic();
+            testCase.verifyEqual(size(s,1), vmf.dim);
+            testCase.verifyEqual(size(s,2), 2*vmf.dim-1);
+            vmfFitted2 = VMFDistribution.fit(s);
+            testCase.verifyEqual(vmf.mu, vmfFitted2.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmf.kappa, vmfFitted2.kappa, 'RelTol', 1E-10);
             
             %% test multiplication
             other = VMFDistribution([0; 0; 1], kappa/3);

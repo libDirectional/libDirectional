@@ -49,6 +49,33 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             p = this.C * exp( this.kappa * this.mu' * xa);
         end
         
+        function samples = sampleDeterministic(this)
+            % Deterministic sampling based on moment matching
+            % Returns:
+            %   samples (d x n matrix)
+            %       one sample per column
+            %
+            % Gerhard Kurz, Igor Gilitschenski, Uwe D. Hanebeck,
+            % Unscented von Mises-Fisher Filtering
+            % IEEE Signal Processing Letters, 2016.
+            
+            % get samples for vm with mu=[1 0 ... 0] first            
+            samples = zeros(this.dim, this.dim*2-1);
+            samples(1,1) = 1;
+            m1 = besseli(this.dim/2, this.kappa,1)/besseli(this.dim/2-1, this.kappa,1);
+            for i=1:this.dim-1
+                alpha = acos( (( this.dim*2-1)*m1 - 1)/( this.dim*2-2));
+                samples(1,2*i) = cos(alpha);
+                samples(1,2*i+1) = cos(alpha);
+                samples(i+1,2*i) = sin(alpha);
+                samples(i+1,2*i+1) = -sin(alpha);
+            end
+            
+            % rotate samples around mu
+            Q = this.getRotationMatrix();
+            samples = Q*samples;
+        end
+        
         function Q = getRotationMatrix(this)
             % Computes a rotation matrix that rotates [1,0,...,0] to mu.
             %
@@ -415,6 +442,8 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Parameters:
             %   samples (d x n matrix)
             %       matrix that contains one sample per column
+            %   weights (1 x n row vector)
+            %       weight for each sample            
             % Returns:
             %   V (VMFDistribution)
             %       the MLE estimate for a VMF distribution given the
