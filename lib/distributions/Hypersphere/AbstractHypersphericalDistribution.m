@@ -380,6 +380,19 @@ classdef AbstractHypersphericalDistribution
             surfaceArea = 2 * pi^((dimension)/2)/gamma((dimension)/2); 
         end
         
+        function h=plotSphere(varargin)
+            % Plots a sphere
+            %
+            % Returns:
+            %   h (handle)
+            %       plot handle
+            [x,y,z]=sphere(15);
+            h = mesh(x,y,z);
+            set(h,'facecolor','none')
+            set(h,'edgecolor',0.7*[1 1 1])
+            axis equal
+            hasbehavior(h,'legend',false); % Prevent legend entry for sphere
+        end
     end 
 end
 
