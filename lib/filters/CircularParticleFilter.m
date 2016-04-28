@@ -31,7 +31,7 @@ classdef CircularParticleFilter < AbstractCircularFilter & HypertoroidalParticle
             %       new state            
             assert (isa (wd_, 'AbstractCircularDistribution'));
             if ~isa(wd_, 'WDDistribution')
-                wd_ = WDDistribution(wd_.sample(length(this.wd.d))');
+                wd_ = WDDistribution(wd_.sample(length(this.wd.d)));
             end
             this.wd = wd_;
         end

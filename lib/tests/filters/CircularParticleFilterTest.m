@@ -17,6 +17,9 @@ classdef CircularParticleFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual(wd.d, wd.d);
             testCase.verifyEqual(wd.w, wd.w);
             
+            filter.setState(VMDistribution(0,1));
+            testCase.verifyNumElements(filter.wd.d,nParticles);
+            
             %% test sampling
             % check wether only valid dirac positions are sampled
             positions = (0:.1:1);
@@ -82,6 +85,8 @@ classdef CircularParticleFilterTest < matlab.unittest.TestCase
             for i=1:length(estimation.d)
                 testCase.verifyEqual(estimation.d(i), 0.5);
             end
+            
+            
         end
     end
 end
