@@ -14,7 +14,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
     end
     
     methods
-        function VFM = VMFDistribution(mu_, kappa_)
+        function VMF = VMFDistribution(mu_, kappa_)
             % Constructor
             %
             % Parameters:
@@ -28,11 +28,11 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             assert(abs(norm(mu_) - 1)<epsilon, 'mu must be a normalized');
             assert(kappa_>=0, 'kappa must be postive');
             
-            VFM.mu = mu_;
-            VFM.kappa = kappa_;
+            VMF.mu = mu_;
+            VMF.kappa = kappa_;
             
-            VFM.dim = size(mu_,1);
-            VFM.C = kappa_^(VFM.dim/2-1)/ ( (2*pi)^(VFM.dim/2) * besseli(VFM.dim/2-1, kappa_));
+            VMF.dim = size(mu_,1);
+            VMF.C = kappa_^(VMF.dim/2-1)/ ( (2*pi)^(VMF.dim/2) * besseli(VMF.dim/2-1, kappa_));
         end
         
         function p = pdf(this, xa)
@@ -433,6 +433,25 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % https://www.wolframalpha.com/input/?i=diff%281%2F%28kappa%5E%28p%2F2-1%29%2F%282*pi%29%5E%28p%2F2%29%2Fbesseli%28p%2F2-1%2C+kappa%29%29%2C+kappa%29
             Cinvdiff = 2^(p/2-1) *pi^(p/2)* this.kappa^(1-p/2) * (besseli(p/2-2,this.kappa)+besseli(p/2,this.kappa))+(1-p/2)*(2*pi)^(p/2)* this.kappa^(-p/2) *besseli(p/2-1,this.kappa);
             e = -log(this.C) - this.kappa * this.C * Cinvdiff;
+        end
+        
+        function h = hellingerDistance(this, other)
+            % Analytically calculates the Hellinger distance to another
+            % VMF distribution.
+            %
+            % Parameters:
+            %   other (VMFDistribution)
+            %       distribution to compare to
+            % Returns:
+            %   dist (scalar)
+            %       hellinger distance of this distribution to other distribution            
+            assert(isa(other,'VMFDistribution'));
+            assert(this.dim==other.dim);
+            d = this.dim;
+            kx = this.kappa;
+            ky = other.kappa;
+            ks = norm(kx/2*this.mu + ky/2*other.mu);
+            h = 1- sqrt(kx^(d/2-1)*ky^(d/2-1))/ks^(d/2-1) * besseli(d/2-1,ks)/sqrt(besseli(d/2-1,kx)*besseli(d/2-1,ky));
         end
     end
     

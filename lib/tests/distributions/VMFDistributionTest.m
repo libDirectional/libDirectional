@@ -180,5 +180,24 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifySize(s, [length(mu), n])
             testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
         end
+        
+        function testHellinger(testCase)
+            % 2D
+            vmf1 = VMFDistribution([1,0]', 0.9);
+            vmf2 = VMFDistribution([0,1]', 1.7);
+            testCase.verifyEqual(vmf1.hellingerDistance(vmf1), 0, 'AbsTol', 1E-10);
+            testCase.verifyEqual(vmf2.hellingerDistance(vmf2), 0, 'AbsTol', 1E-10);
+            testCase.verifyEqual(vmf1.hellingerDistance(vmf2), vmf1.hellingerDistanceNumerical(vmf2), 'RelTol', 1E-10);
+            testCase.verifyEqual(vmf1.hellingerDistance(vmf2), vmf2.hellingerDistance(vmf1), 'RelTol', 1E-10);
+            
+            % 3D
+            vmf1 = VMFDistribution([1,0,0]', 0.6);
+            mu2 = [1,2,3]';
+            vmf2 = VMFDistribution(mu2/norm(mu2), 2.1);
+            testCase.verifyEqual(vmf1.hellingerDistance(vmf1), 0, 'AbsTol', 1E-10);
+            testCase.verifyEqual(vmf2.hellingerDistance(vmf2), 0, 'AbsTol', 1E-10);
+            testCase.verifyEqual(vmf1.hellingerDistance(vmf2), vmf1.hellingerDistanceNumerical(vmf2), 'RelTol', 1E-6);
+            testCase.verifyEqual(vmf1.hellingerDistance(vmf2), vmf2.hellingerDistance(vmf1), 'RelTol', 1E-10);
+        end
     end
 end
