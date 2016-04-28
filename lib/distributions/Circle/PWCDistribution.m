@@ -2,12 +2,13 @@ classdef PWCDistribution < AbstractCircularDistribution
     % Piecewise constant (i.e. discrete) distribution
     
     properties
-        w
+        w %weights as row vector
     end
     
     methods
         function this = PWCDistribution(w_)
             % Constructor
+            assert(size(w_,1)==1);
             this.w = w_/(mean(w_)*2*pi);
         end
         
