@@ -29,8 +29,8 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
                        
             %% test trigonometric moment
             m = twd.trigonometricMoment(1);
-            m1 = twd.marginal(1).trigonometricMoment(1);
-            m2 = twd.marginal(2).trigonometricMoment(1);
+            m1 = twd.marginalizeTo1D(1).trigonometricMoment(1);
+            m2 = twd.marginalizeTo1D(2).trigonometricMoment(1);
             testCase.verifyEqual(m(1), m1, 'RelTol', 1E-10);
             testCase.verifyEqual(m(2), m2, 'RelTol', 1E-10);
             testCase.verifyEqual(m(1), sum(w.*exp(1i*d(1,:))), 'RelTol', 1E-10);
@@ -108,8 +108,8 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C5(1:2,3:4)));            
                        
             %% test getMarginal
-            wd1 = twd.marginal(1);
-            wd2 = twd.marginal(2);
+            wd1 = twd.marginalizeTo1D(1);
+            wd2 = twd.marginalizeTo1D(2);
             testCase.verifyEqual(twd.w, wd1.w);
             testCase.verifyEqual(twd.w, wd2.w);
             testCase.verifyEqual(twd.d(1,:), wd1.d);

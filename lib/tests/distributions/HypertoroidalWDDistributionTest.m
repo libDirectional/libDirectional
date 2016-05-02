@@ -16,8 +16,8 @@ classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
             
             %% test trigonometric moment
             m = twd.trigonometricMoment(1);
-            m1 = twd.marginal(1).trigonometricMoment(1);
-            m2 = twd.marginal(2).trigonometricMoment(1);
+            m1 = twd.marginalizeTo1D(1).trigonometricMoment(1);
+            m2 = twd.marginalizeTo1D(2).trigonometricMoment(1);
             testCase.verifyEqual(m(1), m1, 'RelTol', 1E-10);
             testCase.verifyEqual(m(2), m2, 'RelTol', 1E-10);
             testCase.verifyEqual(m(1), sum(w.*exp(1i*d(1,:))), 'RelTol', 1E-10);
@@ -31,7 +31,7 @@ classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
             
             %% test getMarginal
             for i=1:size(d,1)
-                wd=twd.marginal(i);
+                wd=twd.marginalizeTo1D(i);
                 testCase.verifyEqual(twd.w, wd.w);
                 testCase.verifyEqual(twd.d(i,:), wd.d);
             end 

@@ -394,7 +394,7 @@ classdef ToroidalVMMatrixDistribution < AbstractToroidalDistribution
             l = size(samples,2)*log(this.C) + sum(exponent);
         end
         
-        function dist = marginal(this, dimension)
+        function dist = marginalizeTo1D(this, dimension)
             % Get marginal distribution in first or second dimension, i.e., 
             % f(x_1) or f(x_2), respectively.
             %
@@ -488,8 +488,8 @@ classdef ToroidalVMMatrixDistribution < AbstractToroidalDistribution
             % start value
             twd = ToroidalWDDistribution(samples);
             mu_ = twd.circularMean();
-            marg1 = twd.marginal(1);
-            marg2 = twd.marginal(2);
+            marg1 = twd.marginalizeTo1D(1);
+            marg2 = twd.marginalizeTo1D(2);
             vm1 = VMDistribution.fromMoment(marg1.trigonometricMoment(1));
             vm2 =  VMDistribution.fromMoment(marg2.trigonometricMoment(1));
             kappa_(1) = vm1.kappa;

@@ -22,8 +22,8 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
                 %all diracs have equal weights
                 this.w = ones(1,size(this.d,2))/size(this.d,2);
             else
-                assert(size(w_,1) == 1 );
-                assert(size(d_,2) == size(w_,2));
+                assert(size(w_,1) == 1 ,'Weights must be given as a 1 x L vector.');
+                assert(size(d_,2) == size(w_,2),'Number of Dircas and weights must match.');
                 this.w = w_/sum(w_);
             end
         end      
@@ -135,7 +135,7 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             s = this.d(:,ids);
         end
                        
-        function wd = marginal(this,dimension)
+        function wd = marginalizeTo1D(this,dimension)
             % Get marginal distribution in i-th dimension
             %
             % Parameters:
