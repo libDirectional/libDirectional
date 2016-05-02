@@ -295,7 +295,7 @@ classdef AbstractHypertoroidalDistribution
             %
             % Parameters:
             %   other (AbstractCircularDistribution)
-            %       distribution to compare to
+            %       distribution to compare with
             % Returns:
             %   d (scalar)
             %       integral over [0,2pi)^dim of squared difference of pdfs
@@ -324,7 +324,7 @@ classdef AbstractHypertoroidalDistribution
             %
             % Parameters:
             %   other (AbstractHypertoroidalDistribution)
-            %       distribution to compare to
+            %       distribution to compare with
             % Returns:
             %   kld (scalar)
             %       kld of this distribution to other distribution
@@ -353,7 +353,7 @@ classdef AbstractHypertoroidalDistribution
             %
             % Parameters:
             %   other (AbstractHypertoroidalDistribution)
-            %       distribution to compare to
+            %       distribution to compare with
             % Returns:
             %   dist (scalar)
             %       hellinger distance of this distribution to other distribution
@@ -381,7 +381,7 @@ classdef AbstractHypertoroidalDistribution
             %
             % Parameters:
             %   other (AbstractHypertoroidalDistribution)
-            %       distribution to compare to
+            %       distribution to compare with
             % Returns:
             %   dist (scalar)
             %       total variation distance of this distribution to other distribution
@@ -403,5 +403,6 @@ classdef AbstractHypertoroidalDistribution
                     error('Numerical calculation of total variation distance is currently not supported for this dimension.')
             end
         end
+        
     end
 end
