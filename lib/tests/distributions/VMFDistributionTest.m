@@ -199,5 +199,37 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf1.hellingerDistance(vmf2), vmf1.hellingerDistanceNumerical(vmf2), 'RelTol', 1E-6);
             testCase.verifyEqual(vmf1.hellingerDistance(vmf2), vmf2.hellingerDistance(vmf1), 'RelTol', 1E-10);
         end
+        
+        function testMoment2D(testCase)
+            vmf1 = VMFDistribution([sqrt(2)/2,-sqrt(2)/2]', 0.9);
+            m = vmf1.moment();
+            testCase.verifyEqual(m/norm(m), vmf1.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(norm(m), besseli(1,vmf1.kappa)/besseli(0,vmf1.kappa), 'RelTol', 1E-10);
+            mCirc = vmf1.toVM().trigonometricMoment(1);
+            testCase.verifyEqual(m, [real(mCirc), imag(mCirc)]', 'RelTol', 1E-10);
+            vmf2 = VMFDistribution.fromMoment(m);
+            testCase.verifyEqual(vmf1.mu, vmf2.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmf1.kappa, vmf2.kappa, 'RelTol', 1E-10);
+        end
+        
+        function testMoment3D(testCase)    
+            vmf1 = VMFDistribution([-1, 0, 0]', 1.3);
+            m = vmf1.moment();
+            testCase.verifyEqual(m/norm(m), vmf1.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(norm(m), besseli(1.5,vmf1.kappa)/besseli(0.5,vmf1.kappa), 'RelTol', 1E-10);
+            vmf2 = VMFDistribution.fromMoment(m);
+            testCase.verifyEqual(vmf1.mu, vmf2.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmf1.kappa, vmf2.kappa, 'RelTol', 1E-10);
+        end
+        
+        function testMoment4D(testCase)    
+            vmf1 = VMFDistribution([0, 1, 0, 0]', 0.5);
+            m = vmf1.moment();
+            testCase.verifyEqual(m/norm(m), vmf1.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(norm(m), besseli(2,vmf1.kappa)/besseli(1,vmf1.kappa), 'RelTol', 1E-10);
+            vmf2 = VMFDistribution.fromMoment(m);
+            testCase.verifyEqual(vmf1.mu, vmf2.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmf1.kappa, vmf2.kappa, 'RelTol', 1E-10);
+        end
     end
 end

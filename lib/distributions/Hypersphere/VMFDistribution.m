@@ -453,6 +453,11 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             ks = norm(kx/2*this.mu + ky/2*other.mu);
             h = 1- sqrt(kx^(d/2-1)*ky^(d/2-1))/ks^(d/2-1) * besseli(d/2-1,ks)/sqrt(besseli(d/2-1,kx)*besseli(d/2-1,ky));
         end
+        
+        function r = moment(this)
+            % Returns the mean resultant vector
+            r = VMFDistribution.Ad(this.dim, this.kappa)*this.mu;
+        end
     end
     
     methods (Static)
@@ -486,6 +491,19 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             mu_ = vecSum/norm(vecSum);
             Rbar = norm(vecSum);
             kappa_= VMFDistribution.AdInverse(d, Rbar);
+            
+            V = VMFDistribution(mu_, kappa_);
+        end
+        
+        function V = fromMoment(m)
+            % Estimates paramters from mean resultant vector
+            
+            assert(size(m,2) == 1, 'mu must be a column vector');
+            assert(size(m,1) >= 2, 'mu must be at least 2 for the circular case');
+            
+            mu_ = m/norm(m);
+            Rbar = norm(m);
+            kappa_= VMFDistribution.AdInverse(length(m), Rbar);
             
             V = VMFDistribution(mu_, kappa_);
         end
