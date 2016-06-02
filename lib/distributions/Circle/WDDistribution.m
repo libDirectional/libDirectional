@@ -48,6 +48,17 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             dshifted = this.d+(this.d<startingPoint)*2*pi;
             xamod = mod(xa,2*pi);
             xamodshift = xamod+(xamod<startingPoint)*2*pi; 
+            % If we wish to evaluate the cdf at many xa at once, there are
+            % multiple potential ways to influence the performance. The
+            % function could be converted into a piecewise constant 
+            % function (with borders that can be freely chosen) and we
+            % could then apply binary search to find the suitable region.
+            % However, without an efficient binary search directly
+            % available in Matlab, we have not tried this. Naive
+            % futher vectorization that results in replication of data, e.g.,
+            % val=(((ones(length(xa),1)*dshifted)<=(xamodshift'*ones(1,length(this.d))))*this.w')';
+            % has been tested but is significantly slower than the approach
+            % implemented below.
             val = arrayfun(@(xi)sum(this.w(dshifted<=xi)),xamodshift);
         end
                 
@@ -161,6 +172,44 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             wn = WNDistribution(mu,sigma);
         end
                 
+        function cd=toContinuousVoronoi(this)
+            % Converts the wd to a continouos function using an approach
+            % whose idea comes from Voronoi-regions. Find the center
+            % between each two particles and use these as a boundary to
+            % distribute the probability mass on (the probability mass in
+            % this region corresponds to the weight of the dirac). Subsume
+            % weights diracs with identical position beforehand
+            [diracPositions,order]=sort(this.d); %Sort particles
+            weights=this.w(order);
+            % Eliminate diracs at same locations and cumulate weight
+            difftmp=diff([0,diracPositions,2*pi]);
+            differences=[difftmp(2:end-1),difftmp(1)+difftmp(end)];
+            for i=length(diracPositions):-1:2
+                if differences(i)==0
+                    weights(i-1)=weights(i-1)+weights(i);
+                    diracPositions(i)=[];
+                    weights(i)=[];
+                end
+            end
+            % Subdivide into regions
+            difftmp=diff([0,diracPositions,2*pi]);
+            differences=[difftmp(2:end-1),difftmp(1)+difftmp(end)];
+            
+            boundaries=diracPositions+differences/2;
+            if boundaries(end)<2*pi
+                allBoundaries=[0,boundaries(1:end),2*pi];
+                weights=[weights,weights(1)];
+            else
+                allBoundaries=[0,boundaries(end)-2*pi,boundaries(1:end-1),2*pi];
+                weights=[weights(end),weights];
+            end
+            regionSizes=[allBoundaries(2)-(allBoundaries(end-1)-2*pi),diff(allBoundaries(2:end-1)),allBoundaries(2)-(allBoundaries(end-1)-2*pi)];
+            densityEachRegion=weights./regionSizes;
+            
+            cd=CustomCircularDistribution(@(x)...
+                arrayfun(@(xCurr)densityEachRegion((xCurr>=allBoundaries(1:end-1))&(xCurr<allBoundaries(2:end))),...
+                mod(x,2*pi)));
+        end
         function wd = applyFunction(this,f)
             % Apply a function f(x) to each Dirac component and obtain its new position
             %
