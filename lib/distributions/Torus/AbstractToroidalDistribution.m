@@ -203,21 +203,7 @@ classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
             
             r = this.integralNumerical(l, r);
         end
-        
-        function l = logLikelihood(this, samples)
-            % Calculates the log-likelihood of the given samples
-            %
-            % Parameters:
-            %   sampls (2 x n)
-            %       n samples on the torus
-            % Returns:
-            %   l (scalar)
-            %       log-likelihood of obtaining the given samples
-            assert(size(samples,1)==2);
-            assert(size(samples,2)>=1);
-            
-            l = sum(log(this.pdf(samples)));
-        end         
+     
     end
 end
 

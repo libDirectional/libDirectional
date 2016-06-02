@@ -192,21 +192,29 @@ classdef AbstractHypertoroidalDistribution
             m = this.trigonometricMoment(1);
             mu = reshape([real(m)';imag(m)'],[],1);
         end
-        
-        function l = logLikelihood(this,samples)
+
+        function l = logLikelihood(this, samples, weights)
             % Calculates the log-likelihood of the given samples
             %
             % Parameters:
-            %   sampls (dim x n)
-            %       n samples
+            %   samples (dim x n)
+            %       n samples on the torus
+            %   weights (1 x n)
+            %       weight for each sample (by default, all weights are 1)
             % Returns:
             %   l (scalar)
             %       log-likelihood of obtaining the given samples
             assert(size(samples,1)==this.dim);
             assert(size(samples,2)>=1);
             
-            l = sum(log(this.pdf(samples)));
-        end
+            if nargin>2
+                assert(size(weights,1)==1);
+                assert(size(weights,2)==size(samples,2));
+                l = sum(weights.*log(this.pdf(samples)));
+            else
+                l = sum(log(this.pdf(samples)));
+            end
+        end  
         
         function s = sample(this, n)
             % Obtain n samples from the distribution
