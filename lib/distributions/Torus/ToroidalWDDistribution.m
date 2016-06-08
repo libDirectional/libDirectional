@@ -307,7 +307,7 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
                 twn.C(1,2) = c12;
                 twn.C(2,1) = c12;
                 if det(twn.C) > 0
-                    loglikelihood = twn.logLikelihood(this.d);
+                    loglikelihood = twn.logLikelihood(this.d, this.w);
                 else
                     loglikelihood = -Inf;
                 end

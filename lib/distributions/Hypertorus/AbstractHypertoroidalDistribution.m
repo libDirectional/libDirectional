@@ -192,7 +192,7 @@ classdef AbstractHypertoroidalDistribution
             m = this.trigonometricMoment(1);
             mu = reshape([real(m)';imag(m)'],[],1);
         end
-
+        
         function l = logLikelihood(this, samples, weights)
             % Calculates the log-likelihood of the given samples
             %
