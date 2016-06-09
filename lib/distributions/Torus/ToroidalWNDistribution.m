@@ -194,7 +194,7 @@ classdef ToroidalWNDistribution < AbstractToroidalDistribution & HypertoroidalWN
             tvm = ToroidalVMSineDistribution(this.mu, kappa, lambda);
         end
         
-        function wn = marginal(this, dimension)
+        function wn = marginalizeTo1D(this, dimension)
             % Get marginal distribution in first or second dimension, i.e., 
             % f(x_1) or f(x_2), respectively.
             %
