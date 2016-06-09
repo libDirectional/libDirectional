@@ -15,7 +15,7 @@ classdef AbstractToroidalDistributionTest< matlab.unittest.TestCase
            testCase.verifyEqual(twn.trigonometricMoment(3), twn.trigonometricMomentNumerical(3), 'RelTol', 1E-8);
            
            %% test circularMean
-           testCase.verifyEqual(twn.circularMean, [twn.marginal(1).circularMean; twn.marginal(2).circularMean], 'RelTol', 1E-10);
+           testCase.verifyEqual(twn.circularMean, [twn.marginalizeTo1D(1).circularMean; twn.marginalizeTo1D(2).circularMean], 'RelTol', 1E-10);
            
            %% test correlation
            r1 = twn.circularCorrelationJupp();

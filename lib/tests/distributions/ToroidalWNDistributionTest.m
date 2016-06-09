@@ -46,8 +46,8 @@ classdef ToroidalWNDistributionTest < matlab.unittest.TestCase
             
             %% test angular moment
             m = twn.trigonometricMoment(1);
-            m1 = twn.marginal(1).trigonometricMoment(1);
-            m2 = twn.marginal(2).trigonometricMoment(1);
+            m1 = twn.marginalizeTo1D(1).trigonometricMoment(1);
+            m2 = twn.marginalizeTo1D(2).trigonometricMoment(1);
             testCase.verifyEqual(m(1), m1, 'RelTol', 1E-10);
             testCase.verifyEqual(m(2), m2, 'RelTol', 1E-10);
             testCase.verifyEqual(m, twn.trigonometricMomentNumerical(1), 'RelTol', 1E-9);
@@ -98,8 +98,8 @@ classdef ToroidalWNDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(twn.C, twn2.C, 'RelTol', 1E-5)                        
             
             %% test getMarginal
-            wn1 = twn.marginal(1);
-            wn2 = twn.marginal(2);
+            wn1 = twn.marginalizeTo1D(1);
+            wn2 = twn.marginalizeTo1D(2);
             testCase.verifyClass(wn1, 'WNDistribution');
             testCase.verifyClass(wn2, 'WNDistribution');
             testCase.verifyEqual(wn1.mu, twn.mu(1),'RelTol', 1E-10);
