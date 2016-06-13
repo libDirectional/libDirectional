@@ -123,6 +123,14 @@ classdef HypersphericalUKF < AbstractCircularFilter
             end
         end
         
+        function updateIdentity(this, z, gaussMeasNoise)
+            this.updateNonlinear(@(x) x, gaussMeasNoise, z);
+        end
+        
+        function predictIdentity(this, gaussSys)
+            this.predictNonlinear(@(x) x, gaussSys);
+        end
+
         function state = getEstimate(this)
             % Return current estimate 
             %
@@ -130,6 +138,15 @@ classdef HypersphericalUKF < AbstractCircularFilter
             %   state (GaussianDistribution)
             %       current estimate
             state = this.state;
+        end
+        
+        function state = getEstimateMean(this)
+            % Return current estimate 
+            %
+            % Returns:
+            %   state (GaussianDistribution)
+            %       current estimate
+            state = this.state.mu;
         end
     end
     
