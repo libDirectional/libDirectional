@@ -266,7 +266,7 @@ classdef Checks
                 covSqrts = [];
                 return;
             end
-          	
+            
             [dimA, dimB, N] = size(cov);
             
             if nargin < 2

@@ -13,8 +13,9 @@ classdef SampleBasedGaussianFilter < GaussianFilter
     %   setState                  - Set the system state.
     %   getState                  - Get the current system state.
     %   getStateDim               - Get the dimension of the current system state.
-    %   predict                   - Perform a time update (prediction).
+    %   predict                   - Perform a time update (prediction step).
     %   update                    - Perform a measurement update (filter step) using the given measurement(s).
+    %   step                      - Perform a combined time and measurement update.
     %   getPointEstimate          - Get a point estimate of the current system state.
     %   setUseAnalyticSystemModel - Enable or disable the use of analytic moment calculation during a prediction.
     %   getUseAnalyticSystemModel - Get the current use of analytic moment calculation during a prediction.
@@ -85,7 +86,7 @@ classdef SampleBasedGaussianFilter < GaussianFilter
             %      will be performed.
             
             if ~Checks.isFlag(useAnalyticSysModel)
-            	obj.error('InvalidFlag', ...
+                obj.error('InvalidFlag', ...
                           'useAnalyticSysModel must be a logical scalar.');
             end
             
@@ -103,22 +104,18 @@ classdef SampleBasedGaussianFilter < GaussianFilter
             
             useAnalyticSysModel = obj.useAnalyticSysModel;
         end
+    end
+    
+    methods (Abstract, Access = 'protected')
+        predictArbitraryNoise(obj, sysModel);
         
-        function predict(obj, sysModel)
-            % Perform a time update (prediction).
-            %
-            % Supported system models:
-            %   * AnalyticSystemModel (if enabled, see setUseAnalyticSystemModel())
-            %   * LinearSystemModel
-            %   * SystemModel
-            %   * AdditiveNoiseSystemModel
-            %   * MixedNoiseSystemModel
-            %
-            % Parameters:
-            %   >> sysModel (Arbitrary class (filter dependent))
-            %      System model that provides the mapping between the prior system
-            %      state and the predicted state (i.e., the system state's temporal evolution).
-            
+        predictAdditiveNoise(obj, sysModel);
+        
+        predictMixedNoise(obj, sysModel);
+    end
+    
+    methods (Access = 'protected')
+        function performPrediction(obj, sysModel)
             if obj.useAnalyticSysModel && ...
                Checks.isClass(sysModel, 'AnalyticSystemModel')
                 obj.predictAnalytic(sysModel);
@@ -131,24 +128,14 @@ classdef SampleBasedGaussianFilter < GaussianFilter
             elseif Checks.isClass(sysModel, 'MixedNoiseSystemModel')
                 obj.predictMixedNoise(sysModel);
             else
-            	obj.errorSysModel('AnalyticSystemModel (if enabled)', ...
+                obj.errorSysModel('AnalyticSystemModel (if enabled, see setUseAnalyticSystemModel())', ...
                                   'LinearSystemModel', ...
                                   'SystemModel', ...
                                   'AdditiveNoiseSystemModel', ...
                                   'MixedNoiseSystemModel');
             end
         end
-    end
-    
-    methods (Abstract, Access = 'protected')
-        predictArbitraryNoise(obj, sysModel);
         
-        predictAdditiveNoise(obj, sysModel);
-        
-        predictMixedNoise(obj, sysModel);
-    end
-    
-    methods (Access = 'protected')
         function predictJointGaussianArbitraryNoise(obj, sysModel, sampling)
             [predictedStateMean, ...
              predictedStateCov] = obj.predictArbitraryNoiseMoments(sysModel, sampling);
@@ -198,7 +185,7 @@ classdef SampleBasedGaussianFilter < GaussianFilter
             
             % Compute predicted state covariance
             predictedStateCov = cov + addNoiseCov;
-          	
+            
             obj.checkAndSavePrediction(predictedStateMean, predictedStateCov);
         end
         
@@ -213,7 +200,7 @@ classdef SampleBasedGaussianFilter < GaussianFilter
              numSamples] = Utils.getStateNoiseSamples(sampling, ...
                                                       obj.stateMean, obj.stateCovSqrt, ...
                                                       noiseMean, noiseCovSqrt);
-          	
+            
             % Propagate samples through system equation
             predictedStates = sysModel.systemEquation(stateSamples, noiseSamples);
             

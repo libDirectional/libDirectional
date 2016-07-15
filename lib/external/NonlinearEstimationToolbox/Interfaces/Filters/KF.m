@@ -14,8 +14,9 @@ classdef KF < GaussianFilter
     %   setState                   - Set the system state.
     %   getState                   - Get the current system state.
     %   getStateDim                - Get the dimension of the current system state.
-    %   predict                    - Perform a time update (prediction).
+    %   predict                    - Perform a time update (prediction step).
     %   update                     - Perform a measurement update (filter step) using the given measurement(s).
+    %   step                       - Perform a combined time and measurement update.
     %   getPointEstimate           - Get a point estimate of the current system state.
     %   setMaxNumIterations        - Set the maximum number of iterations that will be performed during a measurement update.
     %   getMaxNumIterations        - Get the current maximum number of iterations that will be performed during a measurement update.
@@ -210,7 +211,7 @@ classdef KF < GaussianFilter
                 try
                     [iterStateMean, iterStateCov] = Utils.kalmanUpdate(obj.stateMean, obj.stateCov, stackedMeas, ...
                                                                        measMean, measCov, stateMeasCrossCov);
-                 	
+                    
                     % Check intermediate state covariance is valid
                     [isPosDef, iterStateCovSqrt] = Checks.isCov(iterStateCov);
                     
@@ -287,7 +288,7 @@ classdef KF < GaussianFilter
                                         measCov, ...
                                         stateMeasCrossCov, ...
                                         dimStackedMeas);
-        	
+            
             if iterNum > 1
                 [measMean, measCov, ...
                  stateMeasCrossCov] = obj.momentCorrection(iterStateMean, iterStateCov, ...

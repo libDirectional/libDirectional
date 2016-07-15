@@ -2,8 +2,7 @@
 classdef GaussianFilter < Filter
     % Abstract base class for Gaussian filters.
     %
-    % This type of filter assumes (or in most cases approximates) the estimate of the system
-    % state as a Gaussian distribution.
+    % This type of filter approximates the estimate of the system state as a Gaussian distribution.
     %
     % GaussianFilter Methods:
     %   GaussianFilter   - Class constructor.
@@ -13,8 +12,9 @@ classdef GaussianFilter < Filter
     %   setState         - Set the system state.
     %   getState         - Get the current system state.
     %   getStateDim      - Get the dimension of the current system state.
-    %   predict          - Perform a time update (prediction).
+    %   predict          - Perform a time update (prediction step).
     %   update           - Perform a measurement update (filter step) using the given measurement(s).
+    %   step             - Perform a combined time and measurement update.
     %   getPointEstimate - Get a point estimate of the current system state.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox

@@ -94,7 +94,7 @@ classdef GaussianSamplingUKF < GaussianSampling
             mat = sqrt(dimension + obj.scaling) * speye(dimension);
             
             samples = [zeros(dimension, 1) -mat mat];
-           	
+            
             weights = (1 / (2 * (dimension + obj.scaling))) * ...
                       [2 * obj.scaling ones(1, numSamples - 1)];
         end

@@ -266,7 +266,7 @@ classdef Utils
             rndSamples = bsxfun(@plus, rndSamples, mean);
         end
         
-        function rndSamples = resampling(samples, cumWeights, numSamples)
+        function [rndSamples, idx] = resampling(samples, cumWeights, numSamples)
             % Perform a simple resampling.
             %
             % Parameters:
@@ -282,6 +282,9 @@ classdef Utils
             % Returns:
             %   << rndSamples (Matrix)
             %      Column-wise arranged samples drawn from the given sample distribution.
+            %
+            %   << idx (Row vector)
+            %      Corresponding indices of the samples that were resampled from.
             
             u = rand(1, numSamples);
             
@@ -302,7 +305,7 @@ classdef Utils
             rndSamples = samples(:, idx);
         end
         
-        function rndSamples = systematicResampling(samples, cumWeights, numSamples)
+        function [rndSamples, idx] = systematicResampling(samples, cumWeights, numSamples)
             % Perform a systematic resampling.
             %
             % Implements the systematic resampling algorithm from:
@@ -325,12 +328,15 @@ classdef Utils
             % Returns:
             %   << rndSamples (Matrix)
             %      Column-wise arranged samples drawn from the given sample distribution.
+            %
+            %   << idx (Row vector)
+            %      Corresponding indices of the samples that were resampled from.
             
             csw = cumWeights * numSamples;
             
             idx = zeros(1, numSamples);
             
-        	u1 = rand(1);
+            u1 = rand(1);
             
             i = 1;
             
@@ -383,7 +389,7 @@ classdef Utils
             %      State mean.
             %
             %   >> stateCovSqrt (Square matrix)
-            %      Square root of the state covariance.
+            %      Square root of the state covariance, e.g., the lower matrix of a Cholesky decomposition.
             %
             % Returns:
             %   << stateSamples (Matrix)
@@ -425,13 +431,13 @@ classdef Utils
             %      State mean.
             %
             %   >> stateCovSqrt (Square matrix)
-            %      Square root of the state covariance.
+            %      Square root of the state covariance, e.g., the lower matrix of a Cholesky decomposition.
             %
             %   >> noiseMean (Column vector)
             %      Noise mean.
             %
             %   >> noiseCovSqrt (Square matrix)
-            %      Square root of the noise covariance.
+            %      Square root of the noise covariance, e.g., the lower matrix of a Cholesky decomposition.
             %
             % Returns:
             %   << stateSamples (Matrix)

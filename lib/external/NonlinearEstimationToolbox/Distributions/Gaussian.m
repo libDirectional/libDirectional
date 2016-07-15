@@ -39,12 +39,14 @@ classdef Gaussian < Distribution
             % Class constructor.
             %
             % Parameters:
-            %   >> mean (Vector)
-            %      Mean of the distribution.
+            %   >> mean (Column vector)
+            %      Mean vector of the distribution.
             %      Default: 0.
             %
-            %   >> covariance (Positive definite matrix)
-            %      Covariance of the distribution.
+            %   >> covariance (Positive definite matrix or vector)
+            %      Covariance matrix of the distribution. If a vector is
+            %      passed, its values are interpreted as the variances of
+            %      a diagonal covariance matrix.
             %      Default: 1.
             
             if nargin == 2
@@ -140,9 +142,10 @@ classdef Gaussian < Distribution
                         obj.covSqrt    = blkdiag(covSqrts{:});
                     else
                         error('Gaussian:InvalidCovariance', ...
-                              ['covariance must be a vector with positive entries of dimension %d,\n' ...
-                               'a positive definite matrix of dimension %dx%d,\n' ...
-                               'or a 3D matrix with positive definite submatrices.'], ...
+                              ['covariance must be\n' ...
+                               '  * a vector of dimension %d containing positive values only, or\n' ...
+                               '  * a positive definite matrix of dimension %dx%d, or\n' ...
+                               '  * a 3D matrix with positive definite submatrices.'], ...
                               dim, dim, dim);
                     end
                 end

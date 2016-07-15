@@ -163,7 +163,7 @@ classdef JointDistribution < Distribution
             %   << numDists (Scalar)
             %      The number of distributions forming the joint distribution.
             %
-        	%   << dimDists (Row vector)
+            %   << dimDists (Row vector)
             %      Row-wise arranged dimensions of the distributions forming the joint distribution.
             
             dists    = obj.dists;
@@ -184,14 +184,9 @@ classdef JointDistribution < Distribution
                     return;
                 end
                 
-                for i = 1:L
-                    if ~Checks.isClass(dists{i}, 'Distribution')
-                        ret = false;
-                        return;
-                    end
-                end
+                checks = cellfun(@(c) Checks.isClass(c, 'Distribution'), dists);
                 
-                ret = true;
+                ret = all(checks);
             else
                 ret = false;
             end

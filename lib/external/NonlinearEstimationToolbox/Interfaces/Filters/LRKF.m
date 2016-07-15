@@ -13,8 +13,9 @@ classdef LRKF < KF & SampleBasedGaussianFilter
     %   setState                       - Set the system state.
     %   getState                       - Get the current system state.
     %   getStateDim                    - Get the dimension of the current system state.
-    %   predict                        - Perform a time update (prediction).
+    %   predict                        - Perform a time update (prediction step).
     %   update                         - Perform a measurement update (filter step) using the given measurement(s).
+    %   step                           - Perform a combined time and measurement update.
     %   getPointEstimate               - Get a point estimate of the current system state.
     %   setMaxNumIterations            - Set the maximum number of iterations that will be performed during a measurement update.
     %   getMaxNumIterations            - Get the current maximum number of iterations that will be performed during a measurement update.
@@ -133,7 +134,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             %      update will be performed.
             
             if ~Checks.isFlag(useAnalyticMeasModel)
-            	obj.error('InvalidFlag', ...
+                obj.error('InvalidFlag', ...
                           'useAnalyticMeasModel must be a logical scalar.');
             end
             
@@ -151,64 +152,6 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             
             useAnalyticMeasModel = obj.useAnalyticMeasModel;
         end
-        
-        function update(obj, measModel, measurements)
-            % Perform a measurement update (filter step) using the given measurement(s).
-            %
-            % Supported measurement models:
-            %   * AnalyticMeasurementModel (if enabled, see setUseAnalyticMeasurementModel())
-            %   * LinearMeasurementModel
-            %   * MeasurementModel
-            %   * AdditiveNoiseMeausrementModel
-            %   * MixedNoiseMeasurementModel
-            %
-            % Parameters:
-            %   >> measModel (Arbitrary class (filter dependent))
-            %      Measurement model that provides the mapping between a measurement
-            %      and the system state.
-            %
-            %   >> measurements (Matrix)
-            %      Column-wise arranged measurement vectors, where each column represents an individual
-            %      measurement. In case of two or more measurements (i.e., two or more columns), the
-            %      filter assumes that the measurements originate from the same measurement model and
-            %      i.i.d. measurement noise. For example, in case of a measurement model h(x, v) and two
-            %      measurements m1 and m2 the filter assumes
-            %
-            %          m1 = h(x, v) and m2 = h(x, v) .
-            %
-            %      The advantage is that one has to set the measurement noise v only for one
-            %      measurement, no matter how many measurements will be provided in one filter step.
-            %      That is, the measurement noise is assumed to be i.i.d. for all measurements.
-            %      However, in case of non-i.i.d. measurement noise 
-            %
-            %          m1 = h(x, v1) and m2 = h(x, v2)
-            %
-            %      (e.g., existing correlations between noise for different measurements or in general
-            %      different noise for different measurements) one has to explicitly stack the
-            %      measurement noise to v = [v1; v2] and pass the measurements m1 and m2 as a stacked
-            %      measurement vector m = [m1; m2].
-            
-          	obj.checkMeasurements(measurements);
-            
-            if obj.useAnalyticMeasModel && ...
-               Checks.isClass(measModel, 'AnalyticMeasurementModel')
-                obj.updateAnalytic(measModel, measurements);
-            elseif Checks.isClass(measModel, 'LinearMeasurementModel')
-                obj.updateAnalytic(measModel, measurements);
-            elseif Checks.isClass(measModel, 'MeasurementModel')
-                obj.updateArbitraryNoise(measModel, measurements);
-            elseif Checks.isClass(measModel, 'AdditiveNoiseMeasurementModel')
-                obj.updateAdditiveNoise(measModel, measurements);
-            elseif Checks.isClass(measModel, 'MixedNoiseMeasurementModel')
-                obj.updateMixedNoise(measModel, measurements);
-            else
-                obj.errorMeasModel('AnalyticMeasurementModel (if enabled)', ...
-                                   'LinearMeasurementModel', ...
-                                   'MeasurementModel', ...
-                                   'AdditiveNoiseMeausrementModel', ...
-                                   'MixedNoiseMeasurementModel');
-            end
-        end
     end
     
     methods (Access = 'protected')
@@ -224,8 +167,29 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             obj.predictJointGaussianMixedNoise(sysModel, obj.samplingPrediction);
         end
         
-     	function updateArbitraryNoise(obj, measModel, measurements)
-          	[dimMeas, numMeas]           = size(measurements);
+        function performUpdate(obj, measModel, measurements)
+            if obj.useAnalyticMeasModel && ...
+               Checks.isClass(measModel, 'AnalyticMeasurementModel')
+                obj.updateAnalytic(measModel, measurements);
+            elseif Checks.isClass(measModel, 'LinearMeasurementModel')
+                obj.updateAnalytic(measModel, measurements);
+            elseif Checks.isClass(measModel, 'MeasurementModel')
+                obj.updateArbitraryNoise(measModel, measurements);
+            elseif Checks.isClass(measModel, 'AdditiveNoiseMeasurementModel')
+                obj.updateAdditiveNoise(measModel, measurements);
+            elseif Checks.isClass(measModel, 'MixedNoiseMeasurementModel')
+                obj.updateMixedNoise(measModel, measurements);
+            else
+                obj.errorMeasModel('AnalyticMeasurementModel (if enabled, see setUseAnalyticMeasurementModel())', ...
+                                   'LinearMeasurementModel', ...
+                                   'MeasurementModel', ...
+                                   'AdditiveNoiseMeausrementModel', ...
+                                   'MixedNoiseMeasurementModel');
+            end
+        end
+        
+        function updateArbitraryNoise(obj, measModel, measurements)
+            [dimMeas, numMeas]           = size(measurements);
             [noiseMean, ~, noiseCovSqrt] = measModel.noise.getMeanAndCovariance();
             dimNoise     = size(noiseMean, 1);
             noiseMean    = repmat(noiseMean, numMeas, 1);
@@ -236,7 +200,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
                              dimNoise, dimMeas, numMeas, noiseMean, noiseCovSqrt);
         end
         
-     	function updateAdditiveNoise(obj, measModel, measurements)
+        function updateAdditiveNoise(obj, measModel, measurements)
             [dimMeas, numMeas]    = size(measurements);
             [noiseMean, noiseCov] = measModel.noise.getMeanAndCovariance();
             dimNoise = size(noiseMean, 1);
@@ -275,7 +239,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
                                                       iterStateMean, iterStateCovSqrt, ...
                                                       noiseMean, noiseCovSqrt);
             
-        	measSamples = nan(dimMeas * numMeas, numSamples);
+            measSamples = nan(dimMeas * numMeas, numSamples);
             a = 1; c = 1;
             
             for i = 1:numMeas
@@ -350,7 +314,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
                                                       iterStateMean, iterStateCovSqrt, ...
                                                       noiseMean, noiseCovSqrt);
             
-        	measSamples = nan(dimMeas * numMeas, numSamples);
+            measSamples = nan(dimMeas * numMeas, numSamples);
             a = 1; c = 1;
             
             for i = 1:numMeas
@@ -372,7 +336,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             [measMean, measCov, ...
              stateMeasCrossCov] = Utils.getMeanCovAndCrossCov(iterStateMean, stateSamples, ...
                                                               measSamples, weights);
-        	
+            
             % Compute measurement mean
             measMean = measMean + repmat(addNoiseMean, numMeas, 1);
             
