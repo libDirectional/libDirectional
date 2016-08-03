@@ -154,14 +154,14 @@ classdef AbstractHypertoroidalDistribution
             end
         end
         
-        function result = entropy(this)
+        function e = entropy(this)
             % Calculates the entropy analytically if possible, 
             % fall back to numerical calculation by default
             %
             % Returns:
-            %   result (scalar)
+            %   e (scalar)
             %       entropy of the distribution
-            result = this.entropyNumerical();
+            e = this.entropyNumerical();
         end
         
         function e = entropyNumerical(this)
@@ -180,7 +180,7 @@ classdef AbstractHypertoroidalDistribution
                     f = @(x,y,z) reshape(this.pdf([x(:)';y(:)';z(:)']).*log(this.pdf([x(:)';y(:)';z(:)'])), size(x));
                     e = -integral3(f, 0, 2*pi, 0, 2*pi, 0, 2*pi);
                 otherwise
-                    error('Numerical moment calculation for this dimension is currently not supported');
+                    error('Numerical moment calculation for this dimension is currently not supported.');
             end
         end
         

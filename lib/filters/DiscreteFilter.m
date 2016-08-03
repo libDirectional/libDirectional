@@ -2,7 +2,12 @@ classdef DiscreteFilter < AbstractCircularFilter
     % A discrete filter on the circle based on the wrapped
     % Dirac distribution with a grid of equidistant samples.
     %
-    % mentioned in 
+    % Gerhard Kurz, Florian Pfaff, Uwe D. Hanebeck,
+    % Discrete Recursive Bayesian Filtering on Intervals and the Unit Circle
+    % Proceedings of the 2016 IEEE International Conference on Multisensor Fusion and Integration for Intelligent Systems (MFI 2016), 
+    % Baden-Baden, Germany, September 2016.    
+    %
+    % also mentioned in 
     % Florian Pfaff, Gerhard Kurz, and Uwe D. Hanebeck,
     % Multimodal Circular Filtering Using Fourier Series
     % Proceedings of the 18th International Conference on Information Fusion (Fusion 2015),
