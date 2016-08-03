@@ -272,6 +272,106 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             result = integral(@(x) this.pdf(x), l, r);
         end
                 
+        function result = l2distanceCdfNumerical(this, other,startingPoint)
+            % Numerically calculates the L2 distance of the cdfs
+            %
+            % Parameters:
+            %   other (AbstractHypertoroidalDistribution)
+            %       distribution to compare with
+            % Returns:
+            %   result (scalar)
+            %       test result
+            if nargin==2
+                startingPoint=0;
+            else
+                startingPoint=mod(startingPoint,2*pi);
+            end
+            assert(isa(other, 'AbstractCircularDistribution'),'cdfs are only implemented for circular distributions.');
+            if isa(other,'WDDistribution')
+                % Swap distributions
+                othertmp=this;
+                this=other;
+                other=othertmp;
+            end
+            if isa(this,'WDDistribution') % Splitting the interal up is usually faster for WDDistributions
+                [d1ShiftedSorted,sorting]=sort(mod(this.d-startingPoint,2*pi)+startingPoint);
+                wSorted=this.w(sorting);
+
+                d1ShiftedSortedAppended=[startingPoint,d1ShiftedSorted,startingPoint+2*pi];
+                wSortedAppended=[0,wSorted];
+                wCum=cumsum(wSortedAppended);
+                if isa(other,'WDDistribution') % In this special case, we can calculate the result very efficiently
+                    d2Shifted=mod(other.d-startingPoint,2*pi)+startingPoint;
+                    allBorders=[startingPoint,union(d1ShiftedSorted,d2Shifted,'sorted'),startingPoint+2*pi];
+                    % Integrate by multiplying lenght of interval with
+                    % squared diff of cdfs
+                    result=sum((allBorders(2:end)-allBorders(1:end-1)).*...
+                        (this.cdf(allBorders(1:end-1),startingPoint)-other.cdf(allBorders(1:end-1),startingPoint)).^2);
+                elseif isa(other,'FourierDistribution')&&(strcmp(other.transformation,'sqrt')||strcmp(other.transformation,'identity')) % Additional speedup for Fourier
+                    if strcmp(other.transformation,'sqrt') %transform to identity
+                        fd=other.transformViaCoefficients('square',4*length(other.a)-3);
+                    else
+                        fd=other;
+                    end
+                    % For the cdf
+                    c=fd.c;
+                    c0=c((length(c)+1)/2);
+                    cnew=fd.c./(1i*(-length(fd.b):length(fd.b))); 
+                    cnew((length(cnew)+1)/2)=1/(2*pi);
+                    fdInt=FourierDistribution.fromComplex(cnew,'identity');
+                    
+                    % For the integral of the cdf
+                    cInt=fdInt.c;
+                    c0int=real(cInt((length(cInt)+1)/2));
+                    cintInt=fdInt.c./(1i*(-length(fdInt.b):length(fdInt.b))); % For all entries except c0
+                    cintInt((length(cintInt)+1)/2)=1/(2*pi);
+                    fdIntInt=FourierDistribution.fromComplex(cintInt,'identity'); 
+                    fIntInt=@(r,l)fdIntInt.value(r)-fdIntInt.value(l)+(c0int)*(r-l);
+
+                    % For the integral of the square of the cdf
+                    cIntSquare=conv(cInt,cInt);
+                    c0intSquare=cIntSquare((length(cIntSquare)+1)/2);
+                    cintSquareInt=cIntSquare./(1i*(-2*length(fdInt.b):2*length(fdInt.b))); % For all entries except c0
+                    cintSquareInt((length(cintSquareInt)+1)/2)=1/(2*pi);
+                    fdIntSquareInt=FourierDistribution.fromComplex(cintSquareInt,'identity'); 
+                    fIntSquareInt=@(r,l)fdIntSquareInt.value(r)-fdIntSquareInt.value(l)+(c0intSquare)*(r-l);
+                
+                    d1Ssa=d1ShiftedSortedAppended;
+                    sp=startingPoint;
+                    result=... % Calculate vectorized over the weights and boundaries
+                        ...% Parts dependent on y
+                        sum((d1Ssa(2:end)-d1Ssa(1:end-1)).*(wCum.^2+2*fdInt.value(sp)*wCum+fdInt.value(sp)^2 ...
+                             +2*fdInt.value(sp)*c0*sp+2*c0*sp*wCum+c0^2*sp^2))...
+                        ...% Parts dependent on y^2
+                        +1/3*sum( (d1Ssa(2:end).^3-d1Ssa(1:end-1).^3)*c0^2)...
+                        ...% Parts dependent on fy^2
+                        +sum(fIntSquareInt(d1Ssa(2:end),d1Ssa(1:end-1)))...
+                        ...% Part dependent on fy
+                        +sum(fIntInt(d1Ssa(2:end),d1Ssa(1:end-1)).*(-2*fdInt.value(sp)-2*wCum-2*c0*sp))...
+                        ...% Part dependent on y
+                        +sum(0.5*(d1Ssa(2:end).^2-d1Ssa(1:end-1).^2).*(-2*c0*wCum-2*sp*c0^2-2*fdInt.value(sp).*c0));
+                    for i=2:length(d1Ssa) % Iterate over all intervals for calculation of part depending on y*fy
+                        l=d1Ssa(i-1);
+                        r=d1Ssa(i);
+                        % Calculate integral for the part dependeing on y*fy
+                        kRange=-(numel(cInt)-1)/2:(numel(cInt)-1)/2;
+                        intValyfySummands=real(cInt.*(exp(l*kRange*1i).*(-1+l*kRange*1i)./kRange.^2-exp(r*kRange*1i).*(-1+r*kRange*1i)./kRange.^2));
+                        intValyfySummands((numel(cInt)+1)/2)=0;
+                        intValyfy=sum(intValyfySummands)+cInt((numel(cInt)+1)/2)*(r^2/2 - l^2/2); % Hanlde part depending on c0int separately
+
+                        result=real(result)+2*c0*real(intValyfy);
+                    end
+                else
+                    result=sum(arrayfun(@(i)...
+                        integral(@(x)(other.cdf(x,startingPoint)-wCum(i-1)).^2,...
+                            d1ShiftedSortedAppended(i-1),d1ShiftedSortedAppended(i)),...
+                        2:length(d1ShiftedSortedAppended)));
+                end
+            else
+                result=integral(@(x) (this.cdf(x,startingPoint)-other.cdf(x,startingPoint)).^2, 0, 2*pi);
+            end
+        end
+         
         function s = sampleCdf(this, n)
             % Sampling algorithm based on calculation of the inverse of the 
             % distribution function with numerical integration

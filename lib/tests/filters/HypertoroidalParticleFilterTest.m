@@ -13,7 +13,7 @@ classdef HypertoroidalParticleFilterTest< matlab.unittest.TestCase
                 hpf.updateIdentity(HypertoroidalWNDistribution([0;0;0],0.5*C),forcedMean);
                 hpf.updateIdentity(HypertoroidalWNDistribution([0;0;0],0.5*C),forcedMean);
             end
-            testCase.verifyEqual(hpf.wd.circularMean,[1;1;1],'AbsTol',1);
+            testCase.verifyEqual(hpf.getEstimateMean,[1;1;1],'AbsTol',1);
         end
     end
 end

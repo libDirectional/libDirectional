@@ -132,5 +132,58 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(twd.w, twdShifted.w);
             testCase.verifyEqual(twd.d, mod(twdShifted.d - repmat(s,1,size(d,2)),2*pi), 'RelTol', 1E-10);
         end        
+
+        function testToContinuousVoronoi(testCase)
+            d=[0.1,5,6];
+            w=[0.3,0.1,0.6];
+            wd=WDDistribution(d,w);
+            cd=wd.toContinuousVoronoi;
+            testCase.verifyGreaterThan(cd.pdf(0.5*(d(2)+d(1))-0.1),cd.pdf(0.5*(d(2)+d(1))+0.1));
+            testCase.verifyEqual(cd.pdf(2*pi-0.01),cd.pdf(0.01), 'RelTol', 1E-10);
+            
+            d=[0.5,5,6];
+            w=[0.3,0.4,0.3];
+            wd=WDDistribution(d,w);
+            cd=wd.toContinuousVoronoi;
+            testCase.verifyGreaterThan(cd.pdf(0.5*(d(2)+d(1))+0.1),cd.pdf(0.5*(d(2)+d(1))-0.1));
+            testCase.verifyEqual(cd.pdf(2*pi-0.01),cd.pdf(0.01), 'RelTol', 1E-10);
+            
+            wd2=WDDistribution(d([2,3,1]),w([2,3,1]));
+            cd2=wd2.toContinuousVoronoi;
+            testCase.verifyEqual(cd2.totalVariationDistanceNumerical(cd),0, 'RelTol', 1E-10);
+        end
+        
+        function testl2distanceCdf(testCase)
+            d=[0,1,2,3,3.5,6];
+            perm=[2,5,6,1,4,3];
+            w=[0.3,0.1,0.15,0.2,0.1,0.05];            
+            wd=WDDistribution(d(perm),w);
+            startingPoint=1.5;
+            
+            vm=VMDistribution(0,10);
+            fdId=FourierDistribution.fromDistribution(vm,101,'identity');
+            fdSqrt=FourierDistribution.fromDistribution(vm,101,'sqrt');
+            
+            cvm=integral(@(x)(wd.cdf(x,startingPoint)-vm.cdf(x,startingPoint)).^2,0,2*pi);
+            
+            testCase.verifyEqual(wd.l2distanceCdfNumerical(vm,startingPoint),cvm,'RelTol',1E-6);
+            testCase.verifyEqual(wd.l2distanceCdfNumerical(fdId,startingPoint),cvm,'RelTol',1E-6);
+            testCase.verifyEqual(wd.l2distanceCdfNumerical(fdSqrt,startingPoint),cvm,'RelTol',1E-6);
+            
+            testCase.verifyEqual(vm.l2distanceCdfNumerical(wd,startingPoint),cvm,'RelTol',1E-6);
+            testCase.verifyEqual(fdId.l2distanceCdfNumerical(wd,startingPoint),cvm,'RelTol',1E-6);
+            testCase.verifyEqual(fdSqrt.l2distanceCdfNumerical(wd,startingPoint),cvm,'RelTol',1E-6);
+            
+            % Test wd-wd
+            d2=rand(1,1000)*45/23*pi;
+            perm2=randperm(numel(d2));
+            w2=rand(size(d2));
+            w2=w2/norm(w2,1);
+            wd2=WDDistribution(d2(perm2),w2);
+            cvm=integral(@(x)(wd.cdf(x,startingPoint)-wd2.cdf(x,startingPoint)).^2,0,2*pi);
+            % AbsTol of 1E-4 is not that good, maybe a more thorough
+            % comparison is necessary.
+            testCase.verifyEqual(wd.l2distanceCdfNumerical(wd2,startingPoint),cvm,'AbsTol',1E-4);
+        end
     end
 end
