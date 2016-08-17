@@ -19,7 +19,7 @@ classdef SE2BinghamDistribution
     
     methods
         function this = SE2BinghamDistribution(C, C2, C3)
-            % Generater an SENDistribution object.
+            % Generate an SE2BinghamDistribution object.
             %
             % Parameters:
             %   C - Full Parameter Matrix (Alternative: sperical part).
@@ -140,13 +140,10 @@ classdef SE2BinghamDistribution
             [bSamples, bWeights] = b.sampleDeterministic('uniform');
             numBinghamSamples = length(bWeights);
             
-            % Generate Samples of Standard normal using UKF.
-            ukfSampling=GaussianSamplingUKF();
-            [gSamples, gWeights,numGaussianSamples] ...
-                = ukfSampling.getStdNormalSamples(2);
-            
-            % Ensure correct covariance of Samples.
-            gSamples = chol(-0.5*pinv(this.C3))*gSamples;
+            % Generate Samples using UKF.
+            % Generate Gaussian Samples using UKF.
+            ukfSampling = GaussianSamplingUKF();
+            [gSamples, gWeights, numGaussianSamples] = ukfSampling.getSamples(Gaussian(zeros(2,1), -0.5*pinv(this.C3)));
             
             % Compute repositioning matrix
             A = -pinv(this.C3)*this.C2;
