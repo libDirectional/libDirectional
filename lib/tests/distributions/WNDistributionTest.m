@@ -120,5 +120,16 @@ classdef WNDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(wn.mu, wnMleNumerical.mu, 'RelTol', 1E-5);
             testCase.verifyEqual(wn.sigma, wnMleNumerical.sigma, 'RelTol', 0.2);
         end
+        
+        function testQuantization(testCase)
+            wn = WNDistribution(2,0.7);
+            n = 11;
+            [s,w] = wn.sampleOptimalQuantization(n);
+            testCase.verifyEqual(sum(w), 1, 'RelTol', 1E-10);
+            testCase.verifySize(s, [1 n]);
+            testCase.verifySize(w, [1 n]);
+            wd = WDDistribution(s,w);
+            testCase.verifyEqual(wd.trigonometricMoment(1), wn.trigonometricMoment(1), 'RelTol', 1E-2);
+        end
     end
 end

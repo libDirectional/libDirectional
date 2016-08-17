@@ -1,8 +1,8 @@
 classdef WNDistribution < AbstractCircularDistribution
     % wrapped normal distribution
     %
-    % see Sreenivasa Rao Jammalamadaka and A. SenGupta, "Topics in Circular 
-    % Statistics", 2001, Sec. 2.2.6, page 44f.    
+    % see Sreenivasa Rao Jammalamadaka and A. SenGupta, "Topics in Circular
+    % Statistics", 2001, Sec. 2.2.6, page 44f.
     
     properties
         mu
@@ -32,7 +32,7 @@ classdef WNDistribution < AbstractCircularDistribution
         end
         
         function val = cdf(this, xa, startingPoint, n)
-            % Evaluate cumulative distribution function 
+            % Evaluate cumulative distribution function
             %
             % Parameters:
             %   xa (1 x n)
@@ -43,15 +43,15 @@ classdef WNDistribution < AbstractCircularDistribution
             % Returns:
             %   val (1 x n)
             %       cdf evaluated at columns of xa
-            if nargin<=2 
-                startingPoint = 0; 
+            if nargin<=2
+                startingPoint = 0;
             end
             if nargin<=3 %Use n for predefined number of runs to use vectorization
-                n = 10; 
+                n = 10;
             end
             startingPoint = mod(startingPoint,2*pi);
             xa = mod(xa,2*pi);
-
+            
             ncdf = @(from,to) 1/2*(erf((this.mu-from)/(sqrt(2)*this.sigma))-erf((this.mu-to)/(sqrt(2)*this.sigma)));
             val = ncdf(startingPoint,xa);
             for i=1:n
@@ -59,7 +59,7 @@ classdef WNDistribution < AbstractCircularDistribution
             end
             val = (xa<startingPoint)+val; %1+int(a,b) if a>b, otherweise int(a,b)
         end
-                               
+        
         function m = trigonometricMoment(this, n)
             % Calculate n-th trigonometric moment analytically
             %
@@ -73,7 +73,7 @@ classdef WNDistribution < AbstractCircularDistribution
             
             m = exp(1i*n*this.mu - n^2*this.sigma^2/2);
         end
-               
+        
         function wn = multiplyVM(this,wn2)
             % Multiply two WN distributions (approximate by means of intermediate VM)
             %
@@ -96,7 +96,7 @@ classdef WNDistribution < AbstractCircularDistribution
             wn = vm.toWN();
         end
         
-        function wn = multiplyMomentBased(this, wn2) 
+        function wn = multiplyMomentBased(this, wn2)
             % Multiply two WN distributions (approximate by means of true moments of product)
             %
             % Parameters:
@@ -195,11 +195,166 @@ classdef WNDistribution < AbstractCircularDistribution
             s = mod(this.mu + this.sigma * randn(1,n),2*pi);
         end
         
+        function [samples, weights] = sampleOptimalQuantization(this, N)
+            % Computes optimal quantization of the
+            % wrapped normal distribution.
+            %
+            % Parameters:
+            %   N (scalar)
+            %       number of samples
+            % Returns:
+            %   samples (1 x N)
+            %       N samples on the circle
+            %   weights (1 x N)
+            %       weight for each sample
+            %
+            % Igor Gilitschenski, Gerhard Kurz, Uwe D. Hanebeck, Roland Siegwart,
+            % Optimal Quantization of Circular Distributions
+            % Proceedings of the 19th International Conference on Information Fusion (Fusion 2016), Heidelberg, Germany, July 2016.
+            
+            assert(isscalar(N));
+            
+            funWithDeriv = @(x) optimfun(x, this.sigma);          
+            startval = ((2*pi/(2*N) + (0:N-1)*(2*pi)/N)-pi) * min(this.sigma,1);
+            
+            [x, ~, ~, ~] = ...
+                fminunc(funWithDeriv, startval, ...
+                optimset( 'Display','none', 'GradObj', 'on', ...
+                'MaxFunEvals', 100000, 'MaxIter', 1000, ...
+                'TolFun', 1e-12, 'TolX', 1e-12 ));
+            
+            samples = sort(mod(x + this.mu,2*pi));
+            weights = WNWeights(samples, this.mu, this.sigma);
+            
+            function [v, g] = optimfun(x,sigma)
+                v = WNUtility(x, sigma);
+                g = WNUtilityDeriv(x, sigma);
+            end
+            
+            function R = WNUtility( x, sigma )
+                % Utility function for computing optimal L-Quantizer
+                % Utility function used in optimization procedure computing the optimal
+                % L-Quantizer of the wrapped normal distribution with mean 0
+                %
+                % Parameters:
+                %       x - Positions of the discrete points (must be between -pi and pi).
+                %       sigma - Dispersion parameter of wrapped normal.
+                
+                assert(sigma > 0, 'Sigma must be a positive real number.');
+                
+                R = sum(P1(x,sigma,0)-2*P2(x, sigma, 0)+P3(x, sigma, 0));
+                i = 1;
+                while 1
+                    T =   P1(x,sigma,i) - 2*P2(x, sigma, i)  + P3(x, sigma, i) ...
+                        + P1(x,sigma,-i) - 2*P2(x, sigma, -i) + P3(x, sigma, -i);                    
+                    R = R + sum(T);
+                    if (sum(T) == 0)
+                        break;
+                    end
+                    i = i + 1;
+                end
+            end
+            
+            function res = P1(x, sigma, k)
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.
+                
+                xBa = xBoundary(1:(end-1));
+                xBb = xBoundary(2:end);
+                
+                P = sigma * (2*k*pi-xBb).* exp( -((xBb + 2*k*pi).^2)/(2*sigma^2) ) / (sqrt(2*pi)) ...
+                    - sigma *(2*k*pi-xBa).* exp( -((xBa + 2*k*pi).^2)/(2*sigma^2) ) / (sqrt(2*pi));
+                P = P + ( (2*k^2*pi^2+sigma^2/2)*erf( (xBb + 2*k*pi)/(sqrt(2)*sigma) ) ...
+                    - (2*k^2*pi^2+sigma^2/2)*erf( (xBa + 2*k*pi)/(sqrt(2)*sigma) ) );
+                
+                res = P;
+            end
+            
+            function res = P2(x, sigma, k)
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.
+                
+                xBa = xBoundary(1:(end-1));
+                xBb = xBoundary(2:end);
+                
+                P = sigma *   exp( -((xBb + 2*k*pi).^2)/(2*sigma^2) ) / (sqrt(2*pi)) ...
+                    - sigma * exp( -((xBa + 2*k*pi).^2)/(2*sigma^2) ) / (sqrt(2*pi));
+                P = P + ( k*pi*erf( (xBb + 2*k*pi)/(sqrt(2)*sigma) ) ...
+                    - k*pi*erf( (xBa + 2*k*pi)/(sqrt(2)*sigma) ) );
+                
+                res = -x(2:(end-1)).*P;
+            end
+            
+            function res = P3(x, sigma, k)
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.
+                
+                P = erf( (xBoundary(2:end)+2*k*pi)/(sqrt(2)*sigma) ) ...
+                    - erf( (xBoundary(1:(end-1))+2*k*pi)/(sqrt(2)*sigma) );
+                
+                res = (x(2:(end-1)).^2).*P/2;
+            end
+            
+            function G = WNUtilityDeriv( x, sigma )
+                % Derivative of utility function for computing optimal L-Quantizer
+                % Utility function used in optimization procedure computing the optimal
+                % L-Quantizer of the wrapped normal distribution with mean 0
+                %
+                % Parameters:
+                %       x - Positions of the discrete points (must be between -pi and pi).
+                %       sigma - Dispersion parameter of wrapped normal.
+                
+                assert(sigma > 0, 'sigma must be a positive real number.');
+                
+                G = zeros(1,numel(x));
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.
+                
+                dist = WNDistribution(0,sigma);
+                WNDensity = @(x) dist.pdf(x);
+                
+                % Compute the actual utility.
+                for i=1:(numel(x)-2)
+                    intfun = @(a) (-2*a+2*x(i+1)).*WNDensity(a);
+                    G(i) = integral(intfun, xBoundary(i),xBoundary(i+1));
+                end
+            end
+            
+            function w = WNWeights(x, mu, sigma )
+                % Computes probability weights of a given quantizer
+                x = x-mu;
+                w = PMass(x, sigma, 0);
+                
+                i=1;
+                while 1
+                    T = PMass(x, sigma, i)+PMass(x, sigma, -i);
+                    if (sum(T) == 0)
+                        break;
+                    end
+                    w = w + T;
+                    i=i+1;
+                end
+                
+                % Normalization to avoid numerical inaccuracy.
+                w=w/sum(w);
+            end
+            
+            function res = PMass(x, sigma, k)
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.                
+                
+                P = erf( (xBoundary(2:end)+2*k*pi)/(sqrt(2)*sigma) ) ...
+                    - erf( (xBoundary(1:(end-1))+2*k*pi)/(sqrt(2)*sigma) );
+                
+                res = P/2;
+            end
+        end
+        
         function wn = shift(this, angle)
             % Shift distribution by the given angle
             %
             % Parameters:
-            %   shiftAngles (scalar) 
+            %   shiftAngles (scalar)
             %       angle to shift by
             % Returns:
             %   hd (WNDistribution)
@@ -209,7 +364,7 @@ classdef WNDistribution < AbstractCircularDistribution
         end
         
         function g = toGaussian(this)
-            % Convert to 1D Gaussian distribution 
+            % Convert to 1D Gaussian distribution
             % this is a simple conversion that just keeps the parameters
             % for large sigma, better conversions are possible
             %
@@ -238,7 +393,7 @@ classdef WNDistribution < AbstractCircularDistribution
         end
         
         function wn = mleJensen(samples)
-            % Obtain WN distribution from samples using MLE 
+            % Obtain WN distribution from samples using MLE
             % Parameters:
             %   samples (1 x n vector)
             %       array of samples in [0,2pi)

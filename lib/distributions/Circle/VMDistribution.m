@@ -1,7 +1,7 @@
 classdef VMDistribution < AbstractCircularDistribution
     % von Mises distribution
     %
-    % see Sreenivasa Rao Jammalamadaka and A. SenGupta, "Topics in Circular 
+    % see Sreenivasa Rao Jammalamadaka and A. SenGupta, "Topics in Circular
     % Statistics", 2001, Sec. 2.2.4, page 35ff.
     
     properties
@@ -19,7 +19,7 @@ classdef VMDistribution < AbstractCircularDistribution
         end
         
         function r = cdf(this, xa, startingPoint)
-            % Evaluate cumulative distribution function 
+            % Evaluate cumulative distribution function
             %
             % Parameters:
             %   xa (1 x n)
@@ -29,11 +29,11 @@ classdef VMDistribution < AbstractCircularDistribution
             %       [0,2pi) on the circle, default 0
             % Returns:
             %   val (1 x n)
-            %       cdf evaluated at columns of xa            
+            %       cdf evaluated at columns of xa
             assert(size(xa,1)==1);
-            if nargin<=2 
-                startingPoint = 0; 
-            end            
+            if nargin<=2
+                startingPoint = 0;
+            end
             
             r = zeros(size(xa));
             for  i=1:size(xa,2)
@@ -82,7 +82,7 @@ classdef VMDistribution < AbstractCircularDistribution
                 m = besseli(abs(n),this.kappa,1)/besseli(0, this.kappa,1)*exp(1i * n * this.mu);
             end
         end
-                
+        
         function vm = multiply(this, vm2)
             % Multiply two von Mises distribution (exact)
             %
@@ -112,9 +112,9 @@ classdef VMDistribution < AbstractCircularDistribution
             %   vm (VMDistribution)
             %       convolution of this and vm2
             %
-            % based on the approximation from 
-            % Azmani, M.; Reboul, S.; Choquel, J.-B. & Benjelloun, M. A 
-            % Recursive Fusion Filter for Angular Data 
+            % based on the approximation from
+            % Azmani, M.; Reboul, S.; Choquel, J.-B. & Benjelloun, M. A
+            % Recursive Fusion Filter for Angular Data
             % IEEE International Conference on Robotics and Biomimetics (ROBIO 2009), 2009, 882-887
             mu_ = mod(this.mu + vm2.mu,2*pi);
             t = besselratio(0, this.kappa)*besselratio(0, vm2.kappa);
@@ -123,7 +123,7 @@ classdef VMDistribution < AbstractCircularDistribution
         end
         
         function result = entropy(this)
-            % Calculates the entropy analytically 
+            % Calculates the entropy analytically
             %
             % Returns:
             %   result (scalar)
@@ -135,7 +135,7 @@ classdef VMDistribution < AbstractCircularDistribution
             % Shift distribution by the given angle
             %
             % Parameters:
-            %   shiftAngles (scalar) 
+            %   shiftAngles (scalar)
             %       angle to shift by
             % Returns:
             %   hd (VMDistribution)
@@ -159,14 +159,14 @@ classdef VMDistribution < AbstractCircularDistribution
             kld = log(besseli(0,other.kappa)) - log(besseli(0,this.kappa)) ...
                 + this.kappa * real(exp(-1i*this.mu)*m1) ...
                 - other.kappa * real(exp(-1i*other.mu)*m1);
-        end        
+        end
         
         function samples = sample(this, n)
             % Obtain n samples from the distribution
-            % 
-            % based on 
+            %
+            % based on
             % Devroye, L. Non-Uniform Random Variate Generation Springer, 1986
-            % together with the errata 
+            % together with the errata
             % http://luc.devroye.org/errors.pdf
             %
             % originally published in
@@ -204,7 +204,106 @@ classdef VMDistribution < AbstractCircularDistribution
                         break;
                     end
                 end
-                samples(1,j) = mod(sign(U)*acos(W) + this.mu, 2*pi); 
+                samples(1,j) = mod(sign(U)*acos(W) + this.mu, 2*pi);
+            end
+        end
+        
+        function [samples, weights] = sampleOptimalQuantization(this, N)
+            % Computes optimal quantization of the von Mises distribution.
+            %
+            % Parameters:
+            %   N (scalar)
+            %       number of samples
+            % Returns:
+            %   samples (1 x N)
+            %       N samples on the circle
+            %   weights (1 x N)
+            %       weight for each sample
+            %
+            % Igor Gilitschenski, Gerhard Kurz, Uwe D. Hanebeck, Roland Siegwart,
+            % Optimal Quantization of Circular Distributions
+            % Proceedings of the 19th International Conference on Information Fusion (Fusion 2016), Heidelberg, Germany, July 2016.
+            
+            assert(isscalar(N));
+            
+            funWithDeriv = @(x) optimfun(x, this.kappa);
+            startval = ((2*pi/(2*N) + (0:N-1)*(2*pi)/N)-pi) * min(1,1/sqrt(this.kappa));
+            
+            [samples, ~, ~, ~] = ...
+                fminunc(funWithDeriv, startval, ...
+                optimset( 'Display','none', 'GradObj', 'on', ...
+                'MaxFunEvals', 100000, 'MaxIter', 1000, ...
+                'TolFun', 1e-12, 'TolX', 1e-12 ));
+            
+            samples = sort(mod(samples + this.mu,2*pi));
+            weights = VMWeights(samples, this.mu, this.kappa);
+            
+            function [v, g] = optimfun(x,kappa)
+                v = VMUtility(x, kappa);
+                g = VMUtilityDeriv(x, kappa);
+            end
+            
+            function R = VMUtility( x, kappa )
+                % Utility function for computing an optimal L-quantizer
+                %
+                % Parameters:
+                %       x - Positions of the discrete points (must be between -pi and pi).
+                %       sigma - Dispersion parameter of Wrapped Normal.
+                
+                % This is not necessary for the optimization procedure.
+                nc = 1/(2*pi*besseli(0,kappa));
+                
+                VMDensityUnnormalized = @(a) nc*exp(kappa .* cos(a));
+                
+                R = 0;
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.
+                
+                % Compute the actual utility.
+                for i=1:(numel(x)-2)
+                    intfun = @(a) (a-x(i+1)).^2.*VMDensityUnnormalized(a);
+                    I = integral(intfun, xBoundary(i),xBoundary(i+1));
+                    R = R + I;
+                end
+            end
+            
+            function G = VMUtilityDeriv(x, kappa )
+                % Gradient of Utility function for an optimal L-quantizer
+                %
+                % Parameters:
+                %       x - Positions of the discrete points (must be between -pi and pi).
+                %       kappa - Concentration parameter of von Mises
+                
+                % This is not necessary for the optimization procedure.
+                nc = 1/(2*pi*besseli(0,kappa));
+
+                VMDensity = @(a) nc*exp(kappa .* cos(a));
+                
+                G = zeros(1,numel(x));
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.
+                
+                % Compute the actual utility.
+                for i=1:(numel(x)-2)
+                    intfun = @(a) (-2*a+2*x(i+1)).*VMDensity(a);
+                    G(i) = integral(intfun, xBoundary(i),xBoundary(i+1));
+                end
+            end
+            
+            function [ W ] = VMWeights(x, mu, kappa )
+                nc = 1/(2*pi*besseli(0,kappa));
+                VMDensity = @(a) nc*exp(kappa .* cos(a-mu));
+                
+                W = zeros(1,numel(x));
+                
+                x = [(x(end)-2*pi) x (x(1)+2*pi)]; % Create x_0 and x_{L+1}.
+                xBoundary = (x(1:(end-1)) + x(2:end))/2; % Mean points between the x_i.
+                
+                for i=1:(numel(x)-2)
+                    W(i) = integral(VMDensity, xBoundary(i),xBoundary(i+1));
+                end
+                
+                W = W/sum(W);
             end
         end
     end

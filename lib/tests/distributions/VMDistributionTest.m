@@ -164,5 +164,16 @@ classdef VMDistributionTest< matlab.unittest.TestCase
             testCase.verifyGreaterThanOrEqual(s,zeros(size(s)));
             testCase.verifyLessThan(s,2*pi*ones(size(s)));            
         end
+        
+        function testQuantization(testCase)
+            vm = VMDistribution(3,1.7);
+            n = 11;
+            [s,w] = vm.sampleOptimalQuantization(n);
+            testCase.verifyEqual(sum(w), 1, 'RelTol', 1E-10);
+            testCase.verifySize(s, [1 n]);
+            testCase.verifySize(w, [1 n]);
+            wd = WDDistribution(s,w);
+            testCase.verifyEqual(wd.trigonometricMoment(1), vm.trigonometricMoment(1), 'RelTol', 1E-2);
+        end        
     end
 end
