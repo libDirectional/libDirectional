@@ -5,7 +5,6 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
     % Equatorial Distributions on a Sphere
     % Biometrika, 1965, 52, 193-201
     
-    
     properties
         kappa   % concentration (scalar)
         mu      % mean as vector
@@ -14,7 +13,7 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
     
     methods
         function W = WatsonDistribution(mu_, kappa_)
-            %% Constructor
+            % Constructor
             %
             % Parameters:
             %   mu_ (d x 1)
@@ -82,13 +81,49 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   s (d x n matrix)
             %       generated samples (one sample per column)
-            s = this.toBingham.sample(n); % use Bingham sampling
+            if this.dim~=3
+                s = this.toBingham.sample(n); % use Bingham sampling
+            else
+                % Algorithm LW from the Paper "Random Sampling From the
+                % Watson Distribution" by Kim-Hung Li and Carl Ka-Fai Wong
+                s=NaN(this.dim,n);
+                theta=NaN(1,n);
+                phi=NaN(1,n);
+                k=this.kappa;
+                rho=4*k/(2*k+3+sqrt((2*k+3)^2-16*k));
+                r=(3*rho/(2*k))^3*exp(-3+2*k/rho);
+                i=0;
+                while i<n
+                    U=rand(n-i,3);
+                    S=U(:,1).^2./(1-rho*(1-U(:,1).^2));
+                    V=r*U(:,2)./(1-rho*S).^3;
+                    valid=V<=exp(2*k*S);
+                    if ~any(valid)
+                        continue
+                    end
+                    U=U(valid,:);
+                    S=S(valid);
+                    
+                    thetasNew=acos(sqrt(S));
+                    U3ltHalf=U(:,3)<0.5;
+                    thetasNew=pi*U3ltHalf+(-1).^(U3ltHalf).*thetasNew;
+                    phisNew=4*pi*U(:,3)-U3ltHalf*2*pi;
+                    theta(i+1:i+size(U,1))=thetasNew;
+                    phi(i+1:i+size(U,1))=phisNew;
+                    i=i+size(U,1);
+                end
+                Rz=@(alpha)[cos(alpha),-sin(alpha),0;sin(alpha),cos(alpha),0;0,0,1];
+                Ry=@(beta)[cos(beta),0,sin(beta);0,1,0;-sin(beta),0,cos(beta)];
+                [muphi,mutheta]=cart2sph(this.mu(1),this.mu(2),this.mu(3));
+                [s(1,:),s(2,:),s(3,:)]=sph2cart(phi,-theta+pi/2,1);
+                s=Rz(muphi-pi)*Ry(mutheta+pi/2)*s;
+            end
         end
         
         function m = mode(this)
             % Calculate the mode of a Watson distribution
             % Returns:
-            %   m (column vector)
+            %   m (d x 1 column vector)
             %       mode of the distribution (note that -m is the mode as well)
             if this.kappa>=0
                 m = this.mu; %todo: this is only correct for kappa>=0
