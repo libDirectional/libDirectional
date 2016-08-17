@@ -365,6 +365,21 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 testCase.verifyEqual(S,Sglover, 'AbsTol', 0.15);
             end
         end
+        
+        function testQuantization(testCase)
+            rng default
+            B = BinghamDistributionTest.getRandomBingham(2);
+            n = 11;
+            [s,w] = B.sampleOptimalQuantization(n);
+            testCase.verifyEqual(sum(w), 1, 'RelTol', 1E-10);
+            testCase.verifySize(s, [1 2*n]);
+            testCase.verifySize(w, [1 2*n]);
+            wd = WDDistribution(s,w);
+            testCase.verifyEqual(wd.trigonometricMoment(1), 0, 'AbsTol', 1E-10);
+            sAug = [cos(s); sin(s)];
+            C = sAug * diag(w) * sAug';
+            testCase.verifyEqual(C, B.moment(), 'RelTol', 1E-3);
+        end  
     end
     
     methods (Static)

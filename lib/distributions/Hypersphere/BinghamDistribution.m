@@ -391,6 +391,35 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             end
         end       
         
+        function [samples, weights] = sampleOptimalQuantization(this, N)
+            % Computes optimal quantization of the
+            % Bingham distribution using 2*N samples.
+            %
+            % Parameters:
+            %   N(scalar)
+            %       number of samples on half circle
+            % Returns:
+            %   samples (1 x 2N)
+            %       2N samples on the circle, parameterized as [0,2pi)
+            %   weights (1 x 2N)
+            %       weight for each sample
+            %
+            % Igor Gilitschenski, Gerhard Kurz, Uwe D. Hanebeck, Roland Siegwart,
+            % Optimal Quantization of Circular Distributions
+            % Proceedings of the 19th International Conference on Information Fusion (Fusion 2016), Heidelberg, Germany, July 2016.
+
+            assert(this.dim == 2, 'sampleOptimalQuantization only implemented for 2d Bingham');
+
+            mu = atan2(this.M(2,2), this.M(1,2));
+            kappa = (this.Z(2)-this.Z(1))/2;
+
+            [samples, weights] = VMDistribution(0, kappa).sampleOptimalQuantization(N);
+            samples = [samples/2 (samples/2+pi)];
+            samples = mod(samples+mu,2*pi);
+
+            weights = [weights weights]/2;
+        end
+        
         function [s,w] = sampleWeighted(this, n)
             % Weighted sample generator.
             % Generates uniform (w.r.t. the Haar Measure) random samples on 
