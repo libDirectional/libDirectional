@@ -182,6 +182,8 @@ classdef WNFilter < AbstractCircularFilter
             %       measurement
             %   tau (scalar between 0 and 1)
             %       parameter controlling the progression step size
+            assert(isa(likelihood,'function_handle'));
+            
             if nargin<4
                 tau = 0.02; 
             end
