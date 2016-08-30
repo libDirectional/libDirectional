@@ -72,6 +72,18 @@ classdef GaussianDistribution
             samples = mvnrnd(this.mu, this.C, n)';
         end
         
+        function [s,w] = sampleDeterministic(this)
+            % Obtain UKF samples from the distribution (using UKF)
+            %
+            % Returns:
+            %   s (d x n)
+            %       one sample per column
+            %   w (1 x n)
+            %       weights (always uniform for now)
+            g = GaussianSamplingUKF;
+            [s,w] = g.getSamples(Gaussian(this.mu, this.C));
+        end
+        
     end
     
 end

@@ -29,8 +29,15 @@ classdef GaussianDistributionTest< matlab.unittest.TestCase
             % test sampling
             n = 10;
             s = g.sample(n);
-            testCase.verifyEqual(size(s,1), 1);
-            testCase.verifyEqual(size(s,2), n);
+            testCase.verifySize(s, [1 n]);        
+            
+            [s,w] = g.sampleDeterministic();
+            n=3;
+            testCase.verifySize(s, [1 n]); 
+            testCase.verifySize(w, [1 n]); 
+            testCase.verifyEqual(w, ones(1,n)/n);
+            testCase.verifyEqual(mean(s), g.mu);
+            testCase.verifyEqual(cov(s,1), g.C, 'RelTol', 1E-10);
         end
         
         function testGaussianDistribution2d(testCase)
@@ -59,8 +66,15 @@ classdef GaussianDistributionTest< matlab.unittest.TestCase
             % test sampling
             n = 10;
             s = g.sample(10);
-            testCase.verifyEqual(size(s,1), 2);
-            testCase.verifyEqual(size(s,2), n);
+            testCase.verifySize(s, [2 n]);      
+            
+            [s,w] = g.sampleDeterministic();
+            n=5;
+            testCase.verifySize(s, [2 n]); 
+            testCase.verifySize(w, [1 n]); 
+            testCase.verifyEqual(w, ones(1,n)/n);
+            testCase.verifyEqual(mean(s,2), g.mu);
+            testCase.verifyEqual(cov(s',1), g.C, 'RelTol', 1E-10);            
         end
         
         function testGaussianDistribution3d(testCase)
@@ -75,8 +89,28 @@ classdef GaussianDistributionTest< matlab.unittest.TestCase
             % test sampling
             n = 10;
             s = g.sample(10);
-            testCase.verifyEqual(size(s,1), 3);
-            testCase.verifyEqual(size(s,2), n);
-        end        
+            testCase.verifySize(s, [3 n]);
+            
+            [s,w] = g.sampleDeterministic();
+            n=7;
+            testCase.verifySize(s, [3 n]); 
+            testCase.verifySize(w, [1 n]); 
+            testCase.verifyEqual(w, ones(1,n)/n);
+            testCase.verifyEqual(mean(s,2), g.mu);
+            testCase.verifyEqual(cov(s',1), g.C, 'RelTol', 1E-10);            
+        end     
+        
+        function testSampleDeterministic(testCase)
+            mu = [2,3,4]';
+            C = [ 1.1 0.4 0; 0.4 0.9 0; 0 0 0.1];
+            g = GaussianDistribution(mu,C);
+            
+            [s,w] = g.sampleDeterministic();
+            nSamples = 2*3+1;
+            testCase.verifySize(s, [3 nSamples]);        
+            testCase.verifySize(w, [1 nSamples]);        
+            testCase.verifyEqual(sum(s.*repmat(w,3,1),2), mu, 'RelTol', 1E-10);
+            testCase.verifyEqual((s-repmat(mu,1,nSamples))*diag(w)*(s-repmat(mu,1,nSamples))', C, 'RelTol', 1E-10);
+        end
     end
 end
