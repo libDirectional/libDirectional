@@ -226,7 +226,8 @@ classdef AbstractHypersphericalDistribution
             % A better proposal distribution could be obtained by roughly estimating
             % the uncertainty of the true distribution.
             normalize = @(x) x/norm(x);
-            proposal = @(x) normalize(x + mvnrnd(zeros(this.dim,1),eye(this.dim))'); 
+            %proposal = @(x) normalize(x + mvnrnd(zeros(this.dim,1),eye(this.dim))'); 
+            proposal = @(x) normalize(x + normrnd(0,1,this.dim,1)); 
             i=1;
             pdfx = this.pdf(x);
             while i<=totalSamples
