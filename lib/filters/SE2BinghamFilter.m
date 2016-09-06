@@ -9,7 +9,7 @@ classdef SE2BinghamFilter < handle
     % Igor Gilitschenski, Gerhard Kurz, and Uwe D. Hanebeck,
     % Proceedings of the 2015 IEEE International Conference on Multisensor
     % Fusion and Integration for Intelligent Systems (MFI),
-    % San Diego, USA, 2015 (submitted)    
+    % San Diego, USA, 2015 
     
     properties (Access = public)
         curEstimate % SE2 Distribution object representing current estimate.
@@ -27,6 +27,7 @@ classdef SE2BinghamFilter < handle
             % Parameters:
             %   distribution (SE2BinghamDistribution)
             %       new state
+            assert(isa(distribution, 'SE2BinghamDistribution'));
             this.curEstimate = distribution;
         end
         
@@ -67,7 +68,7 @@ classdef SE2BinghamFilter < handle
             end
             
             % Fit new samples.
-            this.curEstimate = SE2BinghamDistribution.fit(rSamples);
+            this.curEstimate = SE2BinghamDistribution.fit(rSamples); %todo: weights are ignored!
         end
         
         function this = updateIdentity(this, measNoise, z)
