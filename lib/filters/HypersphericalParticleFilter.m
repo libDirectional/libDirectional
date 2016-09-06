@@ -75,12 +75,19 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
             
             if nargin==3
                 noiseDistribution.mu=z;
-                warning('mu of noiseDistribution is replaced by measurement...');
+                warning('updateIdentity:muReplaced','mu of noiseDistribution is replaced by measurement...');
             end
             wdtmp=this.wd.reweigh(@(x)noiseDistribution.pdf(x));
             
             this.wd.d = wdtmp.sample(length(this.wd.d));
             this.wd.w = 1/size(this.wd.d,2)*ones(1,size(this.wd.d,2));
+        end
+        
+        function updateNonlinearUsingLikelihood(this, likelihood, z) %measurement z, likelihood(z,x)=P(Z|X)
+            % Likliehood to accept vector valued x while only requiring
+            % scalar z.
+            newWeights=this.wd.w.*likelihood(z,this.wd.d);
+            this.wd.w=newWeights/norm(newWeights);
         end
         
         function wd = getEstimate(this)
