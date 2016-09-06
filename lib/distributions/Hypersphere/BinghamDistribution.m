@@ -198,7 +198,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
         
         function s = sample(this, n)
             % Stocahastic sampling
-            % Fall back to Glover's method by default
+            % Fall back to Kent's method by default
             %
             % Parameters:
             %   n (scalar)
@@ -206,7 +206,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   s (dim x n)
             %       one sample per column            
-            s = sampleGlover(this, n);
+            s = sampleKent(this, n);
         end        
         
         function s = sampleKent(this, n)
@@ -286,6 +286,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             Proposal2 = acgpdf_pcs(X2, z, this.M);
 
             nAccepts = 0;
+            X = zeros(size(X2));
             for i=1:n*samplerate+burnin
                 a = Target2(i) / target * proposal / Proposal2(i);
                 if a > rand()
