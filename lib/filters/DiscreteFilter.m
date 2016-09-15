@@ -36,7 +36,7 @@ classdef DiscreteFilter < AbstractCircularFilter
             %       new state
             assert (isa (distribution, 'AbstractCircularDistribution'));
             if ~isa(distribution, 'WDDistribution')
-                this.wd = WDDistribution(this.wd.d, arrayfun(@(x) distribution.pdf(x), this.wd.d));
+                this.wd = WDDistribution(this.wd.d, distribution.pdf(this.wd.d));
             else
                nParticles = size(distribution.d,2);
                assert(all(distribution.d == (0:nParticles-1)/nParticles*2*pi));
