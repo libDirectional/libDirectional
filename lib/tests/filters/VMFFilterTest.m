@@ -22,9 +22,11 @@ classdef VMFFilterTest < matlab.unittest.TestCase
             %% predict identity
             filter.setState(vmf);
             vmFilter.setState(vmf.toVM());
-            vmfNoise = VMFDistribution([1;0], 0.9);
+            vmfNoise = VMFDistribution([0;1], 0.9);
             filter.predictIdentity(vmfNoise);
-            vmFilter.predictIdentity(vmfNoise.toVM());
+            vmDisregardMu=vmfNoise.toVM();
+            vmDisregardMu.mu=0;
+            vmFilter.predictIdentity(vmDisregardMu);
             vmfPredictIdentity = filter.getEstimate();
             vmPredictIdentity = vmFilter.getEstimate();
             testCase.verifyClass(vmfPredictIdentity, 'VMFDistribution');
@@ -38,8 +40,8 @@ classdef VMFFilterTest < matlab.unittest.TestCase
             %% update identity
             filter.setState(vmf);
             vmFilter.setState(vmf.toVM());
-            filter.updateIdentity(vmf.mu, vmfNoise);
-            vmFilter.updateIdentity(vmf.toVM().mu, vmfNoise.toVM());
+            filter.updateIdentity(vmfNoise, vmf.mu);
+            vmFilter.updateIdentity(vmDisregardMu, vmf.toVM().mu);
             vmfUpdateIdentity = filter.getEstimate();
             vmUpdateIdentity = vmFilter.getEstimate();
             testCase.verifyClass(vmfUpdateIdentity, 'VMFDistribution');
@@ -47,25 +49,6 @@ classdef VMFFilterTest < matlab.unittest.TestCase
             testCase.verifyGreaterThanOrEqual(vmfUpdateIdentity.kappa, vmf.kappa);
             testCase.verifyEqual([cos(vmUpdateIdentity.mu); sin(vmUpdateIdentity.mu)], vmfUpdateIdentity.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmUpdateIdentity.kappa, vmfUpdateIdentity.kappa, 'RelTol', 1E-10);
-            
-            return
-            
-            %% update identity with different measurement
-            filter.setState(vmf);
-            z = vmf.mode()+[0.1,0]';
-            filter.updateIdentity(vmfNoise, z/norm(z));
-            B4 = filter.getEstimate();
-            testCase.verifyClass(B4, 'BinghamDistribution');
-            testCase.verifyLessThanOrEqual(B4.Z, vmf.Z);
-            
-            %% predict nonlinear
-            filter.setState(vmf);
-            vmfNoise = BinghamDistribution([-3 0]', [0 1; 1 0]);
-            filter.predictNonlinear(@(x) x, vmfNoise);
-            B5 = filter.getEstimate();
-            testCase.verifyClass(B5, 'BinghamDistribution');
-            testCase.verifyEqual(abs(vmf.M), abs(B5.M), 'RelTol', 1E-10); %each column of M is only determined up to sign
-            testCase.verifyGreaterThanOrEqual(B5.Z, vmf.Z);
         end
         
 
