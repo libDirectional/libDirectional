@@ -104,7 +104,7 @@ classdef VMFilter < AbstractCircularFilter
             this.vm = wdPosterior.toVM();
         end        
         
-        function updateIdentity(this, z, vmMeas)
+        function updateIdentity(this, vmMeas, z)
             % Updates assuming identity measurement model, i.e.,
             % z(k) = x(k) + v(k)    mod 2pi,
             % where v(k) is additive noise given by vmMeas.
