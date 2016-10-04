@@ -4,7 +4,7 @@ classdef HypersphericalParticleFilterTest< matlab.unittest.TestCase
             nSamples=5000;
             vmfInit=VMFDistribution([1;0;0],10);
             vmfSys=VMFDistribution([0;0;1],10);
-            vmfMeas=VMFDistribution([1;0;0],3);
+            vmfMeas=VMFDistribution([0;0;1],3);
 
             vmfFilter=VMFFilter;
             hpf=HypersphericalParticleFilter(nSamples,3);
@@ -13,13 +13,14 @@ classdef HypersphericalParticleFilterTest< matlab.unittest.TestCase
 
             hpf.predictIdentity(vmfSys);
             vmfFilter.predictIdentity(vmfSys);
-
-            hpf.updateIdentity(vmfMeas);
-            hpf.updateIdentity(vmfMeas);
-            hpf.updateIdentity(vmfMeas);
-            vmfFilter.updateIdentity([1;0;0],vmfMeas);
-            vmfFilter.updateIdentity([1;0;0],vmfMeas);
-            vmfFilter.updateIdentity([1;0;0],vmfMeas);
+            warningSetting=warning('off','updateIdentity:muReplaced');
+            hpf.updateIdentity(vmfMeas,[0;0;1]);
+            hpf.updateIdentity(vmfMeas,[0;0;1]);
+            hpf.updateIdentity(vmfMeas,[0;0;1]);
+            warning(warningSetting);
+            vmfFilter.updateIdentity(vmfMeas,[0;0;1]);
+            vmfFilter.updateIdentity(vmfMeas,[0;0;1]);
+            vmfFilter.updateIdentity(vmfMeas,[0;0;1]);
 
             testCase.verifyEqual(norm(hpf.getEstimateMean-vmfFilter.getEstimateMean),0,'AbsTol',0.05);
         end
