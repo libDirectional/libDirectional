@@ -64,7 +64,7 @@ classdef VMFilterTest < matlab.unittest.TestCase
             
             %% update identity
             filter.setState(vm);
-            filter.updateIdentity(vm.mu, measNoise);
+            filter.updateIdentity(measNoise, vm.mu);
             vmIdentity = filter.getEstimate();
             testCase.verifyClass(vmIdentity, 'VMDistribution');
             testCase.verifyEqual(vm.mu, vmIdentity.mu);
@@ -72,7 +72,7 @@ classdef VMFilterTest < matlab.unittest.TestCase
             
             %% update identity with different measurement
             filter.setState(vm);
-            filter.updateIdentity(vm.mu+0.1, measNoise);
+            filter.updateIdentity(measNoise, vm.mu+0.1);
             vmIdentity2 = filter.getEstimate();
             testCase.verifyClass(vmIdentity2, 'VMDistribution');
             testCase.verifyLessThan(vm.mu, vmIdentity2.mu);
