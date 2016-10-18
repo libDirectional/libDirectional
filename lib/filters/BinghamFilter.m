@@ -95,7 +95,7 @@ classdef BinghamFilter < AbstractAxialFilter
             assert(isa(Bv, 'BinghamDistribution'));
             assert(Bv.dim == this.B.dim);
             assert(all(size(z) == [this.B.dim, 1]));
-            assert(norm(z) == 1);
+            assert(abs(norm(z) - 1) < 1E-10);
             
             conjugate = @(q) [q(1); -q(2:end)];
             for i=1:this.B.dim
