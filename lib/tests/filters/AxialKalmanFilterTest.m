@@ -50,7 +50,7 @@ classdef AxialKalmanFilterTest < matlab.unittest.TestCase
             z = [0,0,0,1]';
             filter.updateIdentity(GaussianDistribution(mu, C), z);
             gauss6 = filter.getEstimate();
-            testCase.verifyEqual(norm(gauss6.mu), 1);
+            testCase.verifyEqual(norm(gauss6.mu), 1, 'RelTol', 1E-10);
             testCase.verifyLessThanOrEqual(gauss6.C, C); 
         end
         
