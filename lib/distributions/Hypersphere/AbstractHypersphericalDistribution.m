@@ -387,12 +387,29 @@ classdef AbstractHypersphericalDistribution
             % Returns:
             %   h (handle)
             %       plot handle
-            [x,y,z]=sphere(15);
-            h = mesh(x,y,z);
-            set(h,'facecolor','none')
-            set(h,'edgecolor',0.7*[1 1 1])
+            [x,y,z]=sphere(150); % Create smooth sphere
+            h=mesh(x,y,z);
+            skipx=10;
+            skipy=10;
+            x=get(h,'xdata'); % Get lines from smooth sphere
+            y=get(h,'ydata');
+            z=get(h,'zdata');
+            delete(h)
+            xKeep=x(1:skipx:end,:); % Only plot some of the lines as grid would be too find otherwise
+            yKeep=y(1:skipx:end,:);
+            zKeep=z(1:skipx:end,:);
+            lineHandles=line(xKeep',yKeep',zKeep','color',0.7*[1 1 1]);
+
+            xKeep=x(:,1:skipy:end);
+            yKeep=y(:,1:skipy:end);
+            zKeep=z(:,1:skipy:end);
+            lineHandles=[lineHandles;...
+                line(xKeep,yKeep,zKeep,'color',0.7*[1 1 1])];
+            for hCurr=lineHandles'
+                hasbehavior(hCurr,'legend',false); % Prevent legend entry for all lines
+            end
+
             axis equal
-            hasbehavior(h,'legend',false); % Prevent legend entry for sphere
         end
     end 
 end
