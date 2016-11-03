@@ -36,6 +36,10 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual([cos(vmFitted.mu);sin(vmFitted.mu)], vmfFitted.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmFitted.kappa, vmfFitted.kappa, 'RelTol', 1E-10);
             
+            vmfFittedScore =  VMFDistribution.fitScoreBased([cos(s); sin(s)]);
+            testCase.verifyEqual([cos(vmFitted.mu);sin(vmFitted.mu)], vmfFittedScore.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmFitted.kappa, vmfFittedScore.kappa, 'RelTol', 1E-1);
+            
             %% test deterministic sampling
             s = vmf.sampleDeterministic();
             testCase.verifyEqual(size(s,1), vmf.dim);
@@ -57,13 +61,11 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf.pdf([cos(x);sin(x)]).*other.pdf([cos(x);sin(x)])*c, vmfMul2.pdf([cos(x);sin(x)]), 'RelTol', 1E-10);
             
             %% test colvolve
+            other=VMFDistribution([0;1], kappa/3);
             vmfConv = vmf.convolve(other);
-            vmfConv2 = other.convolve(vmf);            
             testCase.verifyEqual(vmfConv.mu, vmf.mu, 'RelTol', 1E-10);
-            testCase.verifyEqual(vmfConv2.mu, other.mu, 'RelTol', 1E-10);
             d = 2;
             testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
-            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv2.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
             
             %% test stochastic sampling
             n = 10;
@@ -111,12 +113,9 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             
             %% test colvolve
             vmfConv = vmf.convolve(other);
-            vmfConv2 = other.convolve(vmf);
             testCase.verifyEqual(vmfConv.mu, vmf.mu, 'RelTol', 1E-10);
-            testCase.verifyEqual(vmfConv2.mu, other.mu, 'RelTol', 1E-10);
             d = 3;
             testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
-            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv2.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
             
             %% test stochastic sampling
             n = 10;
@@ -167,12 +166,9 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             
             %% test colvolve
             vmfConv = vmf.convolve(other);
-            vmfConv2 = other.convolve(vmf);
             testCase.verifyEqual(vmfConv.mu, vmf.mu, 'RelTol', 1E-10);
-            testCase.verifyEqual(vmfConv2.mu, other.mu, 'RelTol', 1E-10);
             d = 4;
             testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);
-            testCase.verifyEqual(VMFDistribution.Ad(d, vmfConv2.kappa), VMFDistribution.Ad(d, vmf.kappa)*VMFDistribution.Ad(d, other.kappa), 'RelTol', 1E-10);            
             
             %% test stochastic sampling
             n = 10;

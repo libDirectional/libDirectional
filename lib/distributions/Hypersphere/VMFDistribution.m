@@ -127,8 +127,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % another VMF density (approximate).
             %
             % This is not a true convolution, but just a similar
-            % operation. It is not symmetric as the mu-value of the second
-            % density is ignored.
+            % operation. This operation is not symmetric as the mu-value of the second
+            % density is ignored. To ensure that the user is aware of this,
+            % the last entry of mu has to be set to 1 and all others to 0.
             %
             % Traa, J. & Smaragdis, P. 
             % Multiple Speaker Tracking With the Factorial von Mises--Fisher Filter 
@@ -142,6 +143,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             %   vmf (VMFDistribution)
             %       the vmf distribution of the renormalized product.            
             assert(isa(other, 'VMFDistribution'));
+            assert(other.mu(end)==1,'Other is not zonal');
             assert(all(size(this.mu) == size(other.mu)));
             d = this.dim;
             
@@ -493,6 +495,49 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             kappa_= VMFDistribution.AdInverse(d, Rbar);
             
             V = VMFDistribution(mu_, kappa_);
+        end
+        
+        function V = fitScoreBased(samples, weights)
+            % Fits VMF parameters to a set of samples.
+            % Parameters:
+            %   samples (d x n matrix)
+            %       matrix that contains one sample per column
+            %   weights (1 x n row vector)
+            %       weight for each sample            
+            % Returns:
+            %   V (VMFDistribution)
+            %       the MLE estimate for a VMF distribution given the
+            %       samples
+            %
+            % Mardia, K. V.; Kent, J. T. & Laha, A. K. 
+            % Score Matching Estimators for Directional Distributions 
+            % arXiv preprint arXiv:1604.08470, 2016
+            % Sec. 7.1         
+            
+            dim = size(samples,1);    
+            n = size(samples,2);
+            if nargin<2
+                weights = ones(1,n)/n;
+            else
+                error('weighted samples not yet supported'); %todo add support for weights
+            end
+            assert(size(weights,1)==1, 'weights needs to be a row vector');
+            assert(size(weights,2)==n, 'number of weights and samples needs to match');
+            assert(abs(sum(weights)-1) < 0.001, 'weights must sum to 1'); %check normalization
+            
+            vecSum = sum(samples.*repmat(weights,dim,1),2);
+            mu_ = vecSum/norm(vecSum);
+            
+            % use score based method to get kappa
+            tmp = VMFDistribution(mu_, 1);
+            R = tmp.getRotationMatrix();
+            Y = samples' * R;
+            
+            W = 1 - 1/n * sum(Y(:,1).^2);
+            d = (dim-1)/n*sum(Y(:,1)); %/n is missing in Mardia's paper
+            kappa_ =d/W;
+            
+            V = VMFDistribution(mu_, kappa_);            
         end
         
         function V = fromMoment(m)

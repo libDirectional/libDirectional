@@ -131,8 +131,8 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             testCase.verifyClass(twdShifted, 'WDDistribution');
             testCase.verifyEqual(twd.w, twdShifted.w);
             testCase.verifyEqual(twd.d, mod(twdShifted.d - repmat(s,1,size(d,2)),2*pi), 'RelTol', 1E-10);
-        end        
-
+        end
+        
         function testToContinuousVoronoi(testCase)
             d=[0.1,5,6];
             w=[0.3,0.1,0.6];
