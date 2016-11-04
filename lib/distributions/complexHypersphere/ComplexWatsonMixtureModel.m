@@ -105,7 +105,8 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
             
             % kmeans
             Z_kmeans = ComplexWatsonMixtureModel.normalizedPhase(Z);
-            label_kmeans = (kmeans(Z_kmeans', K, 'start', 'sample'))';
+            label_kmeans = (kmeans(vertcat(real(Z_kmeans), imag(Z_kmeans))', ...
+				                   K, 'start', 'sample'))';
             gamma_kmean = zeros(K, N);
             for ii = 1 : K
                 gamma_kmean(ii, :) = label_kmeans == ii;
