@@ -85,5 +85,27 @@ classdef AbstractCircularDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(dist.mu, dist2.mu, 'AbsTol', 0.1);
             testCase.verifyEqual(dist.kappa, dist2.kappa, 'RelTol', 0.1);
         end
+        
+        function testToDiracBT(testCase)
+            dist = PWCDistribution([0, 1]);
+            
+            for n = [1:10, 20, 100]
+                wd = dist.toDiracBT(n);
+                testCase.verifyClass(wd, 'WDDistribution');
+                testCase.verifyEqual(length(wd.d), n);
+                testCase.verifyEqual(length(wd.w), n);
+                testCase.verifyGreaterThanOrEqual(wd.d, pi*ones(size(wd.d)));
+                
+            end
+        end
+        
+        function testl2distanceCdfNumerical(testCase)
+            vm1=VMDistribution(0,10);
+            vm2=VMDistribution(0,9.8);
+            vm3=VMDistribution(pi,10);
+            
+            testCase.verifyLessThan(vm1.l2distanceCdfNumerical(vm2), 0.001);
+            testCase.verifyGreaterThan(vm1.l2distanceCdfNumerical(vm3), 0.5);
+        end
     end
 end

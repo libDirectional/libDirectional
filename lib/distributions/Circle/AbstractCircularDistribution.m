@@ -3,11 +3,6 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
     % the circle S1, or equivalently SO(2). The circle is parameterized as
     % [0,2pi).
     
-    methods (Abstract)
-        % Evaluate pdf at positions stored in xa
-        pdf(this, xa);
-    end
-    
     methods
         function this = AbstractCircularDistribution
             % Constructor
@@ -203,7 +198,163 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             weights = [w1 w1 w1 w1 w5];
             wd = WDDistribution(diracs+this.circularMean,weights);
         end
+        
+        function wd = toDirac5SuperPosition(this, lambda)
+            % Convert to wrapped Dirac mixture using superposition method
+            %
+            % Parameters:
+            %   lambda (scalar or 1 x n column vector)
+            %       number of superpositions or vector containing lambda's
+            % Returns:
+            %   wd (WDDistribution)
+            %       Dirac approximation
+            %
+            % Gerhard Kurz, Igor Gilitschenski, Roland Y. Siegwart, Uwe D. Hanebeck,
+            % Methods for Deterministic Approximation of Circular Densities (to appear)
+            % Journal of Advances in Information Fusion, 2016.
+            d = [];
+            w = [];
+            wCenter = 0;
+            m1 = abs(this.trigonometricMoment(1));
+            m2 = abs(this.trigonometricMoment(2));
+            w5min = (4*m1^2 - 4*m1 - m2 + 1)/(4*m1 - m2 - 3);
+            w5max = (2*m1^2-m2-1)/(4*m1 - m2 - 3);      
+            if isscalar(lambda)
+                % lambda defines the number of approximations to combine
+                % use heuristic choice for lambda's
+                q = lambda;
+                lambdamax = 2*sqrt(2)-2;
+                lambdamin = 2*q/(q-1)*w5min/(w5min-w5max) - lambdamax*(q+1)/(q-1);
+                lambdamin = max(lambdamin, 0);
+                lambda = lambdamin + (1:q)/(q) * (lambdamax-lambdamin);
+            else
+                % lambda is a column vector of the chosen lambda's
+                assert(size(lambda,1) == 1);
+                assert(all(lambda>=0));
+                assert(all(lambda<=1));
+            end
+            for i=1:length(lambda)
+                % generate Diracs for each lambda
+                w5 = w5min + lambda(i) * (w5max-w5min);
+                w1 = (1 - w5)/4;
+                c1 = 2/(1-w5)*(m1-w5);
+                c2 = 1/(1-w5)*(m2-w5)+1;
+                x2 = (2*c1 + sqrt(4*c1^2 - 8* (c1^2-c2)))/4;
+                x1 = c1-x2;
+                phi1 = acos(x1);
+                phi2 = acos(x2);
+                diracs = [-phi1 -phi2 phi1 phi2 0];   
+                weights = [w1 w1 w1 w1 w5];
+                d = [d diracs(1:4)];
+                w = [w weights(1:4)];    
+                wCenter = wCenter + w5;
+            end
+            wd = WDDistribution([d 0]+this.circularMean, [w, wCenter]);
+        end
+        
+        function wd = toDiracBT(this, n, fixCircularMean, fixFirstTrigonometrictMoment)
+            % Convert to wrapped Dirac mixture using binary tree.
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of diracs
+            %   fixCircularMean (boolean)
+            %       corrects circular mean after generating the samples
+            %   fixFirstTrigonometrictMoment (boolean)
+            %       corrects the first trigonometric moment after
+            %       generating the samples (requires a small numerical
+            %       optimization)
+            % Returns:
+            %   wd (WDDistribution)
+            %       Dirac approximation with n components
+            %
+            % Gerhard Kurz, Igor Gilitschenski, Roland Y. Siegwart, Uwe D. Hanebeck,
+            % Methods for Deterministic Approximation of Circular Densities (to appear)
+            % Journal of Advances in Information Fusion, 2016.            
+            if nargin < 3
+                fixCircularMean = true;
+            end
+            if nargin < 4
+                fixFirstTrigonometrictMoment = false;
+            end
+            
+            function diracPos = approximateBT(left, right, n)
+                %todo shift to mu=0?
                 
+                middle = (left+right)/2;
+                % Base case: only one dirac remaining
+                if n==1 
+                    % Possibility 1: use middle for faster calculation
+                    diracPos = middle;
+                    % Possibility 2: use center of mass for higher accuracy
+                    % diracPos = integral(@(x) x.*this.pdf(x), left, right)/this.cdf(right, left);% todo: bug if cdf is zero!
+                    return
+                end
+
+                % Calculate integrals and distribute diracs proportionally
+                leftInt = this.cdf(middle, left);
+                rightInt = this.cdf(right, middle);
+                nLeft  = floor(n*leftInt /(leftInt+rightInt));
+                nRight = floor(n*rightInt/(leftInt+rightInt));
+
+                % Check number of Dirac components
+                if nLeft + nRight == n-1
+                    if n*leftInt /(leftInt+rightInt) - nLeft > n*rightInt/(leftInt+rightInt) - nRight;
+                        nLeft = nLeft + 1;    
+                    else
+                        nRight = nRight + 1;
+                    end
+                elseif nLeft + nRight == n-2
+                    % This should probably never happen except perhaps through
+                    % numerical inaccuracies.
+                    nLeft = nLeft + 1;
+                    nRight = nRight + 1;
+                    warning('nLeft + nRight == n-2');
+                end
+
+                % Recursive calls for left and right half
+                diracPos = [];
+                if nLeft >=1
+                    diracPos = [diracPos approximateBT(left, middle, nLeft)];
+                end
+                if nRight>=1
+                    diracPos = [diracPos approximateBT(middle, right, nRight)];
+                end
+            end
+            
+            d = approximateBT(0, 2*pi, n);
+            wd = WDDistribution(d);
+            
+            % Moment correction
+            if fixCircularMean
+                % Correct circular mean
+                meanError = this.circularMean() - wd.circularMean();
+                d = d + meanError;
+                wd = WDDistribution(d);
+            end
+            
+            function wdScaled = scaledWd(c)
+                    % Scales the wd distribution around its mean by a factor of c
+                    m = wd.circularMean();
+                    d = (wd.d - m); % remove mean
+                    d = mod(d+pi, 2*pi)-pi; %move between -pi and pi
+                    d = d*c; % scale
+                    wdScaled = WDDistribution(d + m); %add mean back in
+            end
+            
+            function y = goalFunMomentError(c)
+                wdTmp = scaledWd(c);
+                y = abs(wdTmp.trigonometricMoment(1) - this.trigonometricMoment(1));
+            end
+            
+            if fixFirstTrigonometrictMoment
+                % Correct first trigonometric moment
+                % Requires one-dimensional nonlinear optimization
+                c = fminunc(@goalFunMomentError, 1, optimoptions(@fminunc, 'display', 'off', 'TolX', 1E-12, 'TolFun', 1E-12, 'algorithm','quasi-newton'));
+                wd = scaledWd(c);
+            end
+        end
+        
         function vm = toVM(this)
             % Convert to von Mises by trigonometric moment matching
             %
@@ -271,7 +422,7 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             end
             result = integral(@(x) this.pdf(x), l, r);
         end
-                
+        
         function result = l2distanceCdfNumerical(this, other,startingPoint)
             % Numerically calculates the L2 distance of the cdfs
             %
@@ -371,7 +522,7 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
                 result=integral(@(x) (this.cdf(x,startingPoint)-other.cdf(x,startingPoint)).^2, 0, 2*pi);
             end
         end
-         
+                
         function s = sampleCdf(this, n)
             % Sampling algorithm based on calculation of the inverse of the 
             % distribution function with numerical integration
