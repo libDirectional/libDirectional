@@ -2,6 +2,8 @@
 //#define NDEBUG 
 //#define EIGEN_UNROLLING_LIMIT 1000
 
+#define _USE_MATH_DEFINES
+
 #include <mex.h> 
 
 #include "Mex/Matrix.h"
