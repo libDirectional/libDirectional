@@ -41,6 +41,14 @@ classdef HypertoroidalVMSineDistribution < AbstractHypertoroidalDistribution
         end
         
         function p = pdf(this, xa)
+            % Evaluate pdf at each column of xa.
+            %
+            % Parameters:
+            %   xa (dim x n)
+            %       n locations where to evaluate the pdf
+            % Returns:
+            %   p (1 x n)
+            %       value of the pdf at each location            
             assert(size(xa,1) == this.dim);
            
             c = cos(xa - repmat(this.mu,1,size(xa,2)));
