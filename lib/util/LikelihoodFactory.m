@@ -17,7 +17,9 @@ classdef LikelihoodFactory
             %       likelihood function f(z,x)
             assert(isa(h, 'function_handle'));
             
-            f = @(z,x) noiseDistribution.pdf(repmat(z, 1, size(x,2))-h(x));
+            %use repmat if z contains one measurement, but x contains many
+            %state vecors
+            f = @(z,x) noiseDistribution.pdf(repmat(z, 1, size(x,2)/size(z,2))-h(x)); 
         end
     end
     
