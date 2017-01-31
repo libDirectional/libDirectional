@@ -5,10 +5,10 @@ classdef SE2UKF < handle
     % Igor Gilitschenski, Gerhard Kurz, and Uwe D. Hanebeck,
     % Proceedings of the 2015 IEEE International Conference on Multisensor
     % Fusion and Integration for Intelligent Systems (MFI),
-    % San Diego, USA, 2015 (submitted)
+    % San Diego, USA, 2015
     
     properties (Access = public)
-        gauss % Current state estimate ass Gaussian
+        gauss % Current state estimate as Gaussian
     end
     
     methods
