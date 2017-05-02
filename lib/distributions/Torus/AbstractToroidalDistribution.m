@@ -48,7 +48,7 @@ classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
             b = 0.5; %smaller radius
             X = (a+(b+f*scale).*cos(alpha)).*cos(beta);
             Y = (a+(b+f*scale).*cos(alpha)).*sin(beta);
-            Z = b.*sin(alpha);
+            Z = (b+f*scale).*sin(alpha);
             p = surf(X,Y,Z,f, varargin{:});
         end
         
@@ -203,7 +203,33 @@ classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
             
             r = this.integralNumerical(l, r);
         end
-     
-    end
-end
 
+        function twd = toToroidalWD5(this)
+            % Approximates the density with five weighted samples by
+            % matching the first trigonometric moment in each dimension
+            % and Jammalamadaka's circular correlation coefficient.
+            %
+            % Gerhard Kurz, Uwe D. Hanebeck,
+            % Deterministic Sampling on the Torus for Bivariate Circular Estimation
+            % IEEE Transactions on Aerospace and Electronic Systems, 53(1):530-534, February 2017.
+            
+            m1 = abs(this.trigonometricMoment(1)); %the abs removes influence of mu
+            rc = this.circularCorrelationJammalamadaka();
+            
+            wtilde = 0.4;
+            
+            a = acos( (m1(1) - 1)/(2*wtilde) + 1 );
+            b = acos( (m1(2) - 1)/(2*wtilde) + 1 );
+            d = [ -a  a -a  a  0;
+                  -b  b  b -b  0 ];
+             
+            w3 = 0.5 * (wtilde - rc* abs(wtilde));
+            
+            w1 = wtilde - w3;
+            w5 = 1 - 2*wtilde;
+            w = [w1 w1 w3 w3 w5];
+            twd = ToroidalWDDistribution(d + repmat(this.mu,1,5), w);
+        end
+    end
+    
+end

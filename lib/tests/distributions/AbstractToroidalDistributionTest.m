@@ -61,6 +61,13 @@ classdef AbstractToroidalDistributionTest< matlab.unittest.TestCase
            i4 = twn.integralNumerical([1;2],[2*pi;2*pi]);
            testCase.verifyEqual(i1+i2+i3+i4 , 1, 'RelTol', 1E-9);
            
+           %% test toToroidalWD5
+           twd5 = twn.toToroidalWD5();
+           testCase.verifyClass(twd5, 'ToroidalWDDistribution');
+           testCase.verifyEqual(twd5.circularMean(), twn.circularMean(), 'RelTol', 1E-10);
+           testCase.verifyEqual(twd5.trigonometricMoment(1), twn.trigonometricMoment(1), 'RelTol', 1E-10);
+           testCase.verifyEqual(twd5.circularCorrelationJammalamadaka(), twn.circularCorrelationJammalamadaka(), 'RelTol', 1E-10);
+           
            %% test sampling
            n = 10;
            s = twn.sampleMetropolisHastings(n);
