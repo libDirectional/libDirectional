@@ -106,9 +106,38 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             b = 0.5; %smaller radius
             X = (a+(b+this.w*scale).*cos(this.d(1,:))).*cos(this.d(2,:));
             Y = (a+(b+this.w*scale).*cos(this.d(1,:))).*sin(this.d(2,:));
-            Z = b.*sin(this.d(1,:));
+            Z = (b+this.w*scale).*sin(this.d(1,:));
             p = scatter3(X,Y,Z, varargin{:});
         end
+        
+        function p = plotTorusStemlike(this, varargin)
+            % Create a torus plot 
+            %
+            % Parameters:
+            %   varargin
+            %       parameters to be passed to scatter3 command
+            % Returns:
+            %   p (scalar)
+            %       plot handle
+            
+            a = 2; %larger radius
+            b = 0.5; %smaller radius
+            
+            scale = 0;
+            X = (a+(b+this.w*scale).*cos(this.d(1,:))).*cos(this.d(2,:));
+            Y = (a+(b+this.w*scale).*cos(this.d(1,:))).*sin(this.d(2,:));
+            Z = b.*sin(this.d(1,:));
+            
+            scale = 1/max(this.w);
+            X2 = (a+(b+this.w*scale).*cos(this.d(1,:))).*cos(this.d(2,:));
+            Y2 = (a+(b+this.w*scale).*cos(this.d(1,:))).*sin(this.d(2,:));
+            Z2 = (b+this.w*scale).*sin(this.d(1,:));
+            
+            for i=1:length(this.w)
+                line([X(i); X2(i)], [Y(i); Y2(i)], [Z(i); Z2(i)], 'color', 'r');
+            end
+            p = scatter3(X2,Y2,Z2, varargin{:});
+        end        
         
         function rhoc = circularCorrelationJammalamadaka(this)
             % Calculates Jammalamadaka's correlation coefficient
