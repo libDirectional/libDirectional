@@ -2,7 +2,7 @@
 /**
 	@brief fast math library for float
 	@author herumi
-	@url http://homepage1.nifty.com/herumi/
+	@url https://github.com/herumi/fmath/
 	@note modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 
@@ -32,6 +32,7 @@
 #include <limits>
 #include <stdlib.h>
 #include <float.h>
+#include <string.h> // for memcpy
 #if defined(_WIN32) && !defined(__GNUC__)
 	#include <intrin.h>
 	#ifndef MIE_ALIGN
@@ -233,9 +234,9 @@ struct ExpCode : public Xbyak::CodeGenerator {
 		Xbyak::util::Cpu cpu;
 		try {
 			makeExp(self, cpu);
-			exp_ = (float(*)(float))getCode();
+			exp_ = getCode<float (*)(float)>();
 			align(16);
-			exp_ps_ = (__m128(*)(__m128))getCurr();
+			exp_ps_ = getCurr<__m128(*)(__m128)>();
 			makeExpPs(self, cpu);
 			return;
 		} catch (std::exception& e) {
@@ -282,7 +283,7 @@ struct ExpCode : public Xbyak::CodeGenerator {
 		mulss(xm1, ptr [base + offsetof(Self, b)]);
 		shl(edx, 23); // u
 		subss(xm0, xm1); // t
-		or(eax, edx); // fi.f
+		or_(eax, edx); // fi.f
 		addss(xm0, ptr [base + offsetof(Self, f1)]);
 		movd(xm1, eax);
 		mulss(xm0, xm1);
@@ -524,13 +525,18 @@ __m128i iaxL = _mm_castpd_si128(_mm_load_sd((const double*)&c.tbl[adr0]));
 }
 #endif
 
+/*
+	px : pointer to array of double
+	n : size of array(assume multiple of 2 or 4)
+*/
 inline void expd_v(double *px, size_t n)
 {
 	using namespace local;
 	const ExpdVar<>& c = C<>::expdVar;
 	const double b = double(3ULL << 51);
 #ifdef __AVX2__
-	assert((n % 4) == 0);
+	size_t r = n & 3;
+	n &= ~3;
 	const __m256d mC1 = _mm256_set1_pd(c.C1[0]);
 	const __m256d mC2 = _mm256_set1_pd(c.C2[0]);
 	const __m256d mC3 = _mm256_set1_pd(c.C3[0]);
@@ -562,13 +568,18 @@ inline void expd_v(double *px, size_t n)
 		px += 4;
 	}
 #else
-	assert((n % 2) == 0);
+	size_t r = n & 1;
+	n &= ~1;
 	const __m128d mC1 = _mm_set1_pd(c.C1[0]);
 	const __m128d mC2 = _mm_set1_pd(c.C2[0]);
 	const __m128d mC3 = _mm_set1_pd(c.C3[0]);
 	const __m128d ma = _mm_set1_pd(c.a);
 	const __m128d mra = _mm_set1_pd(c.ra);
+#if defined(__x86_64__) || defined(_WIN64)
 	const __m128i madj = _mm_set1_epi64x(c.adj);
+#else
+	const __m128i madj = _mm_set_epi32(0, c.adj, 0, c.adj);
+#endif
 	const __m128d expMax = _mm_set1_pd(709.78272569338397);
 	const __m128d expMin = _mm_set1_pd(-708.39641853226408);
 	for (size_t i = 0; i < n; i += 2) {
@@ -598,6 +609,9 @@ inline void expd_v(double *px, size_t n)
 		px += 2;
 	}
 #endif
+	for (size_t i = 0; i < r; i++) {
+		px[i] = expd(px[i]);
+	}
 }
 
 #ifdef FMATH_USE_XBYAK
@@ -645,6 +659,7 @@ inline __m128 exp_ps(__m128 x)
 	t1 = _mm_movelh_ps(t1, t3);
 	t1 = _mm_castsi128_ps(_mm_slli_epi64(_mm_castps_si128(t1), 32));
 	t0 = _mm_movelh_ps(t0, t2);
+	t0 = _mm_castsi128_ps(_mm_srli_epi64(_mm_castps_si128(t0), 32));
 	t0 = _mm_or_ps(t0, t1);
 #else
 	__m128i ti = _mm_castps_si128(_mm_load_ss((const float*)&expVar.tbl[v0]));
