@@ -34,21 +34,6 @@ classdef CustomHypertoroidalDistribution < AbstractHypertoroidalDistribution
             assert(size(xa,1)==this.dim);
             p = this.f(xa);
         end
-        
-        function hd = shift(this, shiftAngles)
-            % Shift distribution by the given angles
-            %
-            % Parameters:
-            %   shiftAngles (dim x 1 column vector) 
-            %       angles to shift by
-            % Returns:
-            %   hd (CustomHypertoroidalDistribution)
-            %       shifted distribution            
-            assert(all(size(shiftAngles) == [this.dim, 1]));
-            
-            hd = this;
-            hd.f = @(xa) this.f(xa-repmat(shiftAngles,[1,size(xa,2)]));
-        end
 
         function ccd = toCustomCircular(this)
             % Convert to a custom circular distribution (only in 1D case)
