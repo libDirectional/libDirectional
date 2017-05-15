@@ -204,8 +204,7 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
 
         function p = pdf(this, xa)
             % Placeholder, pdf does not exist for wrapped Dirac distributions
-            p = 0; %HypertoroidalWDDistribution does not have a proper pdf
-            warning('PDF:UNDEFINED', 'pdf is not defined')
+            error('PDF:UNDEFINED', 'pdf is not defined')
         end    
         
         function result = integralNumerical(this, varargin)

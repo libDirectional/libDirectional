@@ -17,6 +17,9 @@ classdef SE2PWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(mean(1), real(wd.trigonometricMoment(1)), 'RelTol', 1E-10);
             testCase.verifyEqual(mean(2), imag(wd.trigonometricMoment(1)), 'RelTol', 1E-10);
             
+            % test error
+            testCase.verifyError(@() pwd.pdf(), 'PDF:UNDEFINED');
+            
             % test covariance
             C = pwd.covariance4D;
             testCase.verifyEqual(size(C), [4 4]);

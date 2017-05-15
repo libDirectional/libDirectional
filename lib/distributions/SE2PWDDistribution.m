@@ -41,8 +41,7 @@ classdef SE2PWDDistribution
         
         function p = pdf(~, ~)
             % Placeholder, pdf does not exist for wrapped Dirac distributions
-            p = 0; %PWD does not have a proper pdf
-            warning('PDF:UNDEFINED', 'pdf is not defined')
+            error('PDF:UNDEFINED', 'pdf is not defined')
         end
 
         function pwd = applyFunction(this,f)

@@ -23,6 +23,15 @@ classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(m(1), sum(w.*exp(1i*d(1,:))), 'RelTol', 1E-10);
             testCase.verifyEqual(m(2), sum(w.*exp(1i*d(2,:))), 'RelTol', 1E-10);
             
+            %% test errors
+            testCase.verifyError(@() twd.logLikelihood(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() twd.pdf(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() twd.integralNumerical(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() twd.trigonometricMomentNumerical(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() twd.sampleMetropolisHastings(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() twd.squaredDistanceNumerical(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() twd.kldNumerical(), 'PDF:UNDEFINED');
+            
             %% test sampling
             nSamples = 5;
             s = twd.sample(nSamples);

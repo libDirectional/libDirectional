@@ -9,7 +9,7 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             wd = WDDistribution(d, w);
             
             %% test pdf
-            testCase.verifyWarning(@wd.pdf,'PDF:UNDEFINED');
+            testCase.verifyError(@wd.pdf,'PDF:UNDEFINED');
             
             %% test cdf
             x = 0:6;
@@ -151,6 +151,10 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             wd2=WDDistribution(d([2,3,1]),w([2,3,1]));
             cd2=wd2.toContinuousVoronoi;
             testCase.verifyEqual(cd2.totalVariationDistanceNumerical(cd),0, 'RelTol', 1E-10);
+            
+            wd3=WDDistribution([d d],[w/2 w/2]);
+            cd3=wd2.toContinuousVoronoi;
+            testCase.verifyEqual(cd3.totalVariationDistanceNumerical(cd),0, 'RelTol', 1E-10);
         end
         
         function testl2distanceCdf(testCase)
