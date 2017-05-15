@@ -13,6 +13,12 @@ classdef GvMDistribution < AbstractCircularDistribution
     methods
         function this = GvMDistribution(mu_,kappa_)
             % Constructor
+            %
+            % Parameters
+            %   mu_ (k x 1 vector)
+            %       location parameters
+            %   kappa_ (k x 1) vector
+            %       concentration parameters
             assert(size(mu_,2)==1);
             assert(isequal(size(mu_),size(kappa_)));
             assert(all(kappa_>0));
