@@ -10,6 +10,10 @@ classdef CircularUniformDistributionTest< matlab.unittest.TestCase
             %% test pdf
             testCase.verifyEqual(cu.pdf(x), 1/(2*pi)*ones(size(x)));
             
+            %% test shift
+            cu2 = cu.shift(3);
+            testCase.verifyEqual(cu2.pdf(x), 1/(2*pi)*ones(size(x)));
+            
             %% test cdf
             testCase.verifyEqual(cu.cdf(x), cu.cdfNumerical(x), 'RelTol', 1E-10);
             testCase.verifyEqual(cu.cdf(x, 3), cu.cdfNumerical(x,3), 'RelTol', 1E-10);

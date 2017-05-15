@@ -9,6 +9,10 @@ classdef ToroidalUniformDistributionTest< matlab.unittest.TestCase
 
             %% test pdf
             testCase.verifyEqual(tud.pdf(x), 1/(2*pi)^2*ones(1,size(x,2)));
+            
+            %% test shift
+            tudShifted = tud.shift([1;2]);
+            testCase.verifyEqual(tudShifted.pdf(x), 1/(2*pi)^2*ones(1,size(x,2)));
 
             %% test trigonometric moments
             testCase.verifyEqual(tud.trigonometricMoment(0),tud.trigonometricMomentNumerical(0),'AbsTol', 1E-10);
