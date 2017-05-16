@@ -503,10 +503,10 @@ classdef ToroidalVMMatrixDistribution < AbstractToroidalDistribution
                 x = fminsearch(@f,startValue,optimset('display','off'));
             elseif strcmp(method, 'quasi-newton')
                 % approximates derivative
-                x = fminunc(@f,startValue,optimset('display','off','LargeScale','off'));
+                x = fminunc(@f,startValue,optimoptions('fminunc','display','off','Algorithm','quasi-newton'));
             elseif strcmp(method, 'trust-region')
                 % uses exact derivative
-                x = fminunc(@(x) fgrad(x),startValue,optimset('display','off','GradObj','on'));
+                x = fminunc(@(x) fgrad(x),startValue,optimoptions('fminunc','display','off','GradObj','on','Algorithm','trust-region'));
             elseif strcmp(method, 'trust-region-reflective')
                 % uses exact derivative, explicit contraints for kappa>0
                 x = fmincon(@(x) fgrad(x),startValue,[],[],[],[],[-Inf -Inf 0 0 -Inf -Inf -Inf -Inf],Inf*ones(1,8), [], optimset('display','off','GradObj','on','algorithm','trust-region-reflective'));
