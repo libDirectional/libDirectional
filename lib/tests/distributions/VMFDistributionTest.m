@@ -175,6 +175,11 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             s = vmf.sample(n);
             testCase.verifySize(s, [length(mu), n])
             testCase.verifyEqual(sum(s.^2), ones(1,n), 'RelTol', 1E-10);
+            
+            %% test toGaussian
+            g = vmf.toGaussian();
+            testCase.verifyClass(g, 'GaussianDistribution');
+            testCase.verifyEqual(g.mu, vmf.mu);
         end
         
         function testHellinger(testCase)

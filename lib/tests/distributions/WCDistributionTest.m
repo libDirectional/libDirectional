@@ -19,6 +19,11 @@ classdef WCDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(wc.pdf(mu-1), truePdf(mu-1), 'RelTol', 1E-5);
             testCase.verifyEqual(wc.pdf(mu+2), truePdf(mu+2), 'RelTol', 1E-3);
             
+            %% test shift
+            delta = 2;
+            wcShifted = wc.shift(delta);
+            testCase.verifyEqual(wc.pdf((1:10)-delta), wcShifted.pdf(1:10), 'RelTol', 1E-5);
+            
             %% test cdf
             testCase.verifyEqual(wc.cdf(mu),wc.cdfNumerical(mu), 'RelTol', 1E-8);
             testCase.verifyEqual(wc.cdf(mu+1.3),wc.cdfNumerical(mu+1.3), 'RelTol', 1E-8);
@@ -74,7 +79,6 @@ classdef WCDistributionTest< matlab.unittest.TestCase
             
             %% test periodicity
             testCase.verifyEqual(wc.pdf(linspace(-2*pi,0,100)),wc.pdf(linspace(0,2*pi,100)),'RelTol',1E-10);
-            
         end
     end
 end
