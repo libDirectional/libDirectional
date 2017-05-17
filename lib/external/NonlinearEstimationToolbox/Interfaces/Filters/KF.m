@@ -7,22 +7,39 @@ classdef KF < GaussianFilter
     % measurement noise that the posterior state estimate will always be an approximation.
     %
     % KF Methods:
-    %   KF                         - Class constructor.
-    %   getName                    - Get the filter name / description.
-    %   setColor                   - Set the filter color / plotting properties.
-    %   getColor                   - Get the current filter color / plotting properties.
-    %   setState                   - Set the system state.
-    %   getState                   - Get the current system state.
-    %   getStateDim                - Get the dimension of the current system state.
-    %   predict                    - Perform a time update (prediction step).
-    %   update                     - Perform a measurement update (filter step) using the given measurement(s).
-    %   step                       - Perform a combined time and measurement update.
-    %   getPointEstimate           - Get a point estimate of the current system state.
-    %   setMaxNumIterations        - Set the maximum number of iterations that will be performed during a measurement update.
-    %   getMaxNumIterations        - Get the current maximum number of iterations that will be performed during a measurement update.
-    %   setMeasValidationThreshold - Set a threshold to perform a measurement validation (measurement acceptance/rejection).
-    %   getMeasValidationThreshold - Get the current measurement validation threshold.
-    %   getLastUpdateData          - Get information from the last performed measurement update.
+    %   KF                             - Class constructor.
+    %   copy                           - Copy a Filter instance.
+    %   copyWithName                   - Copy a Filter instance and give the copy a new name / description.
+    %   getName                        - Get the filter name / description.
+    %   setColor                       - Set the filter color / plotting properties.
+    %   getColor                       - Get the current filter color / plotting properties.
+    %   setState                       - Set the system state.
+    %   getState                       - Get the current system state.
+    %   getStateDim                    - Get the dimension of the current system state.
+    %   predict                        - Perform a time update (prediction step).
+    %   update                         - Perform a measurement update (filter step) using the given measurement(s).
+    %   step                           - Perform a combined time and measurement update.
+    %   getPointEstimate               - Get a point estimate of the current system state.
+    %   setUseAnalyticSystemModel      - Enable or disable the use of analytic moment calculation during a prediction.
+    %   getUseAnalyticSystemModel      - Get the current use of analytic moment calculation during a prediction.
+    %   setStateDecompDim              - Set the dimension of the unobservable part of the system state.
+    %   getStateDecompDim              - Get the dimension of the unobservable part of the system state.
+    %   setUseAnalyticMeasurementModel - Enable or disable the use of analytic moment calculation during a filter step.
+    %   getUseAnalyticMeasurementModel - Get the current use of analytic moment calculation during a filter step.
+    %   setMaxNumIterations            - Set the maximum number of iterations that will be performed during a measurement update.
+    %   getMaxNumIterations            - Get the current maximum number of iterations that will be performed during a measurement update.
+    %   setMeasValidationThreshold     - Set a threshold to perform a measurement validation (measurement acceptance/rejection).
+    %   getMeasValidationThreshold     - Get the current measurement validation threshold.
+    %   getLastUpdateData              - Get information from the last performed measurement update.
+    
+    % Literature:
+    %   Pawe Stano, Zsófia Lendek, Jelmer Braaksma, Robert Babuska, Cees de Keizer, and Arnold J. den Dekker,
+    %   Parametric Bayesian Filters for Nonlinear Stochastic Dynamical Systems: A Survey,
+    %   IEEE Transactions on Cybernetics, Vol. 43, No. 6, Dec 2013, pp. 1607-1624.
+    %
+    %   Dan Simon,
+    %   Optimal State Estimation,
+    %   1st ed. Wiley & Sons, 2006.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
@@ -68,6 +85,9 @@ classdef KF < GaussianFilter
             % Call superclass constructor
             obj = obj@GaussianFilter(name);
             
+            % By default, the use of analytic measurement models is disabled.
+            obj.setUseAnalyticMeasurementModel(false);
+            
             % By default, no measurement validation
             obj.setMeasValidationThreshold(1);
             
@@ -76,6 +96,44 @@ classdef KF < GaussianFilter
             obj.setMaxNumIterations(1);
             
             obj.lastNumIterations = 0;
+        end
+        
+        function setUseAnalyticMeasurementModel(obj, useAnalyticMeasModel)
+            % Enable or disable the use of analytic moment calculation during a filter step.
+            %
+            % If true, analytic moment calculation will be used for the
+            % measurement update if the given measurement model supports it
+            % (i.e., if the measurement model inherits from AnalyticMeasurementModel).
+            % Otherwise, an approximative moment computation will be used.
+            % The approximation depends on the concrete filter (e.g., based
+            % on samples or derivatives).
+            %
+            % By default, the use of analytic measurement models is disabled.
+            %
+            % Parameters:
+            %   >> useAnalyticMeasModel (Logical scalar)
+            %      If true, analytic moment calculation will be used during a
+            %      measurement update. Otherwise, an approximative moment
+            %      computation will be performed.
+            
+            if ~Checks.isFlag(useAnalyticMeasModel)
+                obj.error('InvalidFlag', ...
+                          'useAnalyticMeasModel must be a logical scalar.');
+            end
+            
+            obj.useAnalyticMeasModel = useAnalyticMeasModel;
+        end
+        
+        function useAnalyticMeasModel = getUseAnalyticMeasurementModel(obj)
+            % Get the current use of analytic moment calculation during a filter step.
+            %
+            % Returns:
+            %   << useAnalyticMeasModel (Logical scalar)
+            %      If true, analytic moment calculation will be used during a
+            %      measurement update. Otherwise, an approximative moment
+            %      computation will be performed.
+            
+            useAnalyticMeasModel = obj.useAnalyticMeasModel;
         end
         
         function setMaxNumIterations(obj, maxNumIterations)
@@ -175,64 +233,73 @@ classdef KF < GaussianFilter
         end
     end
     
+    methods (Abstract, Access = 'protected')
+        momentFunc = getMomentFuncArbitraryNoise(obj, measModel, measurements);
+        
+        momentFunc = getMomentFuncAdditiveNoise(obj, measModel, measurements);
+        
+        momentFunc = getMomentFuncMixedNoise(obj, measModel, measurements);
+    end
+    
     methods (Access = 'protected')
-        function updateAnalytic(obj, measModel, measurements)
-            [dimMeas, numMeas] = size(measurements);
-            dimStackedMeas = dimMeas * numMeas;
+        function [updatedMean, ...
+                  updatedCov] = performUpdateObservable(obj, measModel, measurements, ...
+                                                        priorMean, priorCov, priorCovSqrt)
+            if obj.useAnalyticMeasModel && ...
+               Checks.isClass(measModel, 'AnalyticMeasurementModel')
+                momentFunc = obj.getMomentFuncAnalytic(measModel, measurements);
+            elseif Checks.isClass(measModel, 'LinearMeasurementModel')
+                momentFunc = obj.getMomentFuncAnalytic(measModel, measurements);
+            elseif Checks.isClass(measModel, 'MeasurementModel')
+                momentFunc = obj.getMomentFuncArbitraryNoise(measModel, measurements);
+            elseif Checks.isClass(measModel, 'AdditiveNoiseMeasurementModel')
+                momentFunc = obj.getMomentFuncAdditiveNoise(measModel, measurements);
+            elseif Checks.isClass(measModel, 'MixedNoiseMeasurementModel')
+                momentFunc = obj.getMomentFuncMixedNoise(measModel, measurements);
+            else
+                obj.errorMeasModel('AnalyticMeasurementModel (if enabled, see setUseAnalyticMeasurementModel())', ...
+                                   'LinearMeasurementModel', ...
+                                   'MeasurementModel', ...
+                                   'AdditiveNoiseMeausrementModel', ...
+                                   'MixedNoiseMeasurementModel');
+            end
             
-            % Perform state update
-            obj.kalmanUpdate(measModel, measurements, @obj.momentFuncAnalytic, ...
-                             dimStackedMeas, numMeas);
+            [updatedMean, ...
+             updatedCov] = obj.kalmanUpdate(measurements, momentFunc, ...
+                                            priorMean, priorCov, priorCovSqrt);
         end
         
-        function [measMean, measCov, ...
-                  stateMeasCrossCov] = momentCorrection(obj, iterStateMean, iterStateCov, ...
-                                                        measMean, measCov, stateMeasCrossCov)
-            A = stateMeasCrossCov' / iterStateCov;
-            
-            measMean          = measMean + A * (obj.stateMean - iterStateMean);
-            measCov           = measCov + A * (obj.stateCov - iterStateCov) * A';
-            stateMeasCrossCov = obj.stateCov * A';
-        end
-        
-        function kalmanUpdate(obj, measModel, measurements, momentFunc, varargin)
+        function [updatedMean, ...
+                  updatedCov] = kalmanUpdate(obj, measurements, momentFunc, ...
+                                             priorMean, priorCov, priorCovSqrt)
             stackedMeas = measurements(:);
             
             iterNum = 1;
             
-            [measMean, measCov, stateMeasCrossCov] = momentFunc(measModel, ...
-                                                                iterNum, ...
-                                                                obj.stateMean, ...
-                                                                obj.stateCov, ...
-                                                                obj.stateCovSqrt, ...
-                                                                varargin{:});
+            [measMean, measCov, ...
+             stateMeasCrossCov] = momentFunc(priorMean, priorCov, priorCovSqrt, ...
+                                             iterNum, priorMean, priorCov, priorCovSqrt);
             
             while iterNum < obj.maxNumIterations
                 try
-                    [iterStateMean, iterStateCov] = Utils.kalmanUpdate(obj.stateMean, obj.stateCov, stackedMeas, ...
-                                                                       measMean, measCov, stateMeasCrossCov);
-                    
-                    % Check intermediate state covariance is valid
-                    [isPosDef, iterStateCovSqrt] = Checks.isCov(iterStateCov);
-                    
-                    if ~isPosDef
-                        error('Intermediate state covariance matrix is not positive definite.');
-                    end
+                    [iterMean, iterCov] = Utils.kalmanUpdate(priorMean, priorCov, stackedMeas, ...
+                                                             measMean, measCov, stateMeasCrossCov);
                 catch ex
-                    % Issue warning ...
-                    obj.warnIgnoreMeas(ex.message);
-                    % ... and stop filter step
-                    return;
+                    obj.ignoreMeas(ex.message);
+                end
+                
+                % Check intermediate state covariance is valid
+                [isPosDef, iterCovSqrt] = Checks.isCov(iterCov);
+                
+                if ~isPosDef
+                    obj.ignoreMeas('Intermediate state covariance matrix is not positive definite.');
                 end
                 
                 iterNum = iterNum + 1;
                 
-                [measMean, measCov, stateMeasCrossCov] = momentFunc(measModel, ...
-                                                                    iterNum, ...
-                                                                    iterStateMean, ...
-                                                                    iterStateCov, ...
-                                                                    iterStateCovSqrt, ...
-                                                                    varargin{:});
+                [measMean, measCov, ...
+                 stateMeasCrossCov] = momentFunc(priorMean, priorCov, priorCovSqrt, ...
+                                                 iterNum, iterMean, iterCov, iterCovSqrt);
             end
             
             % Save Kalman update information
@@ -242,62 +309,74 @@ classdef KF < GaussianFilter
             obj.lastStateMeasCrossCov = stateMeasCrossCov;
             obj.lastNumIterations     = iterNum;
             
-            try
-                % Perform gating if enabled
-                if obj.measValidationThreshold ~= 1
-                    obj.measurementGating(stackedMeas, measMean, measCov);
-                end
-                
-                [updatedStateMean, ...
-                 updatedStateCov] = Utils.kalmanUpdate(obj.stateMean, obj.stateCov, stackedMeas, ...
-                                                       measMean, measCov, stateMeasCrossCov);
-                
-                % Check updated state covariance is valid
-                [isPosDef, covSqrt] = Checks.isCov(updatedStateCov);
-                
-                if ~isPosDef
-                    error('Updated state covariance matrix is not positive definite.');
-                end
-            catch ex
-                % Issue warning ...
-                obj.warnIgnoreMeas(ex.message);
-                % ... and stop filter step
-                return;
+            % Perform gating if enabled
+            if obj.measValidationThreshold ~= 1
+                obj.measurementGating(stackedMeas, measMean, measCov);
             end
             
-            % Save new state estimate
-            obj.stateMean    = updatedStateMean;
-            obj.stateCov     = updatedStateCov;
-            obj.stateCovSqrt = covSqrt;
+            try
+                [updatedMean, ...
+                 updatedCov] = Utils.kalmanUpdate(priorMean, priorCov, stackedMeas, ...
+                                                  measMean, measCov, stateMeasCrossCov);
+            catch ex
+                obj.ignoreMeas(ex.message);
+            end
         end
-    end
-    
-    methods (Access = 'private')
+        
+        function momentFunc = getMomentFuncAnalytic(obj, measModel, measurements)
+            [dimMeas, numMeas] = size(measurements);
+            dimStackedMeas = dimMeas * numMeas;
+            
+            momentFunc = @(priorMean, priorCov, priorCovSqrt, iterNum, iterMean, iterCov, iterCovSqrt) ...
+                         obj.momentFuncAnalytic(priorMean, priorCov, priorCovSqrt, ...
+                                                iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                measModel, dimStackedMeas, numMeas);
+        end
+        
         function [measMean, measCov, ...
-                  stateMeasCrossCov] = momentFuncAnalytic(obj, measModel, iterNum, iterStateMean, iterStateCov, ~, ...
-                                                          dimStackedMeas, numMeas)
+                  stateMeasCrossCov] = momentFuncAnalytic(obj, priorMean, priorCov, priorCovSqrt, ...
+                                                          iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                          measModel, dimStackedMeas, numMeas)
             % Compute measurement moments
-            [measMean, ...
-             measCov, ...
-             stateMeasCrossCov] = measModel.analyticMeasurementMoments(iterStateMean, ...
-                                                                       iterStateCov, ...
-                                                                       numMeas);
+            [measMean, measCov, ...
+             stateMeasCrossCov] = measModel.analyticMeasurementMoments(iterMean, iterCov, numMeas);
             
             % Check measurement moments
+            dimState = size(iterMean, 1);
+            
             obj.checkMeasurementMoments(measMean, ...
                                         measCov, ...
                                         stateMeasCrossCov, ...
+                                        dimState, ...
                                         dimStackedMeas);
             
             if iterNum > 1
                 [measMean, measCov, ...
-                 stateMeasCrossCov] = obj.momentCorrection(iterStateMean, iterStateCov, ...
-                                                           measMean, measCov, stateMeasCrossCov);
+                 stateMeasCrossCov] = KF.momentCorrection(priorMean, priorCov, priorCovSqrt, ...
+                                                          iterMean, iterCov, iterCovSqrt, ...
+                                                          measMean, measCov, stateMeasCrossCov);
             end
         end
-        
+    end
+    
+    methods (Static, Access = 'protected')
+        function [measMean, measCov, ...
+                  stateMeasCrossCov] = momentCorrection(priorMean, priorCov, priorCovSqrt, ...
+                                                        iterMean, iterCov, iterCovSqrt, ...
+                                                        measMean, measCov, stateMeasCrossCov)
+            A = stateMeasCrossCov' / iterCov;
+            B = A * priorCovSqrt;
+            C = A * iterCovSqrt;
+            
+            measMean          = measMean + A * (priorMean - iterMean);
+            measCov           = measCov + B * B' - C * C';
+            stateMeasCrossCov = priorCov * A';
+        end
+    end
+    
+    methods (Access = 'private')
         function checkMeasurementMoments(obj, mean, covariance, ...
-                                         crossCovariance, dimMeas)
+                                         crossCovariance, dimState, dimMeas)
             if ~Checks.isColVec(mean, dimMeas)
                 obj.error('InvalidMeasurementMean', ...
                           ['Measurement mean must be a ' ...
@@ -313,11 +392,11 @@ classdef KF < GaussianFilter
                           dimMeas, dimMeas);
             end
             
-            if ~Checks.isMat(crossCovariance, obj.dimState, dimMeas)
+            if ~Checks.isMat(crossCovariance, dimState, dimMeas)
                 obj.error('InvalidStateMeasurementCrossCovariance', ...
                           ['State measurement cross-covariance must be a ' ...
                            'matrix of dimension %dx%d.'], ...
-                          obj.dimState, dimMeas);
+                          dimState, dimMeas);
             end
         end
         
@@ -335,13 +414,16 @@ classdef KF < GaussianFilter
             % Check for threshold exceedance
             if normalizedValue > obj.measValidationThreshold
                 % Discard measurement
-                error('Measurement exceeds validation threshold (value: %f).', ...
-                      normalizedValue);
+                obj.ignoreMeas('Measurement exceeds validation threshold (value: %f).', ...
+                               normalizedValue);
             end
         end
     end
     
     properties (Access = 'private')
+        % Flag that indicates the use of an AnalyticMeasurementMdoel.
+        useAnalyticMeasModel;
+        
         % The maximum number of iterations that will be performed during a measurement update.
         maxNumIterations;
         

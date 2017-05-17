@@ -1,5 +1,5 @@
 
-classdef LRKF < KF & SampleBasedGaussianFilter
+classdef LRKF < KF & SampleBasedJointlyGaussianPrediction
     % Abstract base class for Linear Regression Kalman Filters (LRKFs)
     %
     % This type of filter implements a (nonlinear) Kalman filter with the aid of Gaussian
@@ -7,6 +7,8 @@ classdef LRKF < KF & SampleBasedGaussianFilter
     %
     % LRKF Methods:
     %   LRKF                           - Class constructor.
+    %   copy                           - Copy a Filter instance.
+    %   copyWithName                   - Copy a Filter instance and give the copy a new name / description.
     %   getName                        - Get the filter name / description.
     %   setColor                       - Set the filter color / plotting properties.
     %   getColor                       - Get the current filter color / plotting properties.
@@ -17,17 +19,23 @@ classdef LRKF < KF & SampleBasedGaussianFilter
     %   update                         - Perform a measurement update (filter step) using the given measurement(s).
     %   step                           - Perform a combined time and measurement update.
     %   getPointEstimate               - Get a point estimate of the current system state.
+    %   setUseAnalyticSystemModel      - Enable or disable the use of analytic moment calculation during a prediction.
+    %   getUseAnalyticSystemModel      - Get the current use of analytic moment calculation during a prediction.
+    %   setStateDecompDim              - Set the dimension of the unobservable part of the system state.
+    %   getStateDecompDim              - Get the dimension of the unobservable part of the system state.
+    %   setUseAnalyticMeasurementModel - Enable or disable the use of analytic moment calculation during a filter step.
+    %   getUseAnalyticMeasurementModel - Get the current use of analytic moment calculation during a filter step.
     %   setMaxNumIterations            - Set the maximum number of iterations that will be performed during a measurement update.
     %   getMaxNumIterations            - Get the current maximum number of iterations that will be performed during a measurement update.
     %   setMeasValidationThreshold     - Set a threshold to perform a measurement validation (measurement acceptance/rejection).
     %   getMeasValidationThreshold     - Get the current measurement validation threshold.
     %   getLastUpdateData              - Get information from the last performed measurement update.
-    %   setUseAnalyticSystemModel      - Enable or disable the use of analytic moment calculation during a prediction.
-    %   getUseAnalyticSystemModel      - Get the current use of analytic moment calculation during a prediction.
-    %   setUseAnalyticMeasurementModel - Enable or disable the use of analytic moment calculation during a filter step.
-    %   getUseAnalyticMeasurementModel - Get the current use of analytic moment calculation during a filter step.
     
     % Literature:
+    %   Ángel F. Garcı́a-Fernández, Lennart Svensson, Mark Morelande, and Simo Särkkä,
+    %   Posterior Linearisation Filter: Principles and Implementation Using Sigma Points,
+    %   IEEE Transactions on Signal Processing, Vol. 63, No. 20, Oct 2015, pp. 5561–5573.
+    %
     %   Jannik Steinbring and Uwe D. Hanebeck,
     %   LRKF Revisited: The Smart Sampling Kalman Filter (S²KF),
     %   Journal of Advances in Information Fusion, Vol. 9, No. 2, Dec 2014, pp. 106-123.
@@ -91,14 +99,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             
             % Call superclass constructors
             obj = obj@KF(name);
-            obj = obj@SampleBasedGaussianFilter(name);
-            
-            if ~Checks.isClass(samplingPrediction, 'GaussianSampling')
-                obj.error('InvalidGaussianSampling', ...
-                          'samplingPrediction must be a subclass of GaussianSampling.');
-            end
-            
-            obj.samplingPrediction = samplingPrediction;
+            obj = obj@SampleBasedJointlyGaussianPrediction(name, samplingPrediction);
             
             if nargin == 3
                 if ~Checks.isClass(samplingUpdate, 'GaussianSampling')
@@ -111,108 +112,37 @@ classdef LRKF < KF & SampleBasedGaussianFilter
                 % Use the same samplings for both prediction and update
                 obj.samplingUpdate = samplingPrediction;
             end
-            
-            obj.setUseAnalyticMeasurementModel(false);
-        end
-        
-        function setUseAnalyticMeasurementModel(obj, useAnalyticMeasModel)
-            % Enable or disable the use of analytic moment calculation during a filter step.
-            %
-            % If true, analytic moment calculation will be used for the
-            % measurement update if the given measurement model supports it,
-            % (i.e., if a measurement model is given, which inherits from
-            % AnalyticMeasurementModel). Otherwise, a sample-based
-            % measurement update will be used (provided a measurement model
-            % supported by this filter is given).
-            %
-            % By default, the use of analytic measurement models is disabled.
-            %
-            % Parameters:
-            %   >> useAnalyticMeasModel (Logical scalar)
-            %      If true, analytic moment calculation will be used during a
-            %      measurement update. Otherwise, a sample-based measurement
-            %      update will be performed.
-            
-            if ~Checks.isFlag(useAnalyticMeasModel)
-                obj.error('InvalidFlag', ...
-                          'useAnalyticMeasModel must be a logical scalar.');
-            end
-            
-            obj.useAnalyticMeasModel = useAnalyticMeasModel;
-        end
-        
-        function useAnalyticMeasModel = getUseAnalyticMeasurementModel(obj)
-            % Get the current use of analytic moment calculation during a filter step.
-            %
-            % Returns:
-            %   << useAnalyticMeasModel (Logical scalar)
-            %      If true, analytic moment calculation will be used during a
-            %      measurement update. Otherwise, a sample-based measurement
-            %      update will be performed.
-            
-            useAnalyticMeasModel = obj.useAnalyticMeasModel;
         end
     end
     
     methods (Access = 'protected')
-        function predictArbitraryNoise(obj, sysModel)
-            obj.predictJointGaussianArbitraryNoise(sysModel, obj.samplingPrediction);
-        end
-        
-        function predictAdditiveNoise(obj, sysModel)
-            obj.predictJointGaussianAdditiveNoise(sysModel, obj.samplingPrediction);
-        end
-        
-        function predictMixedNoise(obj, sysModel)
-            obj.predictJointGaussianMixedNoise(sysModel, obj.samplingPrediction);
-        end
-        
-        function performUpdate(obj, measModel, measurements)
-            if obj.useAnalyticMeasModel && ...
-               Checks.isClass(measModel, 'AnalyticMeasurementModel')
-                obj.updateAnalytic(measModel, measurements);
-            elseif Checks.isClass(measModel, 'LinearMeasurementModel')
-                obj.updateAnalytic(measModel, measurements);
-            elseif Checks.isClass(measModel, 'MeasurementModel')
-                obj.updateArbitraryNoise(measModel, measurements);
-            elseif Checks.isClass(measModel, 'AdditiveNoiseMeasurementModel')
-                obj.updateAdditiveNoise(measModel, measurements);
-            elseif Checks.isClass(measModel, 'MixedNoiseMeasurementModel')
-                obj.updateMixedNoise(measModel, measurements);
-            else
-                obj.errorMeasModel('AnalyticMeasurementModel (if enabled, see setUseAnalyticMeasurementModel())', ...
-                                   'LinearMeasurementModel', ...
-                                   'MeasurementModel', ...
-                                   'AdditiveNoiseMeausrementModel', ...
-                                   'MixedNoiseMeasurementModel');
-            end
-        end
-        
-        function updateArbitraryNoise(obj, measModel, measurements)
+        function momentFunc = getMomentFuncArbitraryNoise(obj, measModel, measurements)
             [dimMeas, numMeas]           = size(measurements);
             [noiseMean, ~, noiseCovSqrt] = measModel.noise.getMeanAndCovariance();
             dimNoise     = size(noiseMean, 1);
             noiseMean    = repmat(noiseMean, numMeas, 1);
             noiseCovSqrt = Utils.blockDiag(noiseCovSqrt, numMeas);
             
-            % Perform state update
-            obj.kalmanUpdate(measModel, measurements, @obj.momentFuncArbitraryNoise, ...
-                             dimNoise, dimMeas, numMeas, noiseMean, noiseCovSqrt);
+            momentFunc = @(priorMean, priorCov, priorCovSqrt, iterNum, iterMean, iterCov, iterCovSqrt) ...
+                         obj.momentFuncArbitraryNoise(priorMean, priorCov, priorCovSqrt, ...
+                                                      iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                      measModel, dimNoise, dimMeas, numMeas, noiseMean, noiseCovSqrt);
         end
         
-        function updateAdditiveNoise(obj, measModel, measurements)
+        function momentFunc = getMomentFuncAdditiveNoise(obj, measModel, measurements)
             [dimMeas, numMeas]    = size(measurements);
             [noiseMean, noiseCov] = measModel.noise.getMeanAndCovariance();
             dimNoise = size(noiseMean, 1);
             
             obj.checkAdditiveMeasNoise(dimMeas, dimNoise);
             
-            % Perform state update
-            obj.kalmanUpdate(measModel, measurements, @obj.momentFuncAdditiveNoise, ...
-                             dimMeas, numMeas, noiseMean, noiseCov);
+            momentFunc = @(priorMean, priorCov, priorCovSqrt, iterNum, iterMean, iterCov, iterCovSqrt) ...
+                         obj.momentFuncAdditiveNoise(priorMean, priorCov, priorCovSqrt, ...
+                                                     iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                     measModel, dimMeas, numMeas, noiseMean, noiseCov);
         end
         
-        function updateMixedNoise(obj, measModel, measurements)
+        function momentFunc = getMomentFuncMixedNoise(obj, measModel, measurements)
             [dimMeas, numMeas]           = size(measurements);
             [addNoiseMean, addNoiseCov]  = measModel.additiveNoise.getMeanAndCovariance();
             [noiseMean, ~, noiseCovSqrt] = measModel.noise.getMeanAndCovariance();
@@ -223,60 +153,49 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             
             obj.checkAdditiveMeasNoise(dimMeas, dimAddNoise);
             
-            % Perform state update
-            obj.kalmanUpdate(measModel, measurements, @obj.momentFuncMixedNoise, ...
-                             dimNoise, dimMeas, numMeas, addNoiseMean, addNoiseCov, noiseMean, noiseCovSqrt);
+            momentFunc = @(priorMean, priorCov, priorCovSqrt, iterNum, iterMean, iterCov, iterCovSqrt) ...
+                         obj.momentFuncMixedNoise(priorMean, priorCov, priorCovSqrt, ...
+                                                  iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                  measModel, dimNoise, dimMeas, numMeas, addNoiseMean, ...
+                                                  addNoiseCov, noiseMean, noiseCovSqrt);
         end
         
         function [measMean, measCov, ...
-                  stateMeasCrossCov] = momentFuncArbitraryNoise(obj, measModel, iterNum, iterStateMean, iterStateCov, iterStateCovSqrt, ...
-                                                                dimNoise, dimMeas, numMeas, noiseMean, noiseCovSqrt)
+                  stateMeasCrossCov] = momentFuncArbitraryNoise(obj, priorMean, priorCov, priorCovSqrt, ...
+                                                                iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                                measModel, dimNoise, dimMeas, numMeas, noiseMean, noiseCovSqrt)
             % Generate state and noise samples
             [stateSamples, ...
              noiseSamples, ...
              weights, ...
              numSamples] = Utils.getStateNoiseSamples(obj.samplingUpdate, ...
-                                                      iterStateMean, iterStateCovSqrt, ...
+                                                      iterMean, iterCovSqrt, ...
                                                       noiseMean, noiseCovSqrt);
             
-            measSamples = nan(dimMeas * numMeas, numSamples);
-            a = 1; c = 1;
-            
-            for i = 1:numMeas
-                b = i * dimMeas;
-                d = i * dimNoise;
-                
-                % Propagate samples through measurement equation
-                meas = measModel.measurementEquation(stateSamples, noiseSamples(c:d, :));
-                
-                % Check computed measurements
-                obj.checkComputedMeasurements(meas, dimMeas, numSamples);
-                
-                measSamples(a:b, :) = meas;
-                
-                a = b + 1;
-                c = d + 1;
-            end
+            measSamples = obj.getStackedMeasSamples(measModel, stateSamples, noiseSamples, ...
+                                                    numSamples, dimMeas, numMeas, dimNoise);
             
             [measMean, measCov, ...
-             stateMeasCrossCov] = Utils.getMeanCovAndCrossCov(iterStateMean, stateSamples, ...
+             stateMeasCrossCov] = Utils.getMeanCovAndCrossCov(iterMean, stateSamples, ...
                                                               measSamples, weights);
             
             if iterNum > 1
                 [measMean, measCov, ...
-                 stateMeasCrossCov] = obj.momentCorrection(iterStateMean, iterStateCov, ...
-                                                           measMean, measCov, stateMeasCrossCov);
+                 stateMeasCrossCov] = KF.momentCorrection(priorMean, priorCov, priorCovSqrt, ...
+                                                          iterMean, iterCov, iterCovSqrt, ...
+                                                          measMean, measCov, stateMeasCrossCov);
             end
         end
         
         function [measMean, measCov, ...
-                  stateMeasCrossCov] = momentFuncAdditiveNoise(obj, measModel, iterNum, iterStateMean, iterStateCov, iterStateCovSqrt, ...
-                                                               dimMeas, numMeas, noiseMean, noiseCov)
+                  stateMeasCrossCov] = momentFuncAdditiveNoise(obj, priorMean, priorCov, priorCovSqrt, ...
+                                                               iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                               measModel, dimMeas, numMeas, noiseMean, noiseCov)
             % Generate state samples
             [stateSamples, ...
              weights, ...
              numSamples] = Utils.getStateSamples(obj.samplingUpdate, ...
-                                                 iterStateMean, iterStateCovSqrt);
+                                                 iterMean, iterCovSqrt);
             
             % Propagate samples through deterministic measurement equation
             measSamples = measModel.measurementEquation(stateSamples);
@@ -284,7 +203,7 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             % Check computed measurements
             obj.checkComputedMeasurements(measSamples, dimMeas, numSamples);
             
-            [mean, cov, crossCov] = Utils.getMeanCovAndCrossCov(iterStateMean, stateSamples, ...
+            [mean, cov, crossCov] = Utils.getMeanCovAndCrossCov(iterMean, stateSamples, ...
                                                                 measSamples, weights);
             
             % Compute measurement mean
@@ -298,22 +217,47 @@ classdef LRKF < KF & SampleBasedGaussianFilter
             
             if iterNum > 1
                 [measMean, measCov, ...
-                 stateMeasCrossCov] = obj.momentCorrection(iterStateMean, iterStateCov, ...
-                                                           measMean, measCov, stateMeasCrossCov);
+                 stateMeasCrossCov] = KF.momentCorrection(priorMean, priorCov, priorCovSqrt, ...
+                                                          iterMean, iterCov, iterCovSqrt, ...
+                                                          measMean, measCov, stateMeasCrossCov);
             end
         end
         
         function [measMean, measCov, ...
-                  stateMeasCrossCov] = momentFuncMixedNoise(obj, measModel, iterNum, iterStateMean, iterStateCov, iterStateCovSqrt, ...
-                                                            dimNoise, dimMeas, numMeas, addNoiseMean, addNoiseCov, noiseMean, noiseCovSqrt)
+                  stateMeasCrossCov] = momentFuncMixedNoise(obj, priorMean, priorCov, priorCovSqrt, ...
+                                                            iterNum, iterMean, iterCov, iterCovSqrt, ...
+                                                            measModel, dimNoise, dimMeas, numMeas, addNoiseMean, addNoiseCov, noiseMean, noiseCovSqrt)
             % Generate state and noise samples
             [stateSamples, ...
              noiseSamples, ...
              weights, ...
              numSamples] = Utils.getStateNoiseSamples(obj.samplingUpdate, ...
-                                                      iterStateMean, iterStateCovSqrt, ...
+                                                      iterMean, iterCovSqrt, ...
                                                       noiseMean, noiseCovSqrt);
             
+            measSamples = obj.getStackedMeasSamples(measModel, stateSamples, noiseSamples, ...
+                                                    numSamples, dimMeas, numMeas, dimNoise);
+            
+            [measMean, measCov, ...
+             stateMeasCrossCov] = Utils.getMeanCovAndCrossCov(iterMean, stateSamples, ...
+                                                              measSamples, weights);
+            
+            % Compute measurement mean
+            measMean = measMean + repmat(addNoiseMean, numMeas, 1);
+            
+            % Compute measurement covariance
+            measCov = measCov + Utils.blockDiag(addNoiseCov, numMeas);
+            
+            if iterNum > 1
+                [measMean, measCov, ...
+                 stateMeasCrossCov] = KF.momentCorrection(priorMean, priorCov, priorCovSqrt, ...
+                                                          iterMean, iterCov, iterCovSqrt, ...
+                                                          measMean, measCov, stateMeasCrossCov);
+            end
+        end
+        
+        function measSamples = getStackedMeasSamples(obj, measModel, stateSamples, noiseSamples, ...
+                                                     numSamples, dimMeas, numMeas, dimNoise)
             measSamples = nan(dimMeas * numMeas, numSamples);
             a = 1; c = 1;
             
@@ -332,33 +276,24 @@ classdef LRKF < KF & SampleBasedGaussianFilter
                 a = b + 1;
                 c = d + 1;
             end
+        end
+    end
+    
+    methods (Access = 'protected')
+        function cpObj = copyElement(obj)
+            cpObj = obj.copyElement@SampleBasedJointlyGaussianPrediction();
             
-            [measMean, measCov, ...
-             stateMeasCrossCov] = Utils.getMeanCovAndCrossCov(iterStateMean, stateSamples, ...
-                                                              measSamples, weights);
-            
-            % Compute measurement mean
-            measMean = measMean + repmat(addNoiseMean, numMeas, 1);
-            
-            % Compute measurement covariance
-            measCov = measCov + Utils.blockDiag(addNoiseCov, numMeas);
-            
-            if iterNum > 1
-                [measMean, measCov, ...
-                 stateMeasCrossCov] = obj.momentCorrection(iterStateMean, iterStateCov, ...
-                                                           measMean, measCov, stateMeasCrossCov);
+            if obj.samplingPrediction == obj.samplingUpdate
+                % Still use the same samplings for both prediction and update
+                cpObj.samplingUpdate = cpObj.samplingPrediction;
+            else
+                cpObj.samplingUpdate = obj.samplingUpdate.copy();
             end
         end
     end
     
-    properties (Access = 'private')
-        % GaussianSampling used by the LRKF for the prediction step.
-        samplingPrediction;
-        
-        % GaussianSampling used by the LRKF for the filter step.
+    properties (SetAccess = 'private', GetAccess = 'protected')
+        % Gaussian sampling technique used for the measurement update.
         samplingUpdate;
-        
-        % Flag that indicates the use of an AnalyticMeasurementMdoel.
-        useAnalyticMeasModel;
     end
 end

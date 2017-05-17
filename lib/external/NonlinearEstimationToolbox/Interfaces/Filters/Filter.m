@@ -4,6 +4,8 @@ classdef Filter < handle & matlab.mixin.Copyable
     %
     % Filter Methods:
     %   Filter           - Class constructor.
+    %   copy             - Copy a Filter instance.
+    %   copyWithName     - Copy a Filter instance and give the copy a new name / description.
     %   getName          - Get the filter name / description.
     %   setColor         - Set the filter color / plotting properties.
     %   getColor         - Get the current filter color / plotting properties.
@@ -71,6 +73,35 @@ classdef Filter < handle & matlab.mixin.Copyable
             obj.dimState = 0;
         end
         
+        function cpObj = copyWithName(obj, cpName)
+            % Copy a Filter instance and give the copy a new name / description.
+            %
+            % The standard copy() method also copies the name of the filter instance
+            % to be copied. However, a filter cannot change its name after construction.
+            % If it is desired to have different names for different copies of a filter
+            % instance, use this method to select proper names during the copy procedure,
+            % e.g., to put several copies of a filter instance in the same FilterSet
+            % (which requires the filters to have different names to allow for a
+            % unique identification).
+            %
+            % Parameters:
+            %   >> cpName (Char)
+            %      A new filter name / description for the filter copy.
+            %
+            % Returns:
+            %   << cpObj (Sublcass of Filter)
+            %      A copy of the filter instance.
+            
+            if ~ischar(cpName)
+                error('Filter:InvalidFilterName', ...
+                      'cpName must be a char.');
+            end
+            
+            cpObj = obj.copy();
+            
+            cpObj.name = cpName;
+        end
+        
         function filterName = getName(obj)
             % Get the filter name / description.
             %
@@ -131,10 +162,18 @@ classdef Filter < handle & matlab.mixin.Copyable
             
             if nargout == 1
                 s = tic;
-                obj.performPrediction(sysModel);
+                try
+                    obj.performPrediction(sysModel);
+                catch ex
+                    Filter.handleIgnorePrediction(ex);
+                end
                 runtime = toc(s);
             else
-                obj.performPrediction(sysModel);
+                try
+                    obj.performPrediction(sysModel);
+                catch ex
+                    Filter.handleIgnorePrediction(ex);
+                end
             end
         end
         
@@ -174,10 +213,18 @@ classdef Filter < handle & matlab.mixin.Copyable
             
             if nargout == 1
                 s = tic;
-                obj.performUpdate(measModel, measurements);
+                try
+                    obj.performUpdate(measModel, measurements);
+                catch ex
+                    Filter.handleIgnoreMeas(ex);
+                end
                 runtime = toc(s);
             else
-                obj.performUpdate(measModel, measurements);
+                try
+                    obj.performUpdate(measModel, measurements);
+                catch ex
+                    Filter.handleIgnoreMeas(ex);
+                end
             end
         end
         
@@ -227,10 +274,20 @@ classdef Filter < handle & matlab.mixin.Copyable
             
             if nargout == 1
                 s = tic;
-                obj.performStep(sysModel, measModel, measurements);
+                try
+                    obj.performStep(sysModel, measModel, measurements);
+                catch ex
+                    Filter.handleIgnorePrediction(ex);
+                    Filter.handleIgnoreMeas(ex);
+                end
                 runtime = toc(s);
             else
-                obj.performStep(sysModel, measModel, measurements);
+                try
+                    obj.performStep(sysModel, measModel, measurements);
+                catch ex
+                    Filter.handleIgnorePrediction(ex);
+                    Filter.handleIgnoreMeas(ex);
+                end
             end
         end
     end
@@ -345,6 +402,38 @@ classdef Filter < handle & matlab.mixin.Copyable
             end
         end
         
+        function checkStateJacobian(obj, stateJacobian, dimOutput, dimState)
+            if ~Checks.isMat(stateJacobian, dimOutput, dimState)
+                obj.error('InvalidStateJacobian', ...
+                          'State Jacobian must be a matrix of dimension %dx%d.', ...
+                          dimOutput, dimState);
+            end
+        end
+        
+        function checkStateHessians(obj, stateHessians, dimOutput, dimState)
+            if ~Checks.isMat3D(stateHessians, dimState, dimState, dimOutput)
+                obj.error('InvalidStateHessians', ...
+                          'State Hessians must be a matrix of dimension %dx%dx%d.', ...
+                          dimState, dimState, dimOutput);
+            end
+        end
+        
+        function checkNoiseJacobian(obj, noiseJacobian, dimOutput, dimNoise)
+            if ~Checks.isMat(noiseJacobian, dimOutput, dimNoise)
+                obj.error('InvalidNoiseJacobian', ...
+                          'Noise Jacobian has to be a matrix of dimension %dx%d.', ...
+                          dimOutput, dimNoise);
+            end
+        end
+        
+        function checkNoiseHessians(obj, noiseHessians, dimOutput, dimNoise)
+            if ~Checks.isMat3D(noiseHessians, dimNoise, dimNoise, dimOutput)
+                obj.error('InvalidNoiseHessians', ...
+                          'Noise Hessians must be a matrix of dimension %dx%dx%d.', ...
+                          dimNoise, dimNoise, dimOutput);
+            end
+        end
+        
         function warning(obj, id, msg, varargin)
             msg = sprintf(msg, varargin{:});
             
@@ -352,49 +441,80 @@ classdef Filter < handle & matlab.mixin.Copyable
                     'From "%s":\n%s', obj.name, msg);
         end
         
-        function warnIgnorePrediction(obj, reason, varargin)
+        function error(obj, id, msg, varargin)
+            userMsg    = sprintf(msg, varargin{:});
+            identifier = sprintf('Filter:%s', id);
+            message    = sprintf('From "%s":\n%s', obj.name, userMsg);
+            
+            ex = MException(identifier, message);
+            
+            ex.throwAsCaller();
+        end
+        
+        function errorSysModel(obj, varargin)
+            try
+                numModels = numel(varargin);
+                
+                msg = 'Supported system models:';
+                
+                for i = 1:numModels
+                    msg = sprintf('%s\n * %s', msg, varargin{i});
+                end
+                
+                obj.error('UnsupportedSystemModel', msg);
+            catch ex
+                ex.throwAsCaller();
+            end
+        end
+        
+        function errorMeasModel(obj, varargin)
+            try
+                numModels = numel(varargin);
+                
+                msg = 'Supported measurement models:';
+                
+                for i = 1:numModels
+                    msg = sprintf('%s\n * %s', msg, varargin{i});
+                end
+                
+                obj.error('UnsupportedMeasurementModel', msg);
+            catch ex
+                ex.throwAsCaller();
+            end
+        end
+        
+        function ignorePrediction(obj, reason, varargin)
             reason = sprintf(reason, varargin{:});
             
             obj.warning('IgnoringPrediction', ...
                         '%s\nIgnoring prediction and leaving state estimate unchanged.', reason);
+            
+            error(Filter.IgnorePredictionID, 'Ingore prediction');
         end
         
-        function warnIgnoreMeas(obj, reason, varargin)
+        function ignoreMeas(obj, reason, varargin)
             reason = sprintf(reason, varargin{:});
             
             obj.warning('IgnoringMeasurement', ...
                         '%s\nIgnoring measurement and leaving state estimate unchanged.', reason);
+            
+            error(Filter.IgnoreMeasID, 'Ingore measurement');
         end
-        
-        function error(obj, id, msg, varargin)
-            msg = sprintf(msg, varargin{:});
-            
-            error(sprintf('Filter:%s', id), ...
-                  'From "%s":\n%s', obj.name, msg);
-        end
-        
-        function errorSysModel(obj, varargin)
-            numModels = numel(varargin);
-            
-            msg = 'Supported system models:';
-            
-            for i = 1:numModels
-                msg = sprintf('%s\n * %s', msg, varargin{i});
+    end
+    
+    methods (Static, Access = 'private')
+        function handleIgnorePrediction(ex)
+            if ~strcmp(ex.identifier, Filter.IgnorePredictionID)
+                % Real error => do not catch it
+                ex.rethrow();
             end
-            
-            obj.error('UnsupportedSystemModel', msg);
         end
         
-        function errorMeasModel(obj, varargin)
-            numModels = numel(varargin);
-            
-            msg = 'Supported measurement models:';
-            
-            for i = 1:numModels
-                msg = sprintf('%s\n * %s', msg, varargin{i});
+        function handleIgnoreMeas(ex)
+            if ~strcmp(ex.identifier, Filter.IgnoreMeasID)
+                % Real error => do not catch it
+                ex.rethrow();
             end
-            
-            obj.error('UnsupportedMeasurementModel', msg);
         end
     end
     
@@ -409,5 +529,10 @@ classdef Filter < handle & matlab.mixin.Copyable
         
         % The filter color / plotting properties.
         color;
+    end
+    
+    properties (Constant, Access = 'private')
+        IgnorePredictionID = 'Filter:IgnorePrediction';
+        IgnoreMeasID       = 'Filter:IgnoreMeasurement';
     end
 end

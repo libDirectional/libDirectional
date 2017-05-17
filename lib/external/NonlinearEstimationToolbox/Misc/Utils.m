@@ -6,6 +6,7 @@ classdef Utils
     %   getMeanAndCov             - Compute sample mean and sample covariance.
     %   getMeanCovAndCrossCov     - Compute sample mean, covariance, and cross-covariance.
     %   kalmanUpdate              - Perform a Kalman update.
+    %   decomposedStateUpdate     - Perform an update for a system state decomposed into two parts A and B.
     %   blockDiag                 - Create a block diagonal matrix.
     %   baseBlockDiag             - Create a block diagonal matrix.
     %   drawGaussianRndSamples    - Draw random samples from a multivariate Gaussian distribution.
@@ -14,8 +15,8 @@ classdef Utils
     %   rndOrthogonalMatrix       - Creates a random orthogonal matrix of the specified dimension.
     %   getStateSamples           - Get a set of samples approximating a Gaussian distributed system state.
     %   getStateNoiseSamples      - Get a set of samples approximating a jointly Gaussian distributed system state and (system/measurement) noise.
-    %   diffQuotientState         - Compute the state difference quotient of a function at the given nominal system state.
-    %   diffQuotientStateAndNoise - Compute the state and noise difference quotient of a function at the given nominal sytem state and noise.
+    %   diffQuotientState         - Compute first-order and second-order difference quotients of a function at the given nominal system state.
+    %   diffQuotientStateAndNoise - Compute first-order and second-order difference quotients of a function at the given nominal system state and nominal noise.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
@@ -51,10 +52,9 @@ classdef Utils
             %      Column-wise arranged samples.
             %
             %   >> weights (Row vector)
-            %      Column-wise arranged corresponding sample weights.
-            %      If weights is an empty matrix, all samples are assumed
+            %      Column-wise arranged corresponding normalized sample weights.
+            %      If no weights are passed, all samples are assumed
             %      to be equally weighted.
-            %      Default: Empty matrix.
             %
             % Returns:
             %   << mean (Column vector)
@@ -83,9 +83,25 @@ classdef Utils
                 if nargout > 1
                     diffSamples = bsxfun(@minus, samples, mean);
                     
-                    weightedDiffSamples = bsxfun(@times, diffSamples, weights);
+                    % Weights can be negative => we have to treat them separately
                     
-                    cov = diffSamples * weightedDiffSamples';
+                    % Positive weights
+                    idx = weights >= 0;
+                    
+                    sqrtWeights         = sqrt(weights(idx));
+                    weightedDiffSamples = bsxfun(@times, diffSamples(:, idx), sqrtWeights);
+                    
+                    cov = weightedDiffSamples * weightedDiffSamples';
+                    
+                    % Negative weights
+                    if ~all(idx)
+                        idx = ~idx;
+                        
+                        sqrtWeights         = sqrt(abs(weights(idx)));
+                        weightedDiffSamples = bsxfun(@times, diffSamples(:, idx), sqrtWeights);
+                        
+                        cov = cov - weightedDiffSamples * weightedDiffSamples';
+                    end
                 end
             end
         end
@@ -106,10 +122,9 @@ classdef Utils
             %      Column-wise arranged measurement samples.
             %
             %   >> weights (Row vector)
-            %      Column-wise arranged corresponding sample weights.
-            %      If weights is an empty matrix, all samples are assumed
+            %      Column-wise arranged corresponding normalized sample weights.
+            %      If no weights are passed, all samples are assumed
             %      to be equally weighted.
-            %      Default: Empty matrix.
             %
             % Returns:
             %   << measMean (Column vector)
@@ -140,17 +155,35 @@ classdef Utils
                 % Compute measurement mean
                 measMean = measSamples * weights';
                 
-                % Compute measurement covariance
-                diffMeasSamples = bsxfun(@minus, measSamples, measMean);
-                
-                weightedDiffMeasSamples = bsxfun(@times, diffMeasSamples, weights);
-                
-                measCov = diffMeasSamples * weightedDiffMeasSamples';
-                
-                % Compute state measurement cross-covariance
+                % Compute measurement covariance and state measurement cross-covariance
+                diffMeasSamples  = bsxfun(@minus, measSamples, measMean);
                 diffStateSamples = bsxfun(@minus, stateSamples, stateMean);
                 
-                stateMeasCrossCov = diffStateSamples * weightedDiffMeasSamples';
+                % Weights can be negative => we have to treat them separately
+                
+                % Positive weights
+                idx = weights >= 0;
+                
+                sqrtWeights              = sqrt(weights(idx));
+                weightedDiffMeasSamples  = bsxfun(@times, diffMeasSamples(:, idx), sqrtWeights);
+                weightedDiffStateSamples = bsxfun(@times, diffStateSamples(:, idx), sqrtWeights);
+                
+                measCov = weightedDiffMeasSamples * weightedDiffMeasSamples';
+                
+                stateMeasCrossCov = weightedDiffStateSamples * weightedDiffMeasSamples';
+                
+                % Negative weights
+                if ~all(idx)
+                    idx = ~idx;
+                    
+                    sqrtWeights              = sqrt(abs(weights(idx)));
+                    weightedDiffMeasSamples  = bsxfun(@times, diffMeasSamples(:, idx), sqrtWeights);
+                    weightedDiffStateSamples = bsxfun(@times, diffStateSamples(:, idx), sqrtWeights);
+                    
+                    measCov = measCov - weightedDiffMeasSamples * weightedDiffMeasSamples';
+                    
+                    stateMeasCrossCov = stateMeasCrossCov - weightedDiffStateSamples * weightedDiffMeasSamples';
+                end
             end
         end
         
@@ -185,7 +218,7 @@ classdef Utils
             %   << updatedStateCov (Positive definite matrix)
             %      Posterior state covariance matrix.
             
-            [sqrtMeasCov, isNonPos] = chol(measCov);
+            [measCovSqrt, isNonPos] = chol(measCov);
             
             if isNonPos
                 error('Utils:InvalidMeasurementCovariance', ...
@@ -193,15 +226,69 @@ classdef Utils
             end
             
             % Compute Kalman gain
-            A = stateMeasCrossCov / sqrtMeasCov;
-            
-            kalmanGain = A / sqrtMeasCov';
+            A = stateMeasCrossCov / measCovSqrt;
             
             % Compute updated state mean
-            updatedStateMean = stateMean + kalmanGain * (measurement - measMean);
+            updatedStateMean = stateMean + A * (measCovSqrt' \ (measurement - measMean));
             
             % Compute updated state covariance
             updatedStateCov = stateCov - A * A';
+        end
+        
+        function [updatedStateMean, ...
+                  updatedStateCov] = decomposedStateUpdate(stateMean, stateCov, stateCovSqrt, ...
+                                                           updatedStateMeanA, updatedStateCovA, updatedStateCovASqrt)
+            % Perform an update for a system state decomposed into two parts A and B.
+            %
+            % Parameters:
+            %   >> stateMean (Column vector)
+            %      Prior mean of the entire state.
+            %
+            %   >> stateCov (Positive definite matrix)
+            %      Prior covariance matrix of the entire state.
+            %
+            %   >> stateCovSqrt (Square matrix)
+            %      Square root of the prior covariance matrix.
+            %
+            %   >> updatedStateMeanA (Column vector)
+            %      Already updated mean of subspace A.
+            %
+            %   >> updatedStateCovA (Positive definite matrix)
+            %      Already updated covariance matrix of subspace A.
+            %
+            %   >> updatedStateCovASqrt (Square matrix)
+            %      Square root of the already updated covariance matrix of subspace A.
+            %
+            % Returns:
+            %   << updatedStateMean (Column vector)
+            %      Posterior mean of the entire state.
+            %
+            %   << updatedStateCov (Positive definite matrix)
+            %      Posterior covariance matrix of the entire state.
+            
+            D = size(updatedStateMeanA, 1);
+            
+            priorStateMeanA    = stateMean(1:D);
+            priorStateMeanB    = stateMean(D+1:end);
+            priorStateCovA     = stateCov(1:D, 1:D);
+            priorStateCovB     = stateCov(D+1:end, D+1:end);
+            priorStateCovBA    = stateCov(D+1:end, 1:D);
+            priorStateCovASqrt = stateCovSqrt(1:D, 1:D);
+            
+            % Computed updated mean, covariance, and cross-covariance for the subspace B
+            K = priorStateCovBA / priorStateCovA;
+            A = K * updatedStateCovASqrt;
+            B = K * priorStateCovASqrt;
+            updatedStateMeanB = priorStateMeanB + K * (updatedStateMeanA - priorStateMeanA);
+            updatedStateCovB  = priorStateCovB + A * A' - B * B';
+            updatedStateCovBA = K * updatedStateCovA;
+            
+            % Construct updated state mean and covariance
+            updatedStateMean = [updatedStateMeanA
+                                updatedStateMeanB];
+            
+            updatedStateCov = [updatedStateCovA  updatedStateCovBA'
+                               updatedStateCovBA updatedStateCovB  ];
         end
         
         function blockMat = blockDiag(matrix, numRepetitions)
@@ -468,92 +555,187 @@ classdef Utils
             noiseSamples = bsxfun(@plus, noiseSamples, noiseMean);
         end
         
-        function stateJacobian = diffQuotientState(func, nominalState, step)
-            % Compute the state difference quotient of a function at the given nominal system state.
+        function [stateJacobian, stateHessians] = diffQuotientState(func, nominalState, step)
+            % Compute first-order and second-order difference quotients of a function at the given nominal system state.
             %
             % Parameters:
             %   >> func (Function handle)
             %      System/Measurement function.
             %
             %   >> nominalState (Column vector)
-            %      Nominal system state to compute the Jacobian.
+            %      Nominal system state.
             %
             %   >> step (Positive scalar)
-            %      Step size to compute the finite difference.
-            %      Default: sqrt(eps)
+            %      Step size for computing the difference quotients.
+            %      Default: eps^(1/4)
             %
             % Returns:
             %   << stateJacobian (Square matrix)
-            %      Jacobian of the system state variables.
+            %      First-order difference quotients of the system state
+            %      variables, i.e., an approxiamtion of the Jacobian.
+            %
+            %   << stateHessians (3D matrix)
+            %      Set of second-order difference quotients of the system
+            %      state variables, i.e., approxiamtions of the Hessians.
             
             % Default value for step
             if nargin < 3
-                step = sqrt(eps);
+                step = eps^(1/4);
             end
             
             dimState = size(nominalState, 1);
             
-            % State jacobian
-            stateSamples = bsxfun(@plus, [zeros(dimState, 1) step * eye(dimState)], nominalState);
+            % State Jacobian
+            stateSamples = Utils.getJacobianSamples(dimState, nominalState, step);
             
-            values = func(stateSamples);
+            valuesState = func(stateSamples);
             
-            deltaStates = bsxfun(@minus, values(:, 2:end), values(:, 1));
+            stateJacobian = Utils.getJacobian(dimState, valuesState, step);
             
-            stateJacobian = deltaStates / step;
+            if nargout == 2
+                % State Hessians
+                [stateSamples, L] = Utils.getHessiansSamples(dimState, nominalState, step);
+                
+                valuesState2 = func(stateSamples);
+                
+                stateHessians = Utils.getHessians(dimState, valuesState, valuesState2, L, step);
+            end
         end
         
-        function [stateJacobian, noiseJacobian] = diffQuotientStateAndNoise(func, nominalState, nominalNoise, step)
-            % Compute the state and noise difference quotient of a function at the given nominal sytem state and noise.
+        function [stateJacobian, noiseJacobian, ...
+                  stateHessians, noiseHessians] = diffQuotientStateAndNoise(func, nominalState, nominalNoise, step)
+            % Compute first-order and second-order difference quotients of a function at the given nominal system state and nominal noise.
             %
             % Parameters:
             %   >> func (Function handle)
             %      System/Measurement function.
             %
             %   >> nominalState (Column vector)
-            %      Nominal system state to compute the Jacobian.
+            %      Nominal system state.
             %
             %   >> nominalNoise (Column vector)
-            %      Nominal system/measurement noise to compute the Jacobian.
+            %      Nominal noise.
             %
             %   >> step (Positive scalar)
             %      Step size to compute the finite difference.
-            %      Default: sqrt(eps)
+            %      Default: eps^(1/4)
             %
             % Returns:
             %   << stateJacobian (Square matrix)
-            %      Jacobian of the system state variables.
+            %      First-order difference quotients of the system state
+            %      variables, i.e., an approxiamtion of the Jacobian.
             %
-            %   << noiseJacobian (Matrix)
-            %      Jacobian of the system/measurement noise variables.
+            %   << noiseJacobian (Square matrix)
+            %      First-order difference quotients of the noise variables,
+            %      i.e., an approxiamtion of the Jacobian.
+            %
+            %   << stateHessians (3D matrix)
+            %      Set of second-order difference quotients of the system
+            %      state variables, i.e., approxiamtions of the Hessians.
+            %
+            %   << noiseHessians (3D matrix)
+            %      Set of second-order difference quotients of the noise
+            %      variables, i.e., approxiamtions of the Hessians.
             
             % Default value for step
             if nargin < 4
-                step = sqrt(eps);
+                step = eps^(1/4);
             end
             
             dimState = size(nominalState, 1);
             dimNoise = size(nominalNoise, 1);
             
-            % State jacobian
-            stateSamples = bsxfun(@plus, [zeros(dimState, 1) step * eye(dimState)], nominalState);
-            noiseSamples = repmat(nominalNoise, 1, 1 + dimState);
+            % State Jacobian
+            stateSamples = Utils.getJacobianSamples(dimState, nominalState, step);
+            noiseSamples = repmat(nominalNoise, 1, 2 * dimState + 1);
             
-            values = func(stateSamples, noiseSamples);
+            valuesState = func(stateSamples, noiseSamples);
             
-            deltaStates = bsxfun(@minus, values(:, 2:end), values(:, 1));
+            stateJacobian = Utils.getJacobian(dimState, valuesState, step);
             
-            stateJacobian = deltaStates / step;
+            % Noise Jacobian
+            noiseSamples = Utils.getJacobianSamples(dimNoise, nominalNoise, step);
+            stateSamples = repmat(nominalState, 1, 2 * dimNoise + 1);
             
-            % Noise jacobian
-            stateSamples = repmat(nominalState, 1, 1 + dimNoise);
-            noiseSamples = bsxfun(@plus, [zeros(dimNoise, 1) step * eye(dimNoise)], nominalNoise);
+            valuesNoise = func(stateSamples, noiseSamples);
             
-            values = func(stateSamples, noiseSamples);
+            noiseJacobian = Utils.getJacobian(dimNoise, valuesNoise, step);
             
-            deltaNoise = bsxfun(@minus, values(:, 2:end), values(:, 1));
+            if nargout == 4
+                % State Hessians
+                [stateSamples, L] = Utils.getHessiansSamples(dimState, nominalState, step);
+                noiseSamples = repmat(nominalNoise, 1, 2 * L);
+                
+                valuesState2 = func(stateSamples, noiseSamples);
+                
+                stateHessians = Utils.getHessians(dimState, valuesState, valuesState2, L, step);
+                
+                % Noise Hessians
+                [noiseSamples, L] = Utils.getHessiansSamples(dimNoise, nominalNoise, step);
+                stateSamples = repmat(nominalState, 1, 2 * L);
+                
+                valuesNoise2 = func(stateSamples, noiseSamples);
+                
+                noiseHessians = Utils.getHessians(dimNoise, valuesNoise, valuesNoise2, L, step);
+            end
+        end
+    end
+    
+    methods (Static, Access = 'private')
+        function samples = getJacobianSamples(dim, nominalVec, step)
+            samples = bsxfun(@plus, [step*eye(dim) -step*eye(dim) zeros(dim, 1)], nominalVec);
+        end
+        
+        function jacobian = getJacobian(dim, values, step)
+            idx      = 1:dim;
+            jacobian = values(:, idx) - values(:, dim + idx);
+            jacobian = jacobian / (2 * step);
+        end
+        
+        function [samples, L] = getHessiansSamples(dim, nominalVec, step)
+            L     = (dim * (dim + 1)) * 0.5 - dim;
+            steps = zeros(dim, L);
             
-            noiseJacobian = deltaNoise / step;
+            a = 1;
+            b = dim - 1;
+            for i = 1:dim - 1
+                d = dim - i;
+                
+                steps(i,         a:b) = step;
+                steps(i + 1:end, a:b) = step * eye(d);
+                
+                a = b + 1;
+                b = a + d - 2;
+            end
+            
+            samples = bsxfun(@plus, [steps -steps], nominalVec);
+        end
+        
+        function hessians = getHessians(dim, values, values2, L, step)
+            idx = 1:dim;
+            a   = 2 * values(:, end);
+            b   = bsxfun(@plus, values2(:, 1:L) + values2(:, L + 1:end), a);
+            c   = values(:, idx) + values(:, dim + idx);
+            d   = bsxfun(@minus, c, a);
+            
+            dimFunc  = size(values, 1);
+            hessians = nan(dim, dim, dimFunc);
+            
+            k = 1;
+            for i = 1:dim
+                hessians(i, i, :) = d(:, i);
+                
+                for j = (i + 1):dim
+                    vec = (b(:, k) - c(:, i) - c(:, j)) * 0.5;
+                    
+                    hessians(i, j, :) = vec;
+                    hessians(j, i, :) = vec;
+                    
+                    k = k + 1;
+                end
+            end
+            
+            hessians = hessians / (step * step);
         end
     end
 end

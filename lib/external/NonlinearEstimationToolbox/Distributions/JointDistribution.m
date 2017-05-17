@@ -76,7 +76,6 @@ classdef JointDistribution < Distribution
             if isempty(obj.jointMean)
                 obj.jointMean       = zeros(obj.jointDim, 1);
                 obj.jointCovariance = zeros(obj.jointDim, obj.jointDim);
-                obj.jointCovSqrt    = zeros(obj.jointDim, obj.jointDim);
                 a = 1;
                 b = 0;
                 
@@ -84,8 +83,7 @@ classdef JointDistribution < Distribution
                     b = b + obj.dimDists(i);
                     
                     [obj.jointMean(a:b), ...
-                     obj.jointCovariance(a:b, a:b), ...
-                     obj.jointCovSqrt(a:b, a:b)] = obj.dists{i}.getMeanAndCovariance();
+                     obj.jointCovariance(a:b, a:b)] = obj.dists{i}.getMeanAndCovariance();
                     
                     a = b + 1;
                 end

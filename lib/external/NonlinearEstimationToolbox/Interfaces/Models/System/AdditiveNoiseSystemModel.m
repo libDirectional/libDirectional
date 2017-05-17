@@ -5,7 +5,7 @@ classdef AdditiveNoiseSystemModel < handle
     % AdditiveNoiseSystemModel Methods:
     %   setNoise       - Set the system noise.
     %   systemEquation - The system equation.
-    %   derivative     - Compute the derivative of the implemented system equation.
+    %   derivative     - Compute the first-order and second-order derivatives of the implemented system equation.
     %   simulate       - Simulate the temporal evolution for a given system state.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
@@ -48,23 +48,30 @@ classdef AdditiveNoiseSystemModel < handle
             end
         end
         
-        function stateJacobian = derivative(obj, nominalState)
-            % Compute the derivative of the implemented system equation.
+        function [stateJacobian, stateHessians] = derivative(obj, nominalState)
+            % Compute the first-order and second-order derivatives of the implemented system equation.
             %
-            % By default, the Jacobians are computed using a difference quotient.
+            % By default, the derivatives are computed using difference quotients.
             %
-            % Mainly used by the EKF.
+            % Mainly used by EKF and EKF2.
             %
             % Parameters:
             %   >> nominalState (Column vector)
-            %      The nominal system state vector to linearize the system equation.
+            %      The nominal system state vector.
             %
             % Returns:
             %   << stateJacobian (Square matrix)
             %      The Jacobian of the state variables.
+            %
+            %   << stateHessians (3D matrix)
+            %      The Hessians of the state variables.
             
-            stateJacobian = Utils.diffQuotientState(@obj.systemEquation, ...
-                                                    nominalState);
+            if nargout == 1
+                stateJacobian = Utils.diffQuotientState(@obj.systemEquation, nominalState);
+            else
+                [stateJacobian, ...
+                 stateHessians] = Utils.diffQuotientState(@obj.systemEquation, nominalState);
+            end
         end
         
         function predictedState = simulate(obj, state)

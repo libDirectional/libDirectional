@@ -43,10 +43,11 @@ classdef Gaussian < Distribution
             %      Mean vector of the distribution.
             %      Default: 0.
             %
-            %   >> covariance (Positive definite matrix or vector)
+            %   >> covariance (Positive definite matrix, vector, or 3D matrix of positive definite matrices)
             %      Covariance matrix of the distribution. If a vector is
             %      passed, its values are interpreted as the variances of
-            %      a diagonal covariance matrix.
+            %      a diagonal covariance matrix. If a 3D matrix is passed,
+            %      a block diagonal covariance matrix will be constructed.
             %      Default: 1.
             
             if nargin == 2
@@ -145,7 +146,7 @@ classdef Gaussian < Distribution
                               ['covariance must be\n' ...
                                '  * a vector of dimension %d containing positive values only, or\n' ...
                                '  * a positive definite matrix of dimension %dx%d, or\n' ...
-                               '  * a 3D matrix with positive definite submatrices.'], ...
+                               '  * a 3D matrix of positive definite matrices.'], ...
                               dim, dim, dim);
                     end
                 end

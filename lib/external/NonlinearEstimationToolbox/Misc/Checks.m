@@ -221,19 +221,33 @@ classdef Checks
             end
         end
         
+        function ret = isMat3D(mat, rows, cols, slices)
+            nDims = numel(size(mat));
+            
+            if nargin == 1
+                ret = isnumeric(mat) && ...
+                      (nDims == 2 || nDims == 3) && ...
+                      ~isempty(mat);
+            else
+                ret = isnumeric(mat) && ...
+                      (nDims == 2 || nDims == 3) && ...
+                      size(mat, 1)     == rows && ...
+                      size(mat, 2)     == cols && ...
+                      size(mat, 3)     == slices;
+            end
+        end
+        
         
         function [ret, covSqrt] = isCov(cov, dim)
             if nargin == 1
                 if Checks.isSquareMat(cov)
-                    [covSqrt, isNonPos] = chol(cov);
+                    [covSqrt, isNonPos] = chol(cov, 'Lower');
                     
                     if isNonPos
                         ret = false;
                         covSqrt = [];
                         return;
                     end
-                    
-                    covSqrt = covSqrt';
                 else
                     ret = false;
                     covSqrt = [];
@@ -241,15 +255,13 @@ classdef Checks
                 end
             else
                 if Checks.isSquareMat(cov, dim)
-                    [covSqrt, isNonPos] = chol(cov);
+                    [covSqrt, isNonPos] = chol(cov, 'Lower');
                     
                     if isNonPos
                         ret = false;
                         covSqrt = [];
                         return;
                     end
-                    
-                    covSqrt = covSqrt';
                 else
                     ret = false;
                     covSqrt = [];
@@ -295,14 +307,14 @@ classdef Checks
             covSqrts = nan(dimA, dimB, N);
             
             for i = 1:N
-                [covSqrt, isNonPos] = chol(cov(:, :, i));
+                [covSqrt, isNonPos] = chol(cov(:, :, i), 'Lower');
                 
                 if isNonPos
                     ret = false;
                     covSqrts = [];
                     return;
                 else
-                    covSqrts(:, :, i) = covSqrt';  
+                    covSqrts(:, :, i) = covSqrt;
                 end
             end
             
