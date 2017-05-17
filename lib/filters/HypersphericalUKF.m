@@ -1,4 +1,4 @@
-classdef HypersphericalUKF < AbstractCircularFilter
+classdef HypersphericalUKF < AbstractHypersphericalFilter
     
     properties
         state
@@ -34,7 +34,8 @@ classdef HypersphericalUKF < AbstractCircularFilter
             %   f (function handle)
             %       function from R^(d-1) to R^(d-1)
             %   gaussSys (GaussianDistribution)
-            %       distribution of additive noise
+            %       distribution of additive noise (warning: mean is
+            %       ignored)
             assert(isa(f,'function_handle'));
             if ~isa(gaussSys,'GaussianDistribution')
                 gaussSys = gaussSys.toGaussian();
@@ -46,7 +47,7 @@ classdef HypersphericalUKF < AbstractCircularFilter
                 y = y/norm(y);
             end
             model = SysModelWrapper(@g);
-            model.setNoise(Gaussian(gaussSys.mu, gaussSys.C));
+            model.setNoise(Gaussian(zeros(size(gaussSys.mu)), gaussSys.C));
             
             this.ukf.setState(Gaussian(this.state.mu, this.state.C));
             this.ukf.predict(model);
@@ -61,6 +62,10 @@ classdef HypersphericalUKF < AbstractCircularFilter
         end
         
         function predictNonlinearArbitraryNoise(this, f, noiseSamples, noiseWeights)
+            % Updates assuming nonlinear measurement model
+            % z(k) = f(x(k), v_k)
+            % where z is the measurement and v_k is the non-additive measurement noise
+            % given by gaussMeas
             assert(isa(f, 'function_handle'));
             assert(size(noiseSamples,2) == size(noiseWeights,2));
             assert(size(noiseWeights,1) == 1);
@@ -89,15 +94,18 @@ classdef HypersphericalUKF < AbstractCircularFilter
         end
         
         function updateNonlinear(this, f, gaussMeas, z)
-           % Updates assuming nonlinear measurement model
+            % Updates assuming nonlinear measurement model
             % z(k) = f(x(k)) + v_k
-            % where z is the measurement and v_k is the measurement noise
+            % where z is the measurement and v_k is the additive measurement noise
             % given by gaussMeas
             % 
             % Parameters:
             %   f (function handle)
             %       function from R^(d-1) to R^n, where R^n is
             %       the measurement space containing z
+            %   gaussMeas (gaussianDistribution)
+            %       distribution of additive noise (warning: mean is
+            %       ignored)
             %   z (n x 1 vector)
             %       measurement            
             if ~isa(gaussMeas,'GaussianDistribution')
@@ -110,7 +118,7 @@ classdef HypersphericalUKF < AbstractCircularFilter
                 y = f(x);
             end
             model = MeasModelWrapper(@g);
-            model.setNoise(Gaussian(gaussMeas.mu, gaussMeas.C));
+            model.setNoise(Gaussian(zeros(size(gaussMeas.mu)), gaussMeas.C));
             
             this.ukf.setState(Gaussian(this.state.mu, this.state.C));
             this.ukf.update(model, z);
@@ -123,7 +131,7 @@ classdef HypersphericalUKF < AbstractCircularFilter
             end
         end
         
-        function updateIdentity(this, z, gaussMeasNoise)
+        function updateIdentity(this, gaussMeasNoise, z)
             this.updateNonlinear(@(x) x, gaussMeasNoise, z);
         end
         
@@ -140,13 +148,13 @@ classdef HypersphericalUKF < AbstractCircularFilter
             state = this.state;
         end
         
-        function state = getEstimateMean(this)
+        function estimateMean = getEstimateMean(this)
             % Return current estimate 
             %
             % Returns:
-            %   state (GaussianDistribution)
-            %       current estimate
-            state = this.state.mu;
+            %   estimateMean (n x 1 column vector)
+            %       mean of current estimate 
+            estimateMean = this.state.mu;
         end
     end
     
