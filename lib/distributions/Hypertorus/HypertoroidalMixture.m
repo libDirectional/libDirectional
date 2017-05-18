@@ -34,7 +34,7 @@ classdef HypertoroidalMixture < AbstractHypertoroidalDistribution
             %       value of the pdf at each location
             assert(size(xa,1)==this.dim);
             p = zeros(1, size(xa,2));
-            for i=1:length(this.dists);
+            for i=1:length(this.dists)
                 p = p + this.w(i)*this.dists{i}.pdf(xa); % Calculate pdf using individual pdfs
             end
         end
@@ -49,7 +49,7 @@ classdef HypertoroidalMixture < AbstractHypertoroidalDistribution
             %   m (scalar)
             %       n-th trigonometric moment (complex number)
             m = zeros(this.dim,1);
-            for i=1:length(this.dists);
+            for i=1:length(this.dists)
                 m = m + this.w(i)*this.dists{i}.trigonometricMoment(n); % Calculate moments using moments of each component
             end
         end

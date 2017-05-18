@@ -55,7 +55,7 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
             %       distribution of additive noise
             
             assert (isa (noiseDistribution, 'VMFDistribution'),'Currently, only VMF distributed noise terms are allowed.');
-            if ~isequal(noiseDistribution.mu,[0;0;1]);
+            if ~isequal(noiseDistribution.mu,[0;0;1])
                 warning('mu of noiseDistribution is being ignored...');
             end
             assert(isa(f,'function_handle'));

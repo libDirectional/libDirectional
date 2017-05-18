@@ -96,7 +96,7 @@ classdef WNFilter < AbstractCircularFilter
             d = zeros(1,L*Lw);
             w = zeros(1,L*Lw);
             for j=1:L
-                for l=1:Lw;
+                for l=1:Lw
                     w(1,j+L*(l-1)) = wd.w(j) * weights(l);
                     d(1,j+L*(l-1)) = f(wd.d(j), samples(:,l));
                 end

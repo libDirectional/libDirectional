@@ -122,7 +122,7 @@ classdef VMFFilter < AbstractHypersphericalFilter
             this.state = this.state.multiply(measNoise);
         end
         
-        function updateNonlinearProgressive(this)
+        function updateNonlinearProgressive(~)
             %todo later
             error('not implemented');
         end

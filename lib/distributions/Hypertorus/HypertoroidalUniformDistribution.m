@@ -40,7 +40,7 @@ classdef HypertoroidalUniformDistribution < AbstractHypertoroidalDistribution
             result = this.dim * log(2*pi);
         end
         
-        function m = circularMean(this)
+        function m = circularMean(~)
             % Calculate the circular mean
             %
             % Returns:

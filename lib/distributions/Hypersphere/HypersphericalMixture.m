@@ -34,7 +34,7 @@ classdef HypersphericalMixture < AbstractHypersphericalDistribution
             %       value of the pdf at each location
             assert(size(xa,1)==this.dim);
             p = zeros(1, size(xa,2));
-            for i=1:length(this.dists);
+            for i=1:length(this.dists)
                 p = p + this.w(i)*this.dists{i}.pdf(xa); % Calculate pdf using individual pdfs
             end
         end

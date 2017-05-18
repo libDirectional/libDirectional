@@ -198,34 +198,34 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
     end
     
     methods (Sealed)
-        function l = logLikelihood(this, samples)
+        function logLikelihood(~, ~)
             error('PDF:UNDEFINED', 'not supported');
         end     
 
-        function p = pdf(this, xa)
+        function pdf(~, ~)
             % Placeholder, pdf does not exist for wrapped Dirac distributions
             error('PDF:UNDEFINED', 'pdf is not defined')
         end    
         
-        function result = integralNumerical(this, varargin)
+        function integralNumerical(~, ~)
             error('PDF:UNDEFINED', 'not supported')
         end        
         
-        function m = trigonometricMomentNumerical(this,n)
+        function trigonometricMomentNumerical(~,~)
             % Disable numerical calculation of angular moments since it relies on the pdf
             error('PDF:UNDEFINED', 'not supported');
         end   
         
-        function s = sampleMetropolisHastings(this, n)
+        function sampleMetropolisHastings(~, ~)
             % Disable sampling algorithm relying on pdf
             error('PDF:UNDEFINED', 'not supported');
         end        
 
-        function d = squaredDistanceNumerical(this, other)
+        function squaredDistanceNumerical(~, ~)
             error('PDF:UNDEFINED', 'not supported');
         end
         
-        function kld = kldNumerical(this, other)
+        function kldNumerical(~, ~)
             error('PDF:UNDEFINED', 'not supported');
         end        
     end

@@ -172,7 +172,7 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             wn = WNDistribution(mu,sigma);
         end
                 
-        function cd=toContinuousVoronoi(this)
+        function cd = toContinuousVoronoi(this)
             % Converts the wd to a continouos function using an approach
             % whose idea comes from Voronoi-regions. Find the center
             % between each two particles and use these as a boundary to
@@ -210,6 +210,7 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
                 arrayfun(@(xCurr)densityEachRegion((xCurr>=allBoundaries(1:end-1))&(xCurr<allBoundaries(2:end))),...
                 mod(x,2*pi)));
         end
+        
         function wd = applyFunction(this,f)
             % Apply a function f(x) to each Dirac component and obtain its new position
             %
