@@ -181,14 +181,16 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             % weights diracs with identical position beforehand
             [diracPositions,order]=sort(this.d); %Sort particles
             weights=this.w(order);
-            % Eliminate diracs at same locations and cumulate weight
+            % Calculate difference to next sample and borders
             difftmp=diff([0,diracPositions,2*pi]);
+            % Now calculate distance from each sample to its next (wrap
+            % around at border of periodicity)
             differences=[difftmp(2:end-1),difftmp(1)+difftmp(end)];
-            for i=length(diracPositions):-1:2
+            for i=length(diracPositions)-1:-1:1
                 if differences(i)==0
-                    weights(i-1)=weights(i-1)+weights(i);
-                    diracPositions(i)=[];
-                    weights(i)=[];
+                    weights(i)=weights(i)+weights(i+1);
+                    diracPositions(i+1)=[];
+                    weights(i+1)=[];
                 end
             end
             % Subdivide into regions
