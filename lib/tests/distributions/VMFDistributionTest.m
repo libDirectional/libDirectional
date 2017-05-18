@@ -45,9 +45,8 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(size(s,1), vmf.dim);
             testCase.verifyEqual(size(s,2), 2*vmf.dim-1);
             sVM = vmSame.toDirac3().d;
-            %testCase.verifyEqual(s, [cos(sVM); sin(sVM)], 'RelTol',
-            %1E-10); %this test fails for now, because VM and VMF return
-            %the samples in a different order
+            %we need sort because VM and VMF return the samples in a different order
+            testCase.verifyEqual(sort(s,2), sort([cos(sVM); sin(sVM)],2), 'RelTol',1E-10); 
             vmfFitted2 = VMFDistribution.fit(s);
             testCase.verifyEqual(vmf.mu, vmfFitted2.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmf.kappa, vmfFitted2.kappa, 'RelTol', 1E-10);
