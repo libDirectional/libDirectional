@@ -63,7 +63,7 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             result = sum(this.w);
         end
         
-        function result = integralNumerical(this, varargin)
+        function integralNumerical(~, ~)
             error('PDF:UNDEFINED', 'not supported');
         end
                 
@@ -140,7 +140,7 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             result = -sum(this.w.*log(this.w));
         end       
         
-        function result = entropyNumerical(this)
+        function entropyNumerical(~)
             error('PDF:UNDEFINED', 'not supported');
         end   
         
@@ -154,15 +154,14 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             wd = WDDistribution(atan2(this.d(2,:), this.d(1,:)), this.w);
         end   
         
-        function s = sampleMetropolisHastings(this, n)
+        function sampleMetropolisHastings(~, ~)
             % Disable sampling algorithm relying on pdf
             error('PDF:UNDEFINED', 'not supported');
         end            
 
-        function p = pdf(this, xa)
+        function pdf(~, ~)
             % Placeholder, pdf does not exist for Dirac distributions
-            p = 0; %HypertoroidalWDDistribution does not have a proper pdf
-            warning('PDF:UNDEFINED', 'pdf is not defined')
+            error('PDF:UNDEFINED', 'pdf is not defined')
         end     
     end
 end

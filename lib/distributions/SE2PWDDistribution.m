@@ -39,7 +39,7 @@ classdef SE2PWDDistribution
             end
         end
         
-        function p = pdf(~, ~)
+        function pdf(~, ~)
             % Placeholder, pdf does not exist for wrapped Dirac distributions
             error('PDF:UNDEFINED', 'pdf is not defined')
         end

@@ -36,7 +36,7 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             bcWMM.alpha = alpha_;
         end
         
-        function p = pdf(this, xa)
+        function pdf(~, ~)
             error('not implemented yet');
         end
     end
@@ -242,7 +242,6 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             
             dyadicProductsReshape = reshape(dyadicProducts, [], N);
             
-            D = size(B, 1);
             evalString = sprintf('@(x) cBinghamGradNormDividedByNorm%d(transpose(x))', D);
             firstOrderMoments = str2func(evalString);
             
