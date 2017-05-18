@@ -65,17 +65,18 @@ classdef CircularParticleFilterTest < matlab.unittest.TestCase
             testCase.verifyClass(predicted, 'WDDistribution');
            
             %% test update
+            rng default
             filter.setState(wd);
             h = @(x) x;
             z = 0;
             filter.updateNonlinear(LikelihoodFactory.additiveNoiseLikelihood(h, wn),z);
-            wd3 = filter.getEstimate();
-            testCase.verifyClass(wd3, 'WDDistribution');
+            wd3a = filter.getEstimate();
+            testCase.verifyClass(wd3a, 'WDDistribution');
             
             filter.setState(wd);
             filter.updateIdentity(wn, z);
-            wd3 = filter.getEstimate();
-            testCase.verifyClass(wd3, 'WDDistribution');
+            wd3b = filter.getEstimate();
+            testCase.verifyClass(wd3b, 'WDDistribution');
             
             filter.setState(WDDistribution(0:0.1:1));
             likelihood = @(z, x) x == 0.5;
@@ -86,7 +87,15 @@ classdef CircularParticleFilterTest < matlab.unittest.TestCase
                 testCase.verifyEqual(estimation.d(i), 0.5);
             end
             
-            
+            %% test update with single parameter likelihood
+            rng default
+            filter = CircularParticleFilter(nParticles);
+            filter.setState(wd);
+            filter.updateNonlinear(@(x) wn.pdf(-x));
+            wd3c = filter.getEstimate();
+            testCase.verifyClass(wd3c, 'WDDistribution');
+            testCase.verifyEqual(wd3a.d, wd3c.d);
+            testCase.verifyEqual(wd3a.w, wd3c.w);
         end
     end
 end
