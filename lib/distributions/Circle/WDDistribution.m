@@ -281,7 +281,7 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             %   varargin
             %       parameters to be passed to plot command
             % Returns:
-            %   p (scalar)
+            %   h (scalar)
             %       plot handle
             h = this.plot(varargin{:});
         end
@@ -293,9 +293,9 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             %   varargin
             %       parameters to be passed to plot command
             % Returns:
-            %   p (scalar)
+            %   h (scalar)
             %       plot handle
-            error('not implemented');
+            h = line([cos(this.d); (1+this.w).*cos(this.d)], [sin(this.d); (1+this.w).*sin(this.d)]);
         end
         
         function h = plot3d(this, varargin)
@@ -323,7 +323,7 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             s = this.d(ids);
         end
         
-        function s = sampleCdf(this, n)
+        function sampleCdf(~, ~)
             % Disable sampling algorithm relying on cdf
             error('PDF:UNDEFINED', 'not supported');
         end
@@ -344,7 +344,7 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             d_ = zeros(1,L*Lw);
             w_ = zeros(1,L*Lw);
             for j=1:L
-                for l=1:Lw;
+                for l=1:Lw
                     w_(1,j+L*(l-1)) = this.w(j) * wd2.w(l);
                     d_(1,j+L*(l-1)) = this.d(j) + wd2.d(l);
                 end
@@ -352,7 +352,7 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             wd = WDDistribution(d_,w_);
         end
         
-        function result = entropyNumerical(this)
+        function result = entropyNumerical(~)
             warning('entropy is not defined in a continous sense')
             result = 0;
         end
