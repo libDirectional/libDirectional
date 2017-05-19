@@ -21,6 +21,9 @@ classdef HypersphericalUKFTest< matlab.unittest.TestCase
             vmfFilter.updateIdentity(vmfMeas,[0;0;1]);
             vmfFilter.updateIdentity(vmfMeas,[0;0;1]);
 
+            est = ukf.getEstimate();
+            testCase.verifyClass(est, 'GaussianDistribution');
+            testCase.verifyEqual(norm(est.mu), 1, 'RelTol', 1E-10);
             testCase.verifyEqual(norm(ukf.getEstimateMean-vmfFilter.getEstimateMean),0,'AbsTol',0.05);
             
             %test nonadd. noise
