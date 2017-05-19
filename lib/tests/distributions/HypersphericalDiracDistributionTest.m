@@ -10,10 +10,18 @@ classdef HypersphericalDiracDistributionTest < matlab.unittest.TestCase
             d = d./repmat(sqrt(sum(d.^2)), 3, 1);
             w = [0.1 0.1 0.1 0.1 0.6];
             hdd = HypersphericalDiracDistribution(d,w);
+            
+            % test errors
+            testCase.verifyError(@() hdd.pdf(1), 'PDF:UNDEFINED');
+            testCase.verifyError(@() hdd.sampleMetropolisHastings(1), 'PDF:UNDEFINED');
+            testCase.verifyError(@() hdd.entropyNumerical(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() hdd.integralNumerical(), 'PDF:UNDEFINED');
+            
             % sanity check
             testCase.verifyClass(hdd, 'HypersphericalDiracDistribution');
             testCase.verifyEqual(hdd.d, d);
             testCase.verifyEqual(hdd.w, w);
+            testCase.verifyEqual(hdd.integral, 1, 'RelTol', 1E-10);
             
             % test sampling
             nSamples = 5;
@@ -42,10 +50,10 @@ classdef HypersphericalDiracDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(twdRew.d, hdd.d);
             wNew = hdd.d(1,:).*hdd.w;
             testCase.verifyEqual(twdRew.w, wNew/sum(wNew));
+            testCase.verifyEqual(twdRew.integral, 1, 'RelTol', 1E-10);
             
             % test entropy
             testCase.verifyWarning(@hdd.entropy, 'ENTROPY:DISCRETE')
-            testCase.verifyError(@hdd.entropyNumerical, 'PDF:UNDEFINED');
         end
         
         function testToWD(testCase)

@@ -61,6 +61,10 @@ classdef SE2PWDDistributionTest< matlab.unittest.TestCase
             s = s(1,:);
             testCase.verifyGreaterThanOrEqual(s,zeros(size(s)));
             testCase.verifyLessThan(s,2*pi*ones(size(s)));
+            
+            % test initialization with equal weights
+            pwd2 = SE2PWDDistribution(d);
+            testCase.verifyEqual(pwd2.w, ones(1,size(d,2))/size(d,2), 'RelTol', 1E-10)
         end
     end
 end

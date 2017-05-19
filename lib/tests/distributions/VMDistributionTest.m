@@ -97,7 +97,7 @@ classdef VMDistributionTest< matlab.unittest.TestCase
             cu = CircularUniformDistribution();
 
             % test pdf
-            x = [0:0.1:2*pi];
+            x = 0:0.1:2*pi;
             testCase.verifyEqual(vm.pdf(x),cu.pdf(x) , 'RelTol', 1E-10);
             
             % test cdf

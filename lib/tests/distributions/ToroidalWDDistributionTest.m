@@ -106,6 +106,10 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C3(1:2,3:4)));            
             testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C4(1:2,3:4)));            
             testCase.verifyLessThanOrEqual( frob(Ctwd(1:2,3:4) - C6(1:2,3:4)), frob(Ctwd(1:2,3:4) - C5(1:2,3:4)));            
+            
+            %% test errors
+            testCase.verifyError(@() twd.angularProductMomentNumerical(), 'PDF:UNDEFINED');
+            testCase.verifyError(@() twd.covariance4DNumerical(), 'PDF:UNDEFINED');
                        
             %% test getMarginal
             wd1 = twd.marginalizeTo1D(1);
