@@ -17,6 +17,7 @@ classdef ToroidalUKFTest < matlab.unittest.TestCase
             testCase.verifyClass(g1, 'GaussianDistribution');
             testCase.verifyEqual(g.mu, g1.mu);
             testCase.verifyEqual(g.C, g1.C);
+            testCase.verifyEqual(g.mu, filter.getEstimateMean());
         end
         
         function testPrediction(testCase)

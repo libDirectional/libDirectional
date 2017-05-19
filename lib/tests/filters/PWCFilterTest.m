@@ -119,5 +119,34 @@ classdef PWCFilterTest < matlab.unittest.TestCase
             %H2 = PWCFilter.calculateMeasurementMatrixNumericallySampledNoise(L, Lmeas, @(x,v) mod(x+v,2*pi), wdNoise.d, wdNoise.w);
             %testCase.verifyEqual(H,H2, 'AbsTol', 0.15) %H2 is not very accurate because of the limited number of samples and other artifacts
         end
+        
+        function testCalculateSystemMatrixNumerically(testCase)
+            global enableExpensive
+            if ~islogical(enableExpensive), enableExpensive = false; end    
+            
+            if enableExpensive
+                L = 2;
+                a = @(x,w) mod(x+w,2*pi);
+                noiseDistribution = WNDistribution(2,3);
+                A = PWCFilter.calculateSystemMatrixNumerically(L, a, noiseDistribution);
+                testCase.verifySize(A, [L,L]);
+                testCase.verifyEqual(sum(A), ones(1,L), 'RelTol', 1E-5);
+            end
+        end
+        
+        function testCalculateMeasurementMatrixNumerically(testCase)
+            global enableExpensive
+            if ~islogical(enableExpensive), enableExpensive = false; end    
+            
+            if enableExpensive
+                L = 2;
+                Lmeas = 3;
+                h = @(x,w) mod(x+w,2*pi);
+                noiseDistribution = WNDistribution(2,3);
+                H = PWCFilter.calculateMeasurementMatrixNumerically(L, Lmeas, h, noiseDistribution);
+                testCase.verifySize(H, [Lmeas,L]);
+                testCase.verifyEqual(sum(H), ones(1,L), 'RelTol', 1E-5);
+            end
+        end
     end
 end
