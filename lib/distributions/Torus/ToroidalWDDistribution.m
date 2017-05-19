@@ -22,7 +22,7 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             this@HypertoroidalWDDistribution(d_, w_);
         end
         
-        function m = angularProductMomentNumerical(this,n)
+        function angularProductMomentNumerical(~,~)
             % Disable numerical calculation of angular product moments since it relies on the pdf
             error('PDF:UNDEFINED', 'not supported');
         end    
@@ -42,7 +42,7 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             pm = sum(this.w.* exp(1i*n*(this.d(1,:)-m(1))).* exp(1i*n*(this.d(2,:)-m(2))));
         end
                 
-        function covariance4DNumerical(this)
+        function covariance4DNumerical(~)
             error('PDF:UNDEFINED', 'not supported')
         end
         
@@ -376,7 +376,7 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             mu=[0,0];
             C=eye(2,2);
 
-            for iteration=1:maxIter;
+            for iteration=1:maxIter
                 samplesX=zeros(length(this.d),2*kmax+1,2*kmax+1);
                 samplesY=zeros(length(this.d),2*kmax+1,2*kmax+1);
                 p=zeros(length(this.d),2*kmax+1,2*kmax+1);
