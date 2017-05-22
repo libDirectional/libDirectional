@@ -32,9 +32,10 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
         end
         
         function predictIdentity(this, noiseDistribution)
-            % Predicts assuming identity system model, i.e.,
-            % x(k+1) = x(k) + w(k)    mod 2pi,
-            % where w(k) is additive noise given by noiseDistribution.
+            % Predicts assuming identity system model. Currently only 
+            % supports VMFDistributions. i.e.,
+            % f(x(k+1)|x_k) = VMF(x_k, kappa),
+            % where kappa is the concentration of the VMF distribution.
             %
             % Parameters:
             %   noiseDistribution (AbstractHypersphericalDistribution)
@@ -71,6 +72,16 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
         end
         
         function updateIdentity(this, noiseDistribution, z)
+            % Updates assuming identity system model. Currently only 
+            % supports VMFDistributions. i.e.,
+            % f(z_k|x_k) = VMF(x_k, kappa),
+            % where kappa is the concentration of the VMF distribution.
+            %
+            % Parameters:
+            %   noiseDistribution (AbstractHypersphericalDistribution)
+            %       distribution of additive noise
+            %   z (column vector)
+            %       measurement
             assert (isa (noiseDistribution, 'VMFDistribution'),'Currently, only VMF distributed noise terms are supported.');
             
             if nargin==3
@@ -83,11 +94,29 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
             this.wd.w = 1/size(this.wd.d,2)*ones(1,size(this.wd.d,2));
         end
         
-        function updateNonlinearUsingLikelihood(this, likelihood, z) %measurement z, likelihood(z,x)=P(Z|X)
-            % Likliehood to accept vector valued x while only requiring
-            % scalar z.
-            newWeights=this.wd.w.*likelihood(z,this.wd.d);
-            this.wd.w=newWeights/norm(newWeights);
+        function updateNonlinear(this, likelihood, z) 
+            % Updates assuming nonlinear measurement model given by a
+            % likelihood function likelihood(z,x) = f(z|x), where z is the
+            % measurement. The function can be created using the
+            % LikelihoodFactory.
+            % 
+            % Parameters:
+            %   likelihood (function handle)
+            %       function from Z x [0,2pi)^dim to [0, infinity), where Z is
+            %       the measurement space containing z
+            %   z (arbitrary)
+            %       measurement
+            % 
+            % You can either use a likelihood depending on z and x
+            % and specify the measurement as z or use a likelihood that
+            % depends only on x and omit z.
+            if nargin==2
+                this.wd = this.wd.reweigh(likelihood);
+            else
+                this.wd = this.wd.reweigh(@(x) likelihood(z,x));
+            end
+            this.wd.d = this.wd.sample(length(this.wd.d));
+            this.wd.w = 1/size(this.wd.d,2)*ones(1,size(this.wd.d,2));
         end
         
         function wd = getEstimate(this)
@@ -100,6 +129,11 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
         end
         
         function mean=getEstimateMean(this)
+            % Return mean of current estimate 
+            %
+            % Returns:
+            %   mean (column vector)
+            %       current estimate mean (normalized)
             vecSum = sum(this.wd.d.*repmat(this.wd.w,this.dim,1),2);
             mean = vecSum/norm(vecSum);
         end
