@@ -1,4 +1,4 @@
-classdef HypertoroidalParticleFilter < AbstractToroidalFilter
+classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter
     % SIR particle filter on the hypertorus
     
     properties
@@ -60,7 +60,7 @@ classdef HypertoroidalParticleFilter < AbstractToroidalFilter
             n = length(this.wd.d);
             noise = noiseDistribution.sample(n);
             for i=1:n
-                wdF.d(i) = mod(wdF.d(i) + noise(i),2*pi);
+                wdF.d(:,i) = mod(wdF.d(:,i) + noise(:,i),2*pi);
             end
             this.wd = wdF;
         end
@@ -87,10 +87,10 @@ classdef HypertoroidalParticleFilter < AbstractToroidalFilter
             weights = weights/sum(weights); %ensure normalization
             n = length(this.wd.d);
             noiseIds = discretesample(weights, n);
-            d = zeros(1, n);
+            d = zeros(this.wd.dim, n);
             
             for i=1:n
-                d(i) = f(this.wd.d(i),samples(noiseIds(i)));
+                d(:,i) = f(this.wd.d(:,i),samples(noiseIds(i)));
             end
             this.wd.d=d;
         end
