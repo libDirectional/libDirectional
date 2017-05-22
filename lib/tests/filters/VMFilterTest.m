@@ -121,10 +121,38 @@ classdef VMFilterTest < matlab.unittest.TestCase
             testCase.verifyClass(vmNonlinStatShiftIdentity, 'VMDistribution');
             testCase.verifyEqual(vm.mu, vmNonlinStatShiftIdentity.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmNonlinStatShiftIdentity.kappa, vmIdentity.kappa, 'RelTol', 1E-10);
+            
+            filter.setState(vm);
+            filter.updateNonlinearStatisticalShift(z,h,measNoise,'dirac5')
+            vmNonlinStatShiftIdentity = filter.getEstimate();
+            testCase.verifyClass(vmNonlinStatShiftIdentity, 'VMDistribution');
+            testCase.verifyEqual(vm.mu, vmNonlinStatShiftIdentity.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmNonlinStatShiftIdentity.kappa, vmIdentity.kappa, 'RelTol', 1E-10);
+            
+            filter.setState(vm);
+            filter.updateNonlinearStatisticalShift(z,h,measNoise,'dirac5',0.7)
+            vmNonlinStatShiftIdentity = filter.getEstimate();
+            testCase.verifyClass(vmNonlinStatShiftIdentity, 'VMDistribution');
+            testCase.verifyEqual(vm.mu, vmNonlinStatShiftIdentity.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmNonlinStatShiftIdentity.kappa, vmIdentity.kappa, 'RelTol', 1E-10);
 
             %% updateNonlinearCorrectedNoise
             filter.setState(vm);
             filter.updateNonlinearCorrectedNoise(z,h,measNoise)
+            vmNonlinCorrectedNoiseIdentity = filter.getEstimate();
+            testCase.verifyClass(vmNonlinCorrectedNoiseIdentity, 'VMDistribution');
+            testCase.verifyEqual(vm.mu, vmNonlinCorrectedNoiseIdentity.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmNonlinCorrectedNoiseIdentity.kappa, vmIdentity.kappa, 'RelTol', 1E-10);            
+            
+            filter.setState(vm);
+            filter.updateNonlinearCorrectedNoise(z,h,measNoise,'dirac5')
+            vmNonlinCorrectedNoiseIdentity = filter.getEstimate();
+            testCase.verifyClass(vmNonlinCorrectedNoiseIdentity, 'VMDistribution');
+            testCase.verifyEqual(vm.mu, vmNonlinCorrectedNoiseIdentity.mu, 'RelTol', 1E-10);
+            testCase.verifyEqual(vmNonlinCorrectedNoiseIdentity.kappa, vmIdentity.kappa, 'RelTol', 1E-10);            
+            
+            filter.setState(vm);
+            filter.updateNonlinearCorrectedNoise(z,h,measNoise,'dirac5',0.7)
             vmNonlinCorrectedNoiseIdentity = filter.getEstimate();
             testCase.verifyClass(vmNonlinCorrectedNoiseIdentity, 'VMDistribution');
             testCase.verifyEqual(vm.mu, vmNonlinCorrectedNoiseIdentity.mu, 'RelTol', 1E-10);
