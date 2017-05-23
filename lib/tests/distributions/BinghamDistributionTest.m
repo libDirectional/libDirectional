@@ -33,7 +33,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 rng default
                 testpoints = rand(B.dim, 20);
                 testpoints = bsxfun(@rdivide,testpoints, sum(testpoints));
-                for j=1:size(testpoints,2);
+                for j=1:size(testpoints,2)
                     testCase.verifyEqual(B.pdf(testpoints(:,j)), 1/B.F*exp(testpoints(:,j)'*M*diag(Z)*M'*testpoints(:,j)), 'RelTol', 1E-10);
                 end
 
@@ -54,7 +54,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                     testCase.verifyEqual(Bmul.M, B.M, 'RelTol', 1E-10); %M is the same for both
                 end
                 renormconst = Bmul.pdf(B.mode()) / B.pdf(B.mode)^2;
-                for j=1:size(testpoints,2);
+                for j=1:size(testpoints,2)
                     testCase.verifyEqual(Bmul.pdf(testpoints(:,j)), renormconst*B.pdf(testpoints(:,j))^2, 'RelTol', 1E-10);
                 end
 
@@ -261,7 +261,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
             % Obtain random orthogonal matrices for M and and random
             % vectors for Z, perform deterministic sampling and then
             % parameter estimation.
-            for d = 2:5; % dimension
+            for d = 2:5 % dimension
                 rng default;
                 for i = 1:20
                     B = BinghamDistributionTest.getRandomBingham(d);

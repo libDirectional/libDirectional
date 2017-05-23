@@ -241,7 +241,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 x = y/norm(y);                
                 % check rejection
                 W = rand(1);
-                if W < fbingstar(x) /(Mbstar * facgstar(x));
+                if W < fbingstar(x) /(Mbstar * facgstar(x))
                     s(:,i) = x; 
                     i = i + 1;
                 else
