@@ -17,7 +17,7 @@ Installation
 Requirements:
 
   * Matlab 2014a or later
-  * a suitable compiler (Visual Studio 2012, Visual Studio 2013 Update 4 or later, Visual Studio 2015, gcc 4.7 or later, XCode)
+  * a suitable compiler (Visual Studio 2013 Update 4 or later, Visual Studio 2015, gcc 4.7 or later, XCode)
 
 To use libDirectional, add the entire lib-folder including subdirectories to Matlab's search path. Then, change to the lib-folder and run the `compileAll.m` script. This script should compile all mex-files used by libDirectional. 
 
