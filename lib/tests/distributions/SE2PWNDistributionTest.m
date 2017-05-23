@@ -22,12 +22,14 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
             function p = truePdf(x)
                 p = 0;
                 for k = -20:20
-                    p = p + mvnpdf(x, mu + [2*pi*k, 0 0]', C);
+                    p = p + mvnpdf(x', mu' + [2*pi*k, 0 0], C);
                 end
             end
             testCase.verifyEqual(pwn.pdf(mu), truePdf(mu), 'RelTol', 1E-10);
             testCase.verifyEqual(pwn.pdf(mu-1), truePdf(mu-1), 'RelTol', 1E-10);
             testCase.verifyEqual(pwn.pdf(mu+2), truePdf(mu+2), 'RelTol', 1E-10);
+            x = rand(3,20);
+            testCase.verifyEqual(pwn.pdf(x), truePdf(x)', 'RelTol', 1E-10);
             
             %% test pdf with large uncertainty           
             pwnLargeUncertainty = SE2PWNDistribution(mu, 100*eye(3,3));
