@@ -53,7 +53,24 @@ classdef ToroidalVMMatrixDistributionTest< matlab.unittest.TestCase
             C = tvm.pdf([0;0])*tvm2.pdf([0;0])/ tvmMul.pdf([0;0]); %renormalization factor
             testCase.verifyEqual(tvm.pdf(testpoints).*tvm2.pdf(testpoints), C*tvmMul.pdf(testpoints), 'RelTol', 1E-10);
             testCase.verifyEqual(tvm.pdf(testpoints).*tvm2.pdf(testpoints), C*tvmMulSwapped.pdf(testpoints), 'RelTol', 1E-10);
-                        
+            
+            % compare to ToroidalFourier multiplication
+            n = 45; %use a lot of coefficients for high accuracy
+            tf = ToroidalFourierDistribution.fromDistribution(tvm, n);
+            tf2 = ToroidalFourierDistribution.fromDistribution(tvm2, n);
+            tfMul = tf.multiply(tf2);
+            tfMulSwapped = tf2.multiply(tf);
+            %fix normconst (todo should be removed once normconst works
+            %properly in this range of values)
+            tvmMul.C = 1;
+            tvmMul.C = 1/tvmMul.integral();
+            tvmMulSwapped.C = 1;
+            tvmMulSwapped.C = 1/tvmMul.integral();
+            % use abstol instead of reltol, because relative accuracy is bad in areas with
+            % very little probability mass
+            testCase.verifyEqual(tfMul.pdf(testpoints), tvmMul.pdf(testpoints), 'AbsTol', 1E-5);
+            testCase.verifyEqual(tfMulSwapped.pdf(testpoints), tvmMul.pdf(testpoints), 'AbsTol', 1E-5);
+            
             %% derivatives of normalization constant
             % compare to finite differences
             CinvDiff = tvm.normConstApproxDiff();

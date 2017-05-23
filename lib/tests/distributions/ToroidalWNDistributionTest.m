@@ -32,7 +32,7 @@ classdef ToroidalWNDistributionTest < matlab.unittest.TestCase
                     return
                 end
                 total = 0;
-                Cinv = -0.5 *inv(dist.C);
+                Cinv = -0.5 *inv(dist.C); %#ok<MINV>
                 xa = xa-dist.mu;
                 for j=-n:n
                     for k=-n:n
@@ -78,6 +78,11 @@ classdef ToroidalWNDistributionTest < matlab.unittest.TestCase
             testCase.verifyGreaterThan(det(twnConv.C), det(twn.C));
             testCase.verifyGreaterThan(eig(twnConv.C-twn.C), [0;0]); %matrix is greater in the sense that difference is pos. definite
             
+            fd = ToroidalFourierDistribution.fromDistribution(twn,45);
+            fdConv = fd.convolve(fd);
+            testCase.verifyEqual(twnConv.pdf(testpoints), fdConv.pdf(testpoints),'AbsTol', 1E-7);
+            testCase.verifyEqual(twnConv.trigonometricMoment(1), fdConv.trigonometricMoment(1), 'RelTol', 1E-7);
+            
             %% test sampling
             nSamples = 5;
             s = twn.sample(nSamples);
@@ -95,7 +100,15 @@ classdef ToroidalWNDistributionTest < matlab.unittest.TestCase
             twn2 = tvm.toToroidalWN();
             testCase.verifyClass(twn2, 'ToroidalWNDistribution');
             testCase.verifyEqual(twn.mu, twn2.mu, 'RelTol', 1E-5)
-            testCase.verifyEqual(twn.C, twn2.C, 'RelTol', 1E-5)                        
+            testCase.verifyEqual(twn.C, twn2.C, 'RelTol', 1E-5)
+            twd5 = twn.toToroidalWD5();
+            testCase.verifyClass(twd5, 'ToroidalWDDistribution');
+            testCase.verifyEqual(twd5.trigonometricMoment(1), twn.trigonometricMoment(1), 'RelTol', 1E-5)
+            testCase.verifyEqual(twd5.circularCorrelationJammalamadaka(), twn.circularCorrelationJammalamadaka(), 'RelTol', 1E-5)
+            twn3 = twd5.toToroidalWN();
+            testCase.verifyEqual(twn.mu, twn3.mu, 'RelTol', 1E-5)
+            testCase.verifyEqual(twn.C, twn3.C, 'RelTol', 1E-5)
+                        
             
             %% test getMarginal
             wn1 = twn.marginalizeTo1D(1);

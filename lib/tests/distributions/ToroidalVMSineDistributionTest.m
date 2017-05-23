@@ -71,7 +71,7 @@ classdef ToroidalVMSineDistributionTest< matlab.unittest.TestCase
             
             %% test marginals
             for dim =1:2
-                dist(dim) = tvm.marginal(1); %#ok<AGROW>
+                dist(dim) = tvm.marginalizeTo1D(1); %#ok<AGROW>
                 testCase.verifyClass(dist(dim), 'CustomCircularDistribution');
                 testCase.verifyEqual(dist(dim).integral(), 1, 'RelTol', 1E-10);
             end
