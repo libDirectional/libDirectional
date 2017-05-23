@@ -113,6 +113,14 @@ classdef FourierDistributionTest< matlab.unittest.TestCase
             dist=CircularUniformDistribution();
             FourierDistributionTest.testFourierConversion(testCase,dist,101,'sqrt',1E-8);
         end
+        function testGvMToFourierLog(testCase)
+            dist1=GvMDistribution([1;2;2.5],[2;3;4]);
+            dist2=GvMDistribution((1:50)',linspace(2,10,50)');
+            warnstruct=warning('off','Normalization:cannotTest');
+            FourierDistributionTest.testFourierConversion(testCase,dist1,101,'log',1E-8);
+            testCase.verifyWarning(@()FourierDistribution.fromDistribution(dist2,99,'log'),'Conversion:GvMTooFewCoefficients');
+            warning(warnstruct);
+        end
         function testGCMToFourierId(testCase)
             vm=VMDistribution(1,2);
             wn=WNDistribution(2,1);
@@ -265,7 +273,7 @@ classdef FourierDistributionTest< matlab.unittest.TestCase
             vm=VMDistribution(3,1);
             fd1=FourierDistribution.fromFunction(@(x)vm.pdf(x),9,'identity');
             fd2=fd1.transformViaFFT('sqrt',9);
-            testCase.verifyError(@()fd2.transformViaFFT('sqrt',9),'Transformation:alreadyTransformed')
+            testCase.verifyError(@()fd2.transformViaFFT('sqrt',9),'Transformation:cannotCombine')
         end
         function testSquareAfterSqrt(testCase)
             vm=VMDistribution(3,1);
@@ -367,6 +375,116 @@ classdef FourierDistributionTest< matlab.unittest.TestCase
             fdSqrtTrunc=fdSqrt.truncate(7);
             % Verify that use of .truncate results in a normalized density
             testCase.verifyEqual(integral(@(x)fdSqrtTrunc.pdf(x),0,2*pi),1,'RelTol',1E-4);
+        end
+        function testNormalizationLog(testCase)
+            warningSetting=warning('off','Normalization:cannotTest');
+            fdLog1=FourierDistribution.fromDistribution(VMDistribution(1,2),21,'log');
+            fdLog2=FourierDistribution.fromDistribution(VMDistribution(2,1),21,'log');
+            warningSetting=[warningSetting,warning('off','Multiply:NotNormalizing')];
+            fdMult=fdLog1.multiply(fdLog2);
+            testCase.verifyEqual(fdMult.integralNumerical(0,2*pi),1,'AbsTol',1E-4);
+            fdMultTrunc=fdMult.truncate(5);
+            warning(warningSetting);
+            testCase.verifyEqual(fdMultTrunc.integralNumerical(0,2*pi),1,'AbsTol',1E-4);
+        end
+        function testIntegral(testCase)
+            dist=VMDistribution(0,5);
+            for transformation={'identity','sqrt','log'}
+                warningSetting=warning('off','Normalization:cannotTest');
+                fd=FourierDistribution.fromDistribution(dist,15,[transformation{:}]);
+                warning(warningSetting);
+                testCase.verifyEqual(fd.integral(0,1.5),fd.integralNumerical(0,1.5),'RelTol',1E-8);
+                testCase.verifyEqual(fd.integral(1.5,0),fd.integralNumerical(1.5,0),'RelTol',1E-8);
+                testCase.verifyEqual(fd.integral(10,-10),fd.integralNumerical(10,-10),'RelTol',1E-8);
+            end
+        end
+        function testPdfOnGrid(testCase)
+            for transformation={'identity','sqrt','log'}
+                dist=VMDistribution(0,5);
+                warningSetting=warning('off','Normalization:cannotTest'); % Prevent warning for log
+                fd=FourierDistribution.fromDistribution(dist,15,[transformation{:}]);
+                warning(warningSetting);
+                [vals,xgrid]=fd.pdfOnGrid(99);
+                testCase.verifyEqual(vals,fd.pdf(xgrid),'RelTol',1E-8);
+            end
+        end
+        function testHellingerDistance(testCase)
+            dist1=VMDistribution(0,5);
+            dist2=VMDistribution(0,3);
+            fd1=FourierDistribution.fromDistribution(dist1,51,'sqrt');
+            fd2=FourierDistribution.fromDistribution(dist2,51,'sqrt');
+            testCase.verifyEqual(fd1.hellingerDistanceNumerical(fd2),dist1.hellingerDistanceNumerical(dist2),'RelTol',1E-8);
+            testCase.verifyEqual(fd1.hellingerDistanceNumerical(dist2),dist1.hellingerDistanceNumerical(dist2),'RelTol',1E-8);
+        end
+        function testTransformViaFFTForTransformed(testCase)
+            dist=VMDistribution(2,5);
+            fdSqrt=FourierDistribution.fromDistribution(dist,11,'sqrt');
+            warningSetting=warning('off','Normalization:cannotTest');
+            fdLog=FourierDistribution.fromDistribution(dist,11,'log');
+            warning(warningSetting);
+            fdIdFromSqrt=fdSqrt.transformViaFFT('square');
+            fdIdFromLog=fdLog.transformViaFFT('power');
+            fdIdFromSqrt101=fdSqrt.transformViaFFT('square',511);
+            fdIdFromLog101=fdLog.transformViaFFT('power',51);
+            xvals=0:0.01:2*pi;
+            
+            % Test that approximation is bad when using few coefficients
+            testCase.verifyGreaterThan(max(fdSqrt.pdf(xvals)-fdIdFromSqrt.pdf(xvals)),0.01);
+            testCase.verifyGreaterThan(max(fdLog.pdf(xvals)-fdIdFromLog.pdf(xvals)),0.01);
+            % Test that approximation is good when using many coefficients
+            testCase.verifyEqual(fdSqrt.pdf(xvals),fdIdFromSqrt101.pdf(xvals),'AbsTol',1E-14);
+            testCase.verifyEqual(fdLog.pdf(xvals),fdIdFromLog101.pdf(xvals),'AbsTol',1E-14);
+            
+        end
+        function testNegativitiyId(testCase)
+            % For few coefficients and distributions will little common
+            % probability mass, significantly negative values occur for
+            % identity transformation.
+            kappa=10;
+            dist1=VMDistribution(1,kappa);
+            dist2=VMDistribution(3,kappa);
+            fd1Id=FourierDistribution.fromDistribution(dist1,5,'identity');
+            fd2Id=FourierDistribution.fromDistribution(dist2,5,'identity');
+            testCase.verifyWarning(@()fd1Id.multiply(fd2Id),'Normalization:negative');
+            warnstruct=warning('off','Normalization:negative');
+            distMultId=fd1Id.multiply(fd2Id);
+            warning(warnstruct);
+            xvals=0:0.01:2*pi;
+            testCase.verifyTrue(any(distMultId.pdf(xvals)<-0.01));
+        end
+        function testNonnegativitySqrtAndLog(testCase)
+            % No negative values occur for sqrt and log transformations in
+            % this scenario.
+            kappa=10;
+            dist1=VMDistribution(1,kappa);
+            dist2=VMDistribution(3,kappa);
+            for transformation={'sqrt','log'}
+                warningSetting=[];
+                if strcmp(transformation,'sqrt')
+                    warningSetting=warning('off','Normalization:notNormalized'); % We know this will happen because too few coefficients are used
+                else % If log we also know that we cannot test for normalization
+                    warningSetting=[warningSetting,warning('off','Normalization:cannotTest')]; %#ok<AGROW>
+                end
+                fd1=FourierDistribution.fromDistribution(dist1,5,[transformation{:}]);
+                fd2=FourierDistribution.fromDistribution(dist2,5,[transformation{:}]);
+                warningSetting=[warningSetting,warning('off','Multiply:NotNormalizing')]; %#ok<AGROW>
+                distMult=fd1.multiply(fd2);
+                warning(warningSetting);
+                xvals=0:0.01:2*pi;
+                testCase.verifyGreaterThanOrEqual(distMult.pdf(xvals),0);
+            end
+        end
+        function testShift(testCase)
+            vm=VMDistribution(1,10);
+            vmShift=VMDistribution(2,10);
+            fdId=FourierDistribution.fromDistribution(vm,41,'identity');
+            fdSqrt=FourierDistribution.fromDistribution(vm,41,'sqrt');
+            fdIdShift=fdId.shift(1);
+            fdSqrtShift=fdSqrt.shift(1);
+            
+            xvals=0:0.01:2*pi;
+            testCase.verifyEqual(fdIdShift.pdf(xvals),vmShift.pdf(xvals),'AbsTol',1E-6);
+            testCase.verifyEqual(fdSqrtShift.pdf(xvals),vmShift.pdf(xvals),'AbsTol',1E-6);
         end
     end
 end

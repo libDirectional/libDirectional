@@ -1,4 +1,3 @@
-
 classdef FourierDistribution < AbstractCircularDistribution
     % Used to represent circular densities with Fourier
     % series
@@ -6,7 +5,13 @@ classdef FourierDistribution < AbstractCircularDistribution
     %
     % Florian Pfaff, Gerhard Kurz, Uwe D. Hanebeck,
     % Multimodal Circular Filtering Using Fourier Series
-    % Proceedings of the 18th International Conference on Information Fusion (Fusion 2015), Washington D. C., USA, July 2015.
+    % Proceedings of the 18th International Conference on Information Fusion (Fusion 2015), 
+    % Washington D. C., USA, July 2015.
+    %
+    % Florian Pfaff, Gerhard Kurz, Uwe D. Hanebeck,
+    % Nonlinear Prediction for Circular Filtering Using Fourier Series
+    % Proceedings of the 19th International Conference on Information Fusion (Fusion 2016), 
+    % Heidelberg, Germany, July 2016.
     
     properties
         a
@@ -49,8 +54,8 @@ classdef FourierDistribution < AbstractCircularDistribution
                 case 'identity'
                     p=val;
                 case 'log'
-                    warning('Density may not be normalized');
-                    p=exp(val);
+                    normConstLog=1/integral(@(x)exp(this.value(x)),0,2*pi); % Because this is a value class, we can only store values as attributes in the constructor
+                    p=exp(val)*normConstLog;
                 otherwise
                     error('Transformation not recognized or unsupported');
             end
@@ -68,13 +73,64 @@ classdef FourierDistribution < AbstractCircularDistribution
             % Returns:
             %   result (scalar)
             %       value of the integral
-            if strcmp(this.transformation,'sqrt') %transform to identity
-                fd=this.transformViaCoefficients('square',4*length(this.a)-3);
-            elseif ~strcmp(this.transformation,'identity') %if not possible to transform to identity, give up
-                error('Cdf not supported for this transformation')
-            else
-                fd=this;
+            
+            % This function uses the cdf. It is not implemented the other way
+            % around because integral is only guaranteed to take scalar
+            % arguments, whereas cdf always has to support vector-valued
+            % inputs in libDirectional.
+            if nargin < 2
+                l = 0;
             end
+            if nargin < 3
+                r = 2*pi;
+            end
+            if l<=r
+                result = floor((r-l)/(2*pi)); %each full 2pi interval contributes 1 to the result because of normalization
+                r = mod(r,2*pi);
+                l = mod(l,2*pi);
+                if l<= r
+                    result = result + this.cdf(r,l);
+                else
+                    result = result + this.cdf(r,0) + this.cdf(2*pi,l); % Closer to integralNumerical than 1 - this.cdf(l,r) if not perfectly normalized
+                end
+            else
+                result = -this.integral(r,l);
+            end
+        end
+        
+        function val = cdf(this, xa, startingPoint)
+            % Evaluate cumulative distribution function 
+            %
+            % Parameters:
+            %   xa (1 x n)
+            %       points where the cdf should be evaluated
+            %   startingPoint (scalar)
+            %       point where the cdf is zero (starting point can be
+            %       [0,2pi) on the circle, default 0
+            % Returns:
+            %   val (1 x n)
+            %       cdf evaluated at columns of xa
+            if nargin<=2,startingPoint = 0;end
+            switch this.transformation
+                case 'identity'
+                    fd=this;
+                case 'sqrt' % Transform to identity
+                    fd=this.transformViaCoefficients('square',4*length(this.a)-3);
+                case 'log' 
+                    normConstLog=1/integral(@(x)exp(this.value(x)),0,2*pi); % Calculate factor once, do not use pdf to prevent calculating factor multiple times
+                    startingPoint=mod(startingPoint,2*pi);
+                    xa=mod(xa,2*pi);
+                    if xa<startingPoint
+                        val=1-normConstLog*arrayfun(@(xCurr)integral(@(x)exp(this.value(x)),xCurr,startingPoint),xa);
+                    else
+                        val=normConstLog*arrayfun(@(xCurr)integral(@(x)exp(this.value(x)),startingPoint,xCurr),xa);
+                    end
+                    return
+                otherwise % Fall back to numerical integration for this transformation.
+                    val=arrayfun(@(xCurr)this.integralNumerical(xCurr,startingPoint),xa);
+                    return
+            end
+            xa=mod(xa-startingPoint,2*pi)+startingPoint;
             c=fd.c;
             c0=c((length(c)+1)/2);
             cnew=fd.c./(1i*(-length(fd.b):length(fd.b))); %Calculate coefficients != 0 for antiderivative
@@ -83,13 +139,13 @@ classdef FourierDistribution < AbstractCircularDistribution
             % indefinite integral does not change the value of the definite integral.
             cnew((length(cnew)+1)/2)=1/(2*pi); 
             fdInt=FourierDistribution.fromComplex(cnew,'identity'); 
-            result=fdInt.value(r)-fdInt.value(l)+c0*(r-l);
+            val=fdInt.value(xa)-fdInt.value(startingPoint)+c0*(xa-startingPoint);
         end
        
         function p = value(this,xa)
             % Evalute current Fourier series without undoing transformations
             xa=reshape(xa,[],1);
-            p=this.a(1)/2+sum(repmat(this.a(2:end),[length(xa),1]).*cos(xa*(1:length(this.a)-1))+repmat(this.b,[length(xa),1]).*sin(xa*(1:length(this.b))),2)';
+            p=this.a(1)/2+sum(bsxfun(@times,this.a(2:end),cos(xa*(1:length(this.a)-1)))+bsxfun(@times,this.b,sin(xa*(1:length(this.b)))),2)';
         end
         
         function m = trigonometricMoment(this, n)
@@ -135,23 +191,32 @@ classdef FourierDistribution < AbstractCircularDistribution
             complexCoeffs(1:(length(complexCoeffs)-1)/2)=conj(fliplr(complexCoeffs((length(complexCoeffs)+3)/2:end)));
         end
         
-        function f = multiply(this, f2)
+        function f = multiply(this, f2, noOfCoefficients)
             assert(isa (f2, 'FourierDistribution'));
+            if nargin==2
+                noOfCoefficients=numel(this.a)+numel(this.b);
+            end
             % Multiplies two transformed fourier pdfs (returns transformed result)
-            if ~strcmp(this.transformation,f2.transformation);
+            if ~strcmp(this.transformation,f2.transformation)
                 error('Multiply:differentTransformations','Transformations do not match, transform before using multiply');
             end
             if strcmp(this.transformation,'log')
-                warning('Not performing normalization when using log transformation');
+                % Normalization is not performed for log
                 f=FourierDistribution(this.a+f2.a,this.b+f2.b,'log');
+                warning('Multiply:NotNormalizing','Not performing normalization when using log transformation.');
             elseif strcmp(this.transformation,'identity')||strcmp(this.transformation,'sqrt')
                 % Calculate unnormalized result
-                c=conv(this.c,f2.c);
+                if noOfCoefficients<=numel(this.a)+numel(this.b)
+                    c=conv(this.c,f2.c,'same');
+                else
+                    c=conv(this.c,f2.c,'full');
+                end
                 % Normalization is performed in constructor. Temporarily
                 % disabling warning.
                 warnStruct=warning('off','Normalization:notNormalized');
                 f=FourierDistribution.fromComplex(c,this.transformation); 
                 warning(warnStruct);
+                f.truncate(noOfCoefficients);
             else
                 error('Multiply:unsupportedTransformation','Transformation not recognized or unsupported');
             end
@@ -200,7 +265,7 @@ classdef FourierDistribution < AbstractCircularDistribution
             % Calculates convolution of two Fourier series
             % Expects number of complex coefficients (or sum of number of real
             % coefficients) to know how many points to sample for FFT
-            if ~strcmp(this.transformation,f2.transformation);
+            if ~strcmp(this.transformation,f2.transformation)
                 error('Convolve:differentTransformations','Transformations do not match, transform before using convolve');
             end
             if nargin==2,noOfCoefficients=length(this.a)+length(this.b);end
@@ -261,6 +326,36 @@ classdef FourierDistribution < AbstractCircularDistribution
             end
         end
         
+        function [vals,xGrid]=pdfOnGrid(this,noOfGridpoints)
+            % Calculated function on grid from 0 to
+            % 2*pi-2*pi/noOfGridpoints
+            assert(mod(noOfGridpoints,2)==1,'Evaluation on grid only supported for an odd number of grid points.')
+            skippingFactor=(numel(this.a)+numel(this.b)-1)/(noOfGridpoints-1);
+            assert(noOfGridpoints>=(numel(this.a)+numel(this.b))||(floor(skippingFactor))==(skippingFactor),...
+                'Number of grid points needs to be either higher than the number of coefficients or the grid points need to be obtainable via skipping.');
+            if noOfGridpoints>(numel(this.a)+numel(this.b)) % Fill up with zeros to generate more function values via ifft
+                warningSetting=[warning('off','Truncate:TooFewCoefficients'),warning('off','Normalization:cannotTest')];
+                this=this.truncate(noOfGridpoints);
+                warning(warningSetting);
+            end
+            switch this.transformation
+                case 'identity'
+                    vals=real(ifft(ifftshift(this.c)))*(numel(this.a)+numel(this.b));
+                case 'sqrt'
+                    vals=(real(ifft(ifftshift(this.c)))*(numel(this.a)+numel(this.b))).^2;
+                case 'log'
+                    vals=exp(real(ifft(ifftshift(this.c)))*(numel(this.a)+numel(this.b)))/integral(@(x)exp(this.value(x)),0,2*pi);
+                otherwise
+                    error('Transformation not recognized or unsupported');
+            end
+            if noOfGridpoints<(numel(this.a)+numel(this.b)) % Use skipping if fewer gridpoints are desired
+                vals=vals(1:skippingFactor:end);
+            end
+            if nargout==2
+                xGrid=0:2*pi/noOfGridpoints:2*pi-2*pi/noOfGridpoints;
+            end
+        end
+        
         function f = transformViaCoefficients(this,desiredTransformation,noOfCoefficients)
             % Calculates transformations using Fourier coefficients
             if nargin==2,noOfCoefficients=length(this.a)+length(this.b);end
@@ -285,16 +380,40 @@ classdef FourierDistribution < AbstractCircularDistribution
             f=f.truncate(noOfCoefficients);
         end
         
-        function f = transformViaFFT(this,desiredTransformation,noOfCoefficients)
-            % Calculates transformation of Fourier series via FFT
+        function f = transformViaFFT(this,desiredTransformation,noOfCoefficients,truncateAtEnd)
+            % Calculates transformation of Fourier series via FFT.
             % Expects number of complex coefficients (or sum of number of real
-            % coefficients)
-            if ~strcmp(this.transformation,'identity')
-                error('Transformation:alreadyTransformed','Cannot transform via FFT if already transformed')
-            end
+            % coefficients). This is done by calculating the values of the
+            % function on the grid (using inverse FFT in pdfOnGrid),
+            % applying the transformation, and then using FFT again to
+            % obtain the Fourier coefficients. If truncateAtEnd is set to
+            % true, more coefficients are calculated if the original
+            % density features more. If set to false, entries of the
+            % inverse FFT result are discarded.
             if nargin==2,noOfCoefficients=length(this.a)+length(this.b);end
-            fvals=ifft(ifftshift(this.c))*length(this.c); %Calculate function values via IFFT
-            f=FourierDistribution.fromFunctionValues(fvals,noOfCoefficients,desiredTransformation);
+            if nargin<=3,truncateAtEnd=true;end
+            if truncateAtEnd
+                noOfGridpoints=max(noOfCoefficients,length(this.a)+length(this.b));
+            else
+                noOfGridpoints=noOfCoefficients;
+            end
+            switch this.transformation
+                case 'identity'
+                    f=FourierDistribution.fromFunctionValues(this.pdfOnGrid(noOfGridpoints),noOfGridpoints,desiredTransformation);
+                case 'sqrt'
+                    assert(strcmp(desiredTransformation,'square'),'Transformation:cannotCombine',...
+                        'For series of already transformed distributions, only transformation back to identity is supported');
+                    f=FourierDistribution.fromFunctionValues(this.pdfOnGrid(noOfGridpoints),noOfGridpoints,'identity');
+                case 'log'
+                    assert(strncmp(desiredTransformation,'power',3),'Transformation:cannotCombine',...
+                        'For series of already transformed distributions, only transformation back to identity is supported');
+                    f=FourierDistribution.fromFunctionValues(this.pdfOnGrid(noOfGridpoints),noOfGridpoints,'identity');
+                otherwise
+                    error('Transformation not recognized or unsupported');
+            end
+            if truncateAtEnd
+                f=f.truncate(noOfCoefficients);
+            end
         end
         
         function f = transformViaVM(this,desiredTransformation,noOfCoefficients)
@@ -317,19 +436,38 @@ classdef FourierDistribution < AbstractCircularDistribution
             end
         end
         
-        function f = shift(this, angle)
+        function dist = hellingerDistanceNumerical(this, other)
+            % Numerically calculates the Hellinger distance to another
+            % distribution.
+            %
+            % Parameters:
+            %   other (AbstractHypertoroidalDistribution)
+            %       distribution to compare with
+            % Returns:
+            %   dist (scalar)
+            %       hellinger distance of this distribution to other distribution
+            if isa(other,'FourierDistribution')&&strcmp(this.transformation,'sqrt')&&strcmp(other.transformation,'sqrt')
+                % For square root, we can use 1-int(sqrt(f(x)*g(x)),0,2*pi)
+                cconv=conv(this.c,other.c);
+                dist=1-2*pi*real(cconv((numel(cconv)+1)/2));
+            else % Fall back for other transformations
+                dist=hellingerDistanceNumerical@AbstractHypertoroidalDistribution(this,other);
+            end
+        end
+        
+        function fd = shift(this, angle)
             % Shift distribution by the given angle
             %
             % Parameters:
             %   shiftAngles (scalar) 
             %       angle to shift by
             % Returns:
-            %   hd (FourierDistribution)
+            %   fd (FourierDistribution)
             %       shifted distribution
             assert(isscalar (angle));
-            anew = [this.a(1),arrayfun(@(k)this.a(k+1)*cos(-k*angle)+this.b(k)*sin(-k*angle),1:length(this.b))];
-            bnew = arrayfun(@(k)this.b(k)*cos(-k*angle)-this.a(k+1)*sin(-k*angle),1:length(this.b));
-            f = FourierDistribution(anew, bnew, this.transformation);
+            anew = [this.a(1),this.a(2:end).*cos(-(1:length(this.b))*angle)+this.b(1:end).*sin(-(1:length(this.b))*angle)];
+            bnew = this.b(1:end).*cos(-(1:length(this.b))*angle)-this.a(2:end).*sin(-(1:length(this.b))*angle);
+            fd = FourierDistribution(anew, bnew, this.transformation);
         end
     end
     
@@ -352,11 +490,10 @@ classdef FourierDistribution < AbstractCircularDistribution
             % Creates Fourier distribution from function
             % Function must be able to take vector arguments
             assert(isa(fun, 'function_handle'));
-            if nargin==2,desiredTransformation='sqrt';end;
-            N=2^ceil(log2(noOfCoefficients));
-            xvals=linspace(0,2*pi,N+1);
-            xvals=xvals(1:end-1);
+            if nargin==2,desiredTransformation='sqrt';end
+            xvals=0:2*pi/noOfCoefficients:2*pi-2*pi/noOfCoefficients;
             fvals=fun(xvals);
+            assert(isequal(size(fvals),[1,noOfCoefficients]),'Size of output of pdf is incorrect. Please ensure that the pdf returns only one scalar.');
             f=FourierDistribution.fromFunctionValues(fvals,noOfCoefficients,desiredTransformation);
         end
         
@@ -388,7 +525,7 @@ classdef FourierDistribution < AbstractCircularDistribution
         function f=fromDistribution(distribution,noOfCoefficients,desiredTransformation)
             % Creates Fourier distribution from a different distribution
             assert(isa(distribution,'AbstractCircularDistribution'),'First argument has to be a circular distribution.');
-            assert((noOfCoefficients-1>0) && (mod(noOfCoefficients-1,2)==0),'Invalid number of coefficients, number has to be odd');
+            assert((noOfCoefficients>0) && (mod(noOfCoefficients-1,2)==0),'Invalid number of coefficients, number has to be odd');
             if nargin==2
                 desiredTransformation='sqrt';
             end
@@ -549,6 +686,22 @@ classdef FourierDistribution < AbstractCircularDistribution
                             f=FourierDistribution.fromFunction(@distribution.pdf,noOfCoefficients,desiredTransformation);
                         otherwise 
                             error('Transformation not recognized or unsupported');
+                    end
+                case 'GvMDistribution'
+                    if strcmp(desiredTransformation,'log')
+                        if numel(distribution.kappa)*2+1>noOfCoefficients
+                            warning('Conversion:GvMTooFewCoefficients','Converting a GvM distribution to a Fourier distribution with log transformation and using too few coefficients severely impedes the performance of the approximation.');
+                        end
+                        a=zeros(1,lastk+1);
+                        b=zeros(1,lastk);
+                        a(1:min(end,numel(distribution.kappa)+1))=[1;distribution.kappa(1:min(end,numel(b)))...
+                            .*cos(-(1:min(numel(b),numel(distribution.kappa)))'.*distribution.mu(1:min(end,numel(b))))];
+                        b(1:min(end,numel(distribution.kappa)))=-distribution.kappa(1:min(end,numel(b)))...
+                            .*sin(-(1:min(numel(b),numel(distribution.kappa)))'.*distribution.mu(1:min(end,numel(b))));
+                        f=FourierDistribution(a,b,'log');
+                    else
+                        warning('Conversion:NoFormula','No explicit formula available, using FFT to get transformation');
+                        f=FourierDistribution.fromFunction(@distribution.pdf,noOfCoefficients,desiredTransformation);
                     end
                 otherwise
                     warning('Conversion:NoFormula','No explicit formula available, using FFT to get transformation');
