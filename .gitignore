@@ -11,3 +11,6 @@ output
 cBinghamNorm?.m
 cBinghamGradLogNorm?.m
 cBinghamGradNormDividedByNorm?.m
+
+Thumbs.db*
+*.asv
