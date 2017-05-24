@@ -26,6 +26,21 @@ classdef ToroidalWNFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual(twn2.mu, mod(twn.mu+twn.mu,2*pi));
             testCase.verifyEqual(twn2.C, twn.C + twn.C);
             
+            %% predict nonlinear
+            filter.setState(twn);
+            filter.predictNonlinear(@(x) x, twn);
+            twn3 = filter.getEstimate();
+            testCase.verifyClass(twn3, 'ToroidalWNDistribution');
+            testCase.verifyEqual(twn3.mu, mod(twn.mu+twn.mu,2*pi), 'RelTol', 1E-10);
+            testCase.verifyEqual(diag(twn3.C), diag(twn.C + twn.C), 'RelTol', 1E-10); %todo check off-diagonal entries with lower tolerance
+            
+            %% true nonlinear test
+            filter.setState(ToroidalWNDistribution([0,0]',C));
+            filter.predictNonlinear(@(x) [x(1)^3,x(2)^2], ToroidalWNDistribution([0,0]',C));
+            twn5 = filter.getEstimate();
+            testCase.verifyClass(twn5, 'ToroidalWNDistribution');
+            testCase.verifyGreaterThan(eig(twn5.C-C), [0,0]');
+            
             %% update identity
             filter.setState(twn);
             filter.updateIdentity(ToroidalWNDistribution([0,0]',twn.C),twn.mu);
@@ -37,12 +52,24 @@ classdef ToroidalWNFilterTest < matlab.unittest.TestCase
             %% update nonlinear
             z = 0.4;
             likelihood = LikelihoodFactory.additiveNoiseLikelihood(@(x) x(1,:)+x(2,:), WNDistribution(0,1));
-                        
+            
+            filter.setState(twn);
+            filter.updateNonlinear(likelihood, z);
+            twn8 = filter.getEstimate();
+            testCase.verifyGreaterThan(twn.C, twn8.C);
+            
             rng default
             filter.setState(twn);
             filter.updateNonlinearParticle(likelihood, z);
             twn9 = filter.getEstimate();
             testCase.verifyGreaterThan(twn.C, twn9.C);
+            
+            filter.setState(twn);
+            filter.updateNonlinearProgressive(likelihood, z);
+            twn10 = filter.getEstimate();
+            testCase.verifyGreaterThan(twn.C, twn10.C);
+            testCase.verifyEqual(twn9.mu, twn10.mu, 'RelTol', 1E-1);
+            testCase.verifyEqual(twn8.mu, twn10.mu, 'RelTol', 1E-1);
         end
     end
 end
