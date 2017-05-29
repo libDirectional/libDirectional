@@ -6,7 +6,7 @@ classdef AbstractCircularDistributionTest< matlab.unittest.TestCase
         function testAbstractCircularDistribution(testCase)
             x = 0:6;
             
-            for dist = {WNDistribution(2, 0.7), VMDistribution(6, 1.2)};
+            for dist = {WNDistribution(2, 0.7), VMDistribution(6, 1.2)}
                 current = dist{1};
                 
                 %% cdf numerical
@@ -37,6 +37,11 @@ classdef AbstractCircularDistributionTest< matlab.unittest.TestCase
                 testCase.verifyEqual(current.integralNumerical(-3*pi,3*pi), current.integral(-3*pi,3*pi), 'RelTol', 1E-10);
                 testCase.verifyEqual(current.integralNumerical(-1, 20), current.integral(-1, 20), 'RelTol', 1E-10);
                 testCase.verifyEqual(current.integralNumerical(12, -3), current.integral(12, -3), 'RelTol', 1E-10);
+                
+                %% conversions
+                testCase.verifyEqual(current.trigonometricMoment(1), current.toWN().trigonometricMoment(1), 'RelTol', 1E-10);
+                testCase.verifyEqual(current.trigonometricMoment(1), current.toVM().trigonometricMoment(1), 'RelTol', 1E-10);
+                testCase.verifyEqual(current.trigonometricMoment(1), current.toWC().trigonometricMoment(1), 'RelTol', 1E-10);
                 
                 %% entropy numerical
                 testCase.verifyEqual(current.entropyNumerical(), current.entropy(), 'RelTol', 1E-10);
@@ -90,13 +95,46 @@ classdef AbstractCircularDistributionTest< matlab.unittest.TestCase
             dist = PWCDistribution([0, 1]);
             
             for n = [1:10, 20, 100]
-                wd = dist.toDiracBT(n);
-                testCase.verifyClass(wd, 'WDDistribution');
-                testCase.verifyEqual(length(wd.d), n);
-                testCase.verifyEqual(length(wd.w), n);
-                testCase.verifyGreaterThanOrEqual(wd.d, pi*ones(size(wd.d)));
-                
+                for fixCircularMean = [true false]
+                    for fixFirstTrigonometrictMoment = [true false]
+                        wd = dist.toDiracBT(n, fixCircularMean, fixFirstTrigonometrictMoment);
+                        testCase.verifyClass(wd, 'WDDistribution');
+                        testCase.verifyEqual(length(wd.d), n);
+                        testCase.verifyEqual(length(wd.w), n);
+                        if fixCircularMean
+                            testCase.verifyEqual(dist.circularMean(), wd.circularMean(), 'RelTol', 1E-10);
+                        end
+                        if ~fixCircularMean && ~fixFirstTrigonometrictMoment && n>=2
+                            testCase.verifyEqual(wd.integral(0,pi), dist.integral(0,pi), 'RelTol', 1E-10);
+                            testCase.verifyEqual(wd.integral(pi,2*pi), dist.integral(pi,2*pi), 'RelTol', 1E-10);
+                        end
+                        if fixFirstTrigonometrictMoment && n>=2 %it is not possible to fix the trigonometric moment for n=1
+                            testCase.verifyEqual(dist.trigonometricMoment(1), wd.trigonometricMoment(1), 'RelTol', 1E-3);
+                        else
+                            testCase.verifyGreaterThanOrEqual(wd.d, pi*ones(size(wd.d)));
+                        end
+                    end
+                end
             end
+        end
+        
+        function testToDirac5Superposition(testCase)
+            dist = VMDistribution(1,2);
+            
+            % test scalar lambda
+            for lambda = 1:5
+                wd = dist.toDirac5SuperPosition(lambda);
+                testCase.verifyEqual(dist.trigonometricMoment(1), wd.trigonometricMoment(1), 'RelTol', 1E-10);
+                testCase.verifyEqual(dist.trigonometricMoment(2), wd.trigonometricMoment(2), 'RelTol', 1E-10);
+                testCase.verifySize(wd.d, [1, 1 + 4*lambda]);
+            end
+            
+            % test vector lambda
+            lambda = [0.1 0.5 0.9];
+            wd = dist.toDirac5SuperPosition(lambda);
+            testCase.verifyEqual(dist.trigonometricMoment(1), wd.trigonometricMoment(1), 'RelTol', 1E-10);
+            testCase.verifyEqual(dist.trigonometricMoment(2), wd.trigonometricMoment(2), 'RelTol', 1E-10);
+            testCase.verifySize(wd.d, [1, 1 + 4*length(lambda)]);
         end
         
         function testl2distanceCdfNumerical(testCase)

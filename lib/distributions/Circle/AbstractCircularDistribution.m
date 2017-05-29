@@ -210,8 +210,8 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             %       Dirac approximation
             %
             % Gerhard Kurz, Igor Gilitschenski, Roland Y. Siegwart, Uwe D. Hanebeck,
-            % Methods for Deterministic Approximation of Circular Densities (to appear)
-            % Journal of Advances in Information Fusion, 2016.
+            % Methods for Deterministic Approximation of Circular Densities
+            % Journal of Advances in Information Fusion, 11(2):138-156, December 2016.
             d = [];
             w = [];
             wCenter = 0;
@@ -269,13 +269,18 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             %       Dirac approximation with n components
             %
             % Gerhard Kurz, Igor Gilitschenski, Roland Y. Siegwart, Uwe D. Hanebeck,
-            % Methods for Deterministic Approximation of Circular Densities (to appear)
-            % Journal of Advances in Information Fusion, 2016.            
-            if nargin < 3
+            % Methods for Deterministic Approximation of Circular Densities
+            % Journal of Advances in Information Fusion, 11(2):138-156, December 2016.
+            if nargin < 3   
                 fixCircularMean = true;
             end
             if nargin < 4
                 fixFirstTrigonometrictMoment = false;
+            end
+            if fixFirstTrigonometrictMoment && ~ fixCircularMean
+                %it is not possible to fix the first trigonometric moment
+                %without fixing the circular mean first
+                fixCircularMean = true; 
             end
             
             function diracPos = approximateBT(left, right, n)
@@ -299,7 +304,7 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
 
                 % Check number of Dirac components
                 if nLeft + nRight == n-1
-                    if n*leftInt /(leftInt+rightInt) - nLeft > n*rightInt/(leftInt+rightInt) - nRight;
+                    if n*leftInt /(leftInt+rightInt) - nLeft > n*rightInt/(leftInt+rightInt) - nRight
                         nLeft = nLeft + 1;    
                     else
                         nRight = nRight + 1;
@@ -334,12 +339,13 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             end
             
             function wdScaled = scaledWd(c)
-                    % Scales the wd distribution around its mean by a factor of c
-                    m = wd.circularMean();
-                    d = (wd.d - m); % remove mean
-                    d = mod(d+pi, 2*pi)-pi; %move between -pi and pi
-                    d = d*c; % scale
-                    wdScaled = WDDistribution(d + m); %add mean back in
+                % Scales the wd distribution around its mean by a factor of c
+                m = wd.circularMean();
+                d = (wd.d - m); % remove mean
+                d = mod(d+pi, 2*pi)-pi; %move between -pi and pi
+                d = d*c; % scale, note that scaling can alter the circular mean
+                wdTemp = WDDistribution(d);
+                wdScaled = WDDistribution(d - wdTemp.circularMean() + m); %add mean back in
             end
             
             function y = goalFunMomentError(c)
