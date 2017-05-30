@@ -74,7 +74,7 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             %   m (dim x 1)
             %       n-th trigonometric moment (complex vector)  
             assert(isscalar(n));
-            m=arrayfun(@(i)sum(exp(1i*n*this.d(i,:)).*this.w),1:size(this.d,1)).';
+            m = sum(exp(1i*n*this.d).*repmat(this.w,this.dim,1),2);
         end
                 
         function hwd = applyFunction(this,f)
