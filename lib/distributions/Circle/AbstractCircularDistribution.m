@@ -35,9 +35,9 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             startingPoint=mod(startingPoint,2*pi);
             xa=mod(xa,2*pi);
             if xa<startingPoint
-                val=1-this.integral(xa,startingPoint);
+                val=1-this.integralNumerical(xa,startingPoint);
             else
-                val=this.integral(startingPoint,xa);
+                val=this.integralNumerical(startingPoint,xa);
             end
         end
         
@@ -53,10 +53,21 @@ classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   val (1 x n)
             %       cdf evaluated at columns of xa
+                        assert(size(xa,1) == 1),
             if nargin<=2
                 startingPoint = 0;
             end
-            val = cdfNumerical(this, xa, startingPoint); 
+            if length(xa)>1
+                val=arrayfun(@(xi)this.cdf(xi,startingPoint),xa);
+                return
+            end
+            startingPoint=mod(startingPoint,2*pi);
+            xa=mod(xa,2*pi);
+            if xa<startingPoint
+                val=1-this.integral(xa,startingPoint);
+            else
+                val=this.integral(startingPoint,xa);
+            end
         end
             
         function p = plot2d(this, varargin)
