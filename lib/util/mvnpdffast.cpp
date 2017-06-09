@@ -68,15 +68,15 @@ template<int N> void calculateGaussPdf(Eigen::Matrix<double,Eigen::Dynamic,N> X,
 
 void mexFunction (int numOutputs, mxArray *outputs[],
                  int numInputs, const mxArray *inputs[])
-{      
-    if(numInputs == 3){
+{   
+    if(numInputs == 3 && numOutputs == 1){
         //Eigen::initParallel();
 
         ConstMatrix<double, Eigen::Dynamic, Eigen::Dynamic> X(inputs[0]);
 
         // Get size of data. 
-        int samples = X.rows(); 
-        int dimension = X.cols();
+        ConstMatrix<double, Eigen::Dynamic, Eigen::Dynamic>::Index samples = X.rows(); 
+        ConstMatrix<double, Eigen::Dynamic, Eigen::Dynamic>::Index dimension = X.cols();
 
         if (dimension<1){
             mexErrMsgTxt("stats:mvnpdf:TooFewDimensions");

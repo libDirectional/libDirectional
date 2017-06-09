@@ -28,7 +28,7 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     double *om; // Diagonal entries of Covariance
     double *res; // Result of computation.
-    int m,n;
+    size_t m,n;
     
     /* Check argument count */
     if (nrhs != 1 ) { 
@@ -50,7 +50,7 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     plhs[0] = mxCreateDoubleMatrix(m,1,mxREAL);
     res = mxGetPr(plhs[0]);
     
-    binghamMLE(m, om, res, 0);
+    binghamMLE((int)m, om, res, 0);
 }
 
 
@@ -164,11 +164,11 @@ int binghamMLE(int dim, double *in, double *res, double *initval) {
     
     eRes.array()=-(eRes.array()+(-eRes.minCoeff()));
     
-    delete ncApprox;
-    delete derivApprox;
-    delete tmpEig;
-    delete tmpNc;
-    delete tmpDeriv;
+    delete[] ncApprox;
+    delete[] derivApprox;
+    delete[] tmpEig;
+    delete[] tmpNc;
+    delete[] tmpDeriv;
     
     return 0;
 }

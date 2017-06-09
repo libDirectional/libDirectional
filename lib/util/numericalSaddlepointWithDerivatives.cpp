@@ -25,7 +25,7 @@ double *findMultipleRootsNewton(int dim, double *la);
 void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     double *eigval; // Eigenvalues of the matrix.
-    int m,n;
+    size_t m,n;
     double *resultNC, *resultDeriv;
     
     
@@ -59,6 +59,6 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         resultDeriv = mxGetPr(plhs[1]);
     }
     
-    binghamNormalizationConstant(m, eigval, resultNC, resultDeriv);
+    binghamNormalizationConstant((int)m, eigval, resultNC, resultDeriv);
 }
 

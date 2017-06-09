@@ -1,6 +1,6 @@
 % This script compiles everything in util.
 
-clear mex %#ok<CLSCR> % make sure mex files are not open
+clear mex %#ok<CLMEX> % make sure mex files are not open
 
 % switch to path of this file
 cd(fileparts(mfilename('fullpath')));
@@ -36,7 +36,7 @@ end
 %options = {'-v', options{:} };
 
 mex(options{:}, fullfile(utilDir,'besselratio.cpp'))
-mex(fullfile(utilDir,'numericalSaddlepointWithDerivatives.cpp'),fullfile(utilDir,'binghamNormalizationConstant.cpp'))
+mex(options{:}, fullfile(utilDir,'numericalSaddlepointWithDerivatives.cpp'), fullfile(utilDir,'binghamNormalizationConstant.cpp'))
 mex(options{:}, fullfile(utilDir,'numericalBinghamMLE.cpp'),fullfile(utilDir,'binghamNormalizationConstant.cpp'))
 mex(options{:},fullfile(utilDir,'wnpdf.cpp'))
 mex(options{:},fullfile(utilDir,'toroidalwnpdf.cpp'))

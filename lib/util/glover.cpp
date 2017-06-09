@@ -29,7 +29,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h> 
 
-#define LogGamma lgamma
 #include "Gamma.h"
 
 #define EPSILON 1e-8
@@ -84,7 +83,7 @@ static double compute_1F1_1d_canon(double a, double b, double z, int iter)
 	double g, F = 0.0, logz = log(z);
 
 	for (i = 0; i < iter; i++) {
-		g = lgamma(i+a) - lgamma(i+b) + i*logz - lfact(i);
+		g = LogGamma(i+a) - LogGamma(i+b) + i*logz - lfact(i);
 		if (i > z && exp(g) < EPSILON * F)  // exp(g) < 1e-8 * F
 			break;
 		F += exp(g);
@@ -117,7 +116,7 @@ static double compute_1F1_2d_canon(double a, double b, double z1, double z2, int
 
 	for (i = 0; i < iter; i++) {
 		for (j = 0; j < iter; j++) {
-			g = lgamma(i+a) + lgamma(j+a) - lgamma(i+j+b) + i*logz1 + j*logz2 - lfact(i) - lfact(j);
+			g = LogGamma(i+a) + LogGamma(j+a) - LogGamma(i+j+b) + i*logz1 + j*logz2 - lfact(i) - lfact(j);
 			if ((i > z1 || j > z2) && exp(g) < EPSILON * F)  // exp(g) < 2e-9
 				break;
 			F += exp(g);
@@ -156,7 +155,7 @@ static double compute_1F1_3d_canon(double a, double b, double z1, double z2, dou
 	for (i = 0; i < iter; i++) {
 		for (j = 0; j < iter; j++) {
 			for (k = 0; k < iter; k++) {
-				g = lgamma(i+a) + lgamma(j+a) + lgamma(k+a) - lgamma(i+j+k+b) + i*logz1 + j*logz2 + k*logz3 - lfact(i) - lfact(j) - lfact(k);
+				g = LogGamma(i+a) + LogGamma(j+a) + LogGamma(k+a) - LogGamma(i+j+k+b) + i*logz1 + j*logz2 + k*logz3 - lfact(i) - lfact(j) - lfact(k);
 				if ((i > z1 || j > z2 || k > z3) && exp(g) < EPSILON * F)  // exp(g) < 2e-9
 					break;
 				F += exp(g);

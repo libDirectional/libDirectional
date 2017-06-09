@@ -51,7 +51,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //Define 
     const double *Lambda;    
     double MaxKappa;    
-    unsigned int NumberOfElements;
+    size_t NumberOfElements;
     unsigned int nb;
     unsigned int Dimensions;
     double *Kappa;

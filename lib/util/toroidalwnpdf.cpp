@@ -26,7 +26,8 @@ void mexFunction (
                    ) 
 { 
 	double *xa, *result, *mu, *C;
-    int cols, n;
+    size_t cols;
+    int n;
     double Cinv[4];
    
 	/* Check for proper number of arguments */ 
@@ -43,7 +44,7 @@ void mexFunction (
     }
     cols = mxGetN(prhs[0]);
     
-    n = *mxGetPr(prhs[1]); 
+    n = int(*mxGetPr(prhs[1])); 
 	if(mxGetM(prhs[1])!= 1 || mxGetN(prhs[1]) !=1){
         mexErrMsgTxt ("n must be 1x1."); 
     }
