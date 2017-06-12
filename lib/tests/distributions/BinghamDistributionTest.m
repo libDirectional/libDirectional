@@ -86,7 +86,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 %% test stochastic sampling
                 rng default
                 n = 1000;
-                samples = B.sample(n);
+                samples = B.sampleGlover(n);
                 testCase.verifySize(samples, [B.dim, n]);
                 testCase.verifyEqual(sum(samples.*samples), ones(1,n), 'RelTol', 1E-10);                
                 Bfitted = BinghamDistribution.fit(samples);
@@ -99,6 +99,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 Bfitted = BinghamDistribution.fit(samples);
                 testCase.verifyEqual(Bfitted.Z, B.Z, 'RelTol', 0.2); % this can be quite imprecise
                 testCase.verifyEqual(abs(Bfitted.M), abs(B.M), 'AbsTol', 0.2); % this can be quite imprecise
+                testCase.verifyEqual(size(unique(samples', 'rows'),1), n); % make sure all samples are unique
 
                 %% test scatter/covariance matrix
                 S = B.moment();
@@ -128,7 +129,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 
                 %% test bounds for d=2
                 if B.dim == 2
-                    for p = 0.1:0.1:0.9;
+                    for p = 0.1:0.1:0.9
                         alpha = B.bounds(p);
                         f = @(phi) B.pdf([cos(phi); sin(phi)]);
                         mB = B.mode();

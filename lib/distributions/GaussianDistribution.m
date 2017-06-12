@@ -73,7 +73,7 @@ classdef GaussianDistribution
         end
         
         function [s,w] = sampleDeterministic(this)
-            % Obtain UKF samples from the distribution (using UKF)
+            % Obtain UKF samples from the distribution.
             %
             % Returns:
             %   s (d x n)

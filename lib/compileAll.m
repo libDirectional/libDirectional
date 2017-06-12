@@ -1,6 +1,6 @@
 % This script compiles everything.
 
-clear mex %#ok<CLSCR> % make sure mex files are not open
+clear mex %#ok<CLMEX> % % make sure mex files are not open
 
 % switch to path of this file
 cd(fileparts(mfilename('fullpath')));

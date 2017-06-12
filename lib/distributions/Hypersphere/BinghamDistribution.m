@@ -738,7 +738,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Parameters:
             %	S (d x d matrix)
             %       matrix representing second moment.
-            %   options (string)
+            %   options (struct)
             %       parameters to configure the MLE algorithm
             % Returns:
             %   B (BinghamDistribution)
