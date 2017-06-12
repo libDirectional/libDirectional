@@ -26,7 +26,7 @@ void mexFunction (
                    ) 
 { 
 	double *xa, *result, *mu, *C;
-    size_t cols;
+    int cols;
     int n;
     double Cinv[4];
    
@@ -42,7 +42,7 @@ void mexFunction (
 	if(mxGetM(prhs[0])!= 2){
         mexErrMsgTxt ("v must have two rows."); 
     }
-    cols = mxGetN(prhs[0]);
+    cols = (int)mxGetN(prhs[0]);
     
     n = int(*mxGetPr(prhs[1])); 
 	if(mxGetM(prhs[1])!= 1 || mxGetN(prhs[1]) !=1){
@@ -74,7 +74,7 @@ void mexFunction (
 	result = mxGetPr(plhs[0]);  
     
     #pragma omp parallel for
-    for(size_t i=0;i<cols;i++){ //iterate over columns of xa
+    for(int i=0;i<cols;i++){ //iterate over columns of xa
         result[i]=0;
         for(int j=-n;j<=n;j++){
             for(int k=-n;k<=n;k++){
