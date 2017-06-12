@@ -74,7 +74,7 @@ void mexFunction (
 	result = mxGetPr(plhs[0]);  
     
     #pragma omp parallel for
-    for(int i=0;i<cols;i++){ //iterate over columns of xa
+    for(size_t i=0;i<cols;i++){ //iterate over columns of xa
         result[i]=0;
         for(int j=-n;j<=n;j++){
             for(int k=-n;k<=n;k++){
