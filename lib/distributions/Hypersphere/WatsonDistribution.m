@@ -41,11 +41,8 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   p (1 x n row vector)
             %       values of the pdf at each column of xa
-            p = zeros(1, size(xa,2));
-            for i=1:size(xa,2)
-                x = xa(:,i);
-                p(i) = this.C * exp( this.kappa * (this.mu' * x).^2);
-            end
+            assert(size(xa,1) == this.dim);
+            p = this.C * exp( this.kappa * (this.mu' * xa).^2);
         end      
         
         function B = toBingham(this)
