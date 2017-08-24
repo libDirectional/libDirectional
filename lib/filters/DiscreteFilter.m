@@ -44,7 +44,7 @@ classdef DiscreteFilter < AbstractCircularFilter
             end
         end
         
-        function predictNonlinear(this, f, noiseDistribution)
+        function predictNonlinear(this, f, noiseDistribution, useProportional)
             % Predicts assuming a nonlinear system model, i.e.,
             % x(k+1) = f(x(k)) + w(k)    mod 2pi,
             % where w(k) is additive noise given by noiseDistribution.
@@ -54,8 +54,14 @@ classdef DiscreteFilter < AbstractCircularFilter
             %       function from [0,2pi) to [0,2pi)
             %   noiseDistribution (AbstractCircularDistribution)
             %       distribution of additive noise
+            %   useProportional (boolean)
+            %       use proportional weight assignment method
             assert (isa (noiseDistribution, 'AbstractCircularDistribution'));
             assert(isa(f,'function_handle'));
+            
+            if nargin<=3
+                useProportional = true;
+            end
             
             if isa(noiseDistribution, 'WDDistribution')
                 % fall back to nonadditive case, because noise is given by
@@ -77,8 +83,16 @@ classdef DiscreteFilter < AbstractCircularFilter
                 end
                 distance1 = angularError(wdF.d(i),this.wd.d(id1));
                 distance2 = angularError(wdF.d(i),this.wd.d(id2));
-                w_(id1) = w_(id1) + distance2 / (distance1+distance2) * wdF.w(i);
-                w_(id2) = w_(id2) + distance1 / (distance1+distance2) * wdF.w(i);
+                if useProportional
+                    w_(id1) = w_(id1) + distance2 / (distance1+distance2) * wdF.w(i);
+                    w_(id2) = w_(id2) + distance1 / (distance1+distance2) * wdF.w(i);
+                else
+                    if distance1<distance2
+                        w_(id1) = w_(id1) + wdF.w(i);
+                    else
+                        w_(id2) = w_(id2) + wdF.w(i);
+                    end
+                end
             end
             
             %add (additive) noise 
