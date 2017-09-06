@@ -231,7 +231,7 @@ classdef FourierDistribution < AbstractCircularDistribution
                 case 'sqrt'
                     % Calculate normalization factor and return normalized
                     % result
-                    a0=2*real(conv(this.c,this.c,'valid'));
+                    a0=2*norm(this.c)^2;
                     if a0<0
                         error('Normalization:negative','a0 is negative, this usually points to a user error');
                     elseif (a0<1e-200) % Tolerance has to be that low to avoid unnecessary errors on multiply
