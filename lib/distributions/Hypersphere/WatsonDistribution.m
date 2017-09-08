@@ -93,7 +93,7 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
                 while i<n
                     U=rand(n-i,3);
                     S=U(:,1).^2./(1-rho*(1-U(:,1).^2));
-                    V=r*U(:,2)./(1-rho*S).^3;
+                    V=r*U(:,2).^2./(1-rho*S).^3;
                     valid=V<=exp(2*k*S);
                     if ~any(valid)
                         continue
@@ -104,7 +104,10 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
                     thetasNew=acos(sqrt(S));
                     U3ltHalf=U(:,3)<0.5;
                     thetasNew=pi*U3ltHalf+(-1).^(U3ltHalf).*thetasNew;
-                    phisNew=4*pi*U(:,3)-U3ltHalf*2*pi;
+                    % The 2*pi*(2*U(:,3)-1) in the otherwise case in the
+                    % paper is equivalent as this yields 4*pi*U(:,3)-2*pi,
+                    % which can be neglected due to the periodicity.
+                    phisNew=4*pi*U(:,3); 
                     theta(i+1:i+size(U,1))=thetasNew;
                     phi(i+1:i+size(U,1))=phisNew;
                     i=i+size(U,1);
