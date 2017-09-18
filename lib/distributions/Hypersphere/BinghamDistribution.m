@@ -69,12 +69,8 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %       values of the pdf at each column of xa
             assert(size(xa,1) == this.dim);
         
-            p = zeros(1, size(xa,2));
             C = this.M * diag(this.Z) * this.M';
-            for i=1:size(xa,2)
-                x = xa(:,i);
-                p(i) = 1/this.F * exp( x' * C * x);
-            end
+            p = 1/this.F * exp(sum(xa.*(C*xa)));
         end    
 
         function B = multiply(this, B2)
