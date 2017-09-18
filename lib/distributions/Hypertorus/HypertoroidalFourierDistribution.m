@@ -198,7 +198,7 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             tol=1e-4;
             switch this.transformation
                 case 'sqrt'
-                    c00=norm(this.C(:))^2; % More efficient than using convolutin with 'valid'
+                    c00=norm(this.C(:))^2; % More efficient than using convolution with 'valid'
                     factorForId=c00*(2*pi)^(this.dim);
                     normalizationFactor=sqrt(factorForId);
                 case 'identity'
