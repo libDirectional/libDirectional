@@ -7,24 +7,19 @@ classdef GaussianSamplingUKF < GaussianSampling
     %   copy                - Copy a GaussianSampling instance.
     %   getStdNormalSamples - Get a set of samples approximating a standard normal distribution.
     %   getSamples          - Get a set of samples approximating a Gaussian distribution.
-    %   getSampleScaling    - Get the current sample scaling factor.
+    %   setSampleScaling    - Set the sample scaling factor.
+    %   getSampleScaling    - Get the sample scaling factor.
     
     % Literature:
     %   Simon J. Julier and Jeffrey K. Uhlmann,
     %   Unscented Filtering and Nonlinear Estimation,
-    %   Proceedings of the IEEE, Vol. 92 No. 3, 2004, pp. 401-422.
+    %   Proceedings of the IEEE, vol. 92 no. 3, pp. 401-422, 2004.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
     %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
-    %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
-    %
-    %                        Institute for Anthropomatics and Robotics
-    %                        Chair for Intelligent Sensor-Actuator-Systems (ISAS)
-    %                        Karlsruhe Institute of Technology (KIT), Germany
-    %
-    %                        http://isas.uka.de
+    %    Copyright (C) 2015-2017  Jannik Steinbring <nonlinearestimation@gmail.com>
     %
     %    This program is free software: you can redistribute it and/or modify
     %    it under the terms of the GNU General Public License as published by
@@ -47,13 +42,13 @@ classdef GaussianSamplingUKF < GaussianSampling
             %   << obj (GaussianSamplingUKF)
             %      A new GaussianSamplingUKF instance.
             
-            % Default scaling
-            obj.setSampleScaling(0.5);
+            % Default sample scaling
+            obj.scaling = 0.5;
         end
         
         function setSampleScaling(obj, scaling)
             % Set the sample scaling factor.
-            % 
+            %
             % For example, a scaling factor of 0.5 results in an equal sample
             % weight for all samples, a factor of 1 results in a double
             % weighted sample located at the state space origin, and a factor
@@ -78,11 +73,11 @@ classdef GaussianSamplingUKF < GaussianSampling
         end
         
         function scaling = getSampleScaling(obj)
-            % Get the current sample scaling factor.
-            % 
+            % Get the sample scaling factor.
+            %
             % Returns:
             %   << scaling (Scalar)
-            %      The current sample scaling factor.
+            %      The sample scaling factor.
             
             scaling = obj.scaling;
         end
@@ -100,12 +95,17 @@ classdef GaussianSamplingUKF < GaussianSampling
             
             numSamples = 2 * dimension + 1;
             
-            mat = sqrt(dimension + obj.scaling) * speye(dimension);
+            mat = sqrt(dimension + obj.scaling) * eye(dimension);
             
             samples = [zeros(dimension, 1) -mat mat];
             
-            weights = (1 / (2 * (dimension + obj.scaling))) * ...
-                      [2 * obj.scaling ones(1, numSamples - 1)];
+            if obj.scaling == 0.5
+                % Samples are equally weighted
+                weights = 1 / numSamples;
+            else
+                weights = (1 / (2 * (dimension + obj.scaling))) * ...
+                          [2 * obj.scaling ones(1, numSamples - 1)];
+            end
         end
     end
     

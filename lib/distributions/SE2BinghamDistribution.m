@@ -144,6 +144,9 @@ classdef SE2BinghamDistribution
             % Generate Gaussian Samples using UKF.
             ukfSampling = GaussianSamplingUKF();
             [gSamples, gWeights, numGaussianSamples] = ukfSampling.getSamples(Gaussian(zeros(2,1), -0.5*pinv(this.C3)));
+            if isscalar(gWeights)
+                gWeights = repmat(gWeights, 1, numGaussianSamples);
+            end            
             
             % Compute repositioning matrix
             A = -pinv(this.C3)*this.C2;

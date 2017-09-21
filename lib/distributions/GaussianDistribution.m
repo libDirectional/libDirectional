@@ -81,10 +81,11 @@ classdef GaussianDistribution
             %   w (1 x n)
             %       weights (always uniform for now)
             g = GaussianSamplingUKF;
-            [s,w] = g.getSamples(Gaussian(this.mu, this.C));
+            [s,w,numGaussianSamples] = g.getSamples(Gaussian(this.mu, this.C));
+            if isscalar(w)
+                w = repmat(w, 1, numGaussianSamples);
+            end
         end
-        
     end
-    
 end
 

@@ -1,33 +1,28 @@
 
 classdef Filter < handle & matlab.mixin.Copyable
-    % Abstract base class for a general (nonlinear) filter.
+    % Abstract base class for a filter.
     %
     % Filter Methods:
-    %   Filter           - Class constructor.
-    %   copy             - Copy a Filter instance.
-    %   copyWithName     - Copy a Filter instance and give the copy a new name / description.
-    %   getName          - Get the filter name / description.
-    %   setColor         - Set the filter color / plotting properties.
-    %   getColor         - Get the current filter color / plotting properties.
-    %   setState         - Set the system state.
-    %   getState         - Get the current system state.
-    %   getStateDim      - Get the dimension of the current system state.
-    %   predict          - Perform a time update (prediction step).
-    %   update           - Perform a measurement update (filter step) using the given measurement(s).
-    %   step             - Perform a combined time and measurement update.
-    %   getPointEstimate - Get a point estimate of the current system state.
+    %   Filter             - Class constructor.
+    %   copy               - Copy a Filter instance.
+    %   copyWithName       - Copy a Filter instance and give the copy a new name/description.
+    %   getName            - Get the filter name/description.
+    %   setColor           - Set the filter color/plotting properties.
+    %   getColor           - Get the filter color/plotting properties.
+    %   setState           - Set the system state.
+    %   getState           - Get the system state.
+    %   setStateMeanAndCov - Set the system state by means of mean and covariance matrix.
+    %   getStateMeanAndCov - Get mean and covariance matrix of the system state.
+    %   getStateDim        - Get the dimension of the system state.
+    %   predict            - Perform a state prediction.
+    %   update             - Perform a measurement update.
+    %   step               - Perform a combined state prediction and measurement update.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
     %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
-    %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
-    %
-    %                        Institute for Anthropomatics and Robotics
-    %                        Chair for Intelligent Sensor-Actuator-Systems (ISAS)
-    %                        Karlsruhe Institute of Technology (KIT), Germany
-    %
-    %                        http://isas.uka.de
+    %    Copyright (C) 2015-2017  Jannik Steinbring <nonlinearestimation@gmail.com>
     %
     %    This program is free software: you can redistribute it and/or modify
     %    it under the terms of the GNU General Public License as published by
@@ -42,7 +37,7 @@ classdef Filter < handle & matlab.mixin.Copyable
     %    You should have received a copy of the GNU General Public License
     %    along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
-    methods
+    methods (Sealed)
         function obj = Filter(name)
             % Class constructor.
             %
@@ -51,7 +46,7 @@ classdef Filter < handle & matlab.mixin.Copyable
             %      An appropriate filter name / description of the implemented
             %      filter. The Filter subclass should set this during its
             %      construction to a meaningful default value (e.g., 'EKF'),
-            %      or the user should specify an appropriate name (e.g., 
+            %      or the user should specify an appropriate name (e.g.,
             %      'PF (10k Particles)').
             %
             % Returns:
@@ -74,7 +69,7 @@ classdef Filter < handle & matlab.mixin.Copyable
         end
         
         function cpObj = copyWithName(obj, cpName)
-            % Copy a Filter instance and give the copy a new name / description.
+            % Copy a Filter instance and give the copy a new name/description.
             %
             % The standard copy() method also copies the name of the filter instance
             % to be copied. However, a filter cannot change its name after construction.
@@ -86,7 +81,7 @@ classdef Filter < handle & matlab.mixin.Copyable
             %
             % Parameters:
             %   >> cpName (Char)
-            %      A new filter name / description for the filter copy.
+            %      A new filter name/description for the filter copy.
             %
             % Returns:
             %   << cpObj (Sublcass of Filter)
@@ -102,18 +97,18 @@ classdef Filter < handle & matlab.mixin.Copyable
             cpObj.name = cpName;
         end
         
-        function filterName = getName(obj)
-            % Get the filter name / description.
+        function name = getName(obj)
+            % Get the filter name/description.
             %
             % Returns:
-            %   << filterName (Char)
-            %      The filter name / description.
+            %   << name (Char)
+            %      The filter name/description.
             
-            filterName = obj.name;
+            name = obj.name;
         end
         
         function setColor(obj, color)
-            % Set the filter color / plotting properties.
+            % Set the filter color/plotting properties.
             %
             % Assign a color (e.g., 'r') or a color with additional line
             % plotting settings (e.g., { '--', 'LineWidth', 2, 'Color',
@@ -129,36 +124,86 @@ classdef Filter < handle & matlab.mixin.Copyable
         end
         
         function color = getColor(obj)
-            % Get the current filter color / plotting properties.
+            % Get the filter color/plotting properties.
             %
             % Returns:
             %   << color (Arbitrary data)
-            %      The current filter color / plotting properties.
+            %      The filter color/plotting properties.
             
             color = obj.color;
         end
         
         function dim = getStateDim(obj)
-            % Get the dimension of the current system state.
+            % Get the dimension of the system state.
             %
             % Returns:
             %   << dim (Scalar)
-            %      The dimension of the current system state.
+            %      The dimension of the system state.
             
             dim = obj.dimState;
         end
         
-        function runtime = predict(obj, sysModel)
-            % Perform a time update (prediction step).
+        function setState(obj, state)
+            % Set the system state.
+            %
+            % This function is mainly used to set an initial system state, as
+            % it is intended that the Filter is responsible for modifying the
+            % system state by exploiting system and measurement models.
             %
             % Parameters:
-            %   >> sysModel (Arbitrary class (filter dependent))
-            %      System model that provides the mapping between the prior system
-            %      state and the predicted state (i.e., the system state's temporal evolution).
+            %   >> state (Subclass of Distribution)
+            %      The new system state.
+            
+            if ~Checks.isClass(state, 'Distribution')
+                obj.error('InvalidSystemState', ...
+                          'state must be a subclass of Distribution.');
+            end
+            
+            obj.performSetState(state);
+            
+            % Set system state dimension
+            obj.dimState = state.getDim();
+        end
+        
+        function setStateMeanAndCov(obj, stateMean, stateCov, stateCovSqrt)
+            % Set the system state by means of mean and covariance matrix.
+            %
+            % Note: this method does not perform input validation like setState()!
+            % It is intended for fastly setting the system state without creating
+            % a temporary Gaussian distribution, e.g., in order to assign the
+            % Gaussian state estimate of a filter to another one.
+            %
+            % Parameters:
+            %   >> stateMean (Column vector)
+            %      The new mean vector of the system state.
+            %
+            %   >> stateCov (Positive definite matrix)
+            %      The new covariance matrix of the system state.
+            %
+            %   >> stateCovSqrt (Square matrix)
+            %      Lower Cholesky decomposition of the new system state covariance matrix.
+            %      If no square root is passed, it will be computed.
+            
+            if nargin < 4
+                stateCovSqrt = chol(stateCov, 'Lower');
+            end
+            
+            obj.performSetStateMeanAndCov(stateMean, stateCov, stateCovSqrt);
+            
+            % Set system state dimension
+            obj.dimState = size(stateMean, 1);
+        end
+        
+        function runtime = predict(obj, sysModel)
+            % Perform a state prediction.
+            %
+            % Parameters:
+            %   >> sysModel (Arbitrary class; filter dependent)
+            %      System model that describes the temporal behavior of the system state.
             %
             % Returns:
             %   << runtime (Scalar)
-            %      Time needed to perform the prediction step.
+            %      Time needed to perform the state prediction.
             
             if nargout == 1
                 s = tic;
@@ -177,105 +222,66 @@ classdef Filter < handle & matlab.mixin.Copyable
             end
         end
         
-        function runtime = update(obj, measModel, measurements)
-            % Perform a measurement update (filter step) using the given measurement(s).
+        function runtime = update(obj, measModel, measurement)
+            % Perform a measurement update.
             %
             % Parameters:
-            %   >> measModel (Arbitrary class (filter dependent))
-            %      Measurement model that provides the mapping between measurements and the system state.
+            %   >> measModel (Arbitrary class; filter dependent)
+            %      Measurement model that describes the relationship between system state and measurement.
             %
-            %   >> measurements (Matrix)
-            %      Column-wise arranged measurement vectors, where each column represents an individual
-            %      measurement. In case of two or more measurements (i.e., two or more columns), the
-            %      filter assumes that the measurements originate from the same measurement model and
-            %      i.i.d. measurement noise. For example, in case of a measurement model h(x, v) and two
-            %      measurements m1 and m2 the filter assumes
-            %
-            %          m1 = h(x, v) and m2 = h(x, v) .
-            %
-            %      The advantage is that one has to set the measurement noise v only for one
-            %      measurement, no matter how many measurements will be provided in one filter step.
-            %      That is, the measurement noise is assumed to be i.i.d. for all measurements.
-            %      However, in case of non-i.i.d. measurement noise 
-            %
-            %          m1 = h(x, v1) and m2 = h(x, v2)
-            %
-            %      (e.g., existing correlations between noise for different measurements or in general
-            %      different noise for different measurements) one has to explicitly stack the
-            %      measurement noise to v = [v1; v2] and pass the measurements m1 and m2 as a stacked
-            %      measurement vector m = [m1; m2].
+            %   >> measurement (Arbitrary data)
+            %      Measurement data that has to be processed by the measurement update.
+            %      What type of data is supported depends on the passed measurement model
+            %      and implemented filter. Usually, this is a column vector.
             %
             % Returns:
             %   << runtime (Scalar)
             %      Time needed to perform the measurement update.
             
-            obj.checkMeasurements(measurements);
-            
             if nargout == 1
                 s = tic;
                 try
-                    obj.performUpdate(measModel, measurements);
+                    obj.performUpdate(measModel, measurement);
                 catch ex
                     Filter.handleIgnoreMeas(ex);
                 end
                 runtime = toc(s);
             else
                 try
-                    obj.performUpdate(measModel, measurements);
+                    obj.performUpdate(measModel, measurement);
                 catch ex
                     Filter.handleIgnoreMeas(ex);
                 end
             end
         end
         
-        function runtime = step(obj, sysModel, measModel, measurements)
-            % Perform a combined time and measurement update.
+        function runtime = step(obj, sysModel, measModel, measurement)
+            % Perform a combined state prediction and measurement update.
             %
             % By default, this is equal to execute predict() followed by an update().
-            %
-            % However, each filter can overwrite this behavior with a custom implementation
-            % of a combined time and measurement update in order to improve estimation quality
-            % (e.g., done by the Auxiliary SIR-PF).
+            % Nevertheless, each filter can overwrite this behavior with a custom implementation
+            % of a combined state prediction and measurement update if desired.
             %
             % Parameters:
-            %   >> sysModel (Arbitrary class (filter dependent))
-            %      System model that provides the mapping between the prior system
-            %      state and the predicted state (i.e., the system state's temporal evolution).
+            %   >> sysModel (Arbitrary class; filter dependent)
+            %      System model that describes the temporal behavior of the system state.
             %
-            %   >> measModel (Arbitrary class (filter dependent))
-            %      Measurement model that provides the mapping between measurements and the system state.
+            %   >> measModel (Arbitrary class; filter dependent)
+            %      Measurement model that describes the relationship between system state and measurement.
             %
-            %   >> measurements (Matrix)
-            %      Column-wise arranged measurement vectors, where each column represents an individual
-            %      measurement. In case of two or more measurements (i.e., two or more columns), the
-            %      filter assumes that the measurements originate from the same measurement model and
-            %      i.i.d. measurement noise. For example, in case of a measurement model h(x, v) and two
-            %      measurements m1 and m2 the filter assumes
-            %
-            %          m1 = h(x, v) and m2 = h(x, v) .
-            %
-            %      The advantage is that one has to set the measurement noise v only for one
-            %      measurement, no matter how many measurements will be provided in one filter step.
-            %      That is, the measurement noise is assumed to be i.i.d. for all measurements.
-            %      However, in case of non-i.i.d. measurement noise
-            %
-            %          m1 = h(x, v1) and m2 = h(x, v2)
-            %
-            %      (e.g., existing correlations between noise for different measurements or in general
-            %      different noise for different measurements) one has to explicitly stack the
-            %      measurement noise to v = [v1; v2] and pass the measurements m1 and m2 as a stacked
-            %      measurement vector m = [m1; m2].
+            %   >> measurement (Arbitrary data)
+            %      Measurement data that has to be processed by the measurement update.
+            %      What type of data is supported depends on the passed measurement model
+            %      and implemented filter. Usually, this is a column vector.
             %
             % Returns:
             %   << runtime (Scalar)
-            %      Time needed to perform the combined time and measurement update.
-            
-            obj.checkMeasurements(measurements);
+            %      Time needed to perform the combined state prediction and measurement update.
             
             if nargout == 1
                 s = tic;
                 try
-                    obj.performStep(sysModel, measModel, measurements);
+                    obj.performStep(sysModel, measModel, measurement);
                 catch ex
                     Filter.handleIgnorePrediction(ex);
                     Filter.handleIgnoreMeas(ex);
@@ -283,7 +289,7 @@ classdef Filter < handle & matlab.mixin.Copyable
                 runtime = toc(s);
             else
                 try
-                    obj.performStep(sysModel, measModel, measurements);
+                    obj.performStep(sysModel, measModel, measurement);
                 catch ex
                     Filter.handleIgnorePrediction(ex);
                     Filter.handleIgnoreMeas(ex);
@@ -293,52 +299,49 @@ classdef Filter < handle & matlab.mixin.Copyable
     end
     
     methods (Abstract)
-        % Set the system state.
-        %
-        % This function is mainly used to set an initial system state, as
-        % it is intended that the Filter is responsible for modifying the
-        % system state by exploiting system and measurement models.
-        %
-        % Parameters:
-        %   >> state (Subclass of Distribution)
-        %      The new system state.
-        setState(obj, state);
-        
-        % Get the current system state.
+        % Get the system state.
         %
         % Returns:
         %   << state (Subclass of Distribution)
-        %      The current system state.
+        %      The system state.
         state = getState(obj);
         
-        % Get a point estimate of the current system state.
+        % Get mean and covariance matrix of the system state.
         %
         % Returns:
-        %   << pointEstimate (Column vector)
-        %      Point estimate of the current system state.
+        %   << stateMean (Column vector)
+        %      Mean vector of the system state.
         %
-        %   << uncertainty (Positive definite matrix)
-        %      Uncertainty of the current system state point estimate (e.g.,
-        %      a covariance matrix).
-        [pointEstimate, uncertainty] = getPointEstimate(obj);
+        %   << stateCov (Positive definite matrix)
+        %      Covariance matrix of the system state.
+        %
+        %   << stateCovSqrt (Square matrix)
+        %      Lower Cholesky decomposition of the system state covariance matrix.
+        [stateMean,  stateCov, stateCovSqrt] = getStateMeanAndCov(obj);
     end
     
     methods (Abstract, Access = 'protected')
+        performSetState(obj, state);
+        
+        performSetStateMeanAndCov(obj, stateMean, stateCov, stateCovSqrt);
+        
         performPrediction(obj, sysModel);
         
-        performUpdate(obj, measModel, measurements);
+        performUpdate(obj, measModel, measurement);
     end
     
     methods (Access = 'protected')
-        function performStep(obj, sysModel, measModel, measurements)
+        function performStep(obj, sysModel, measModel, measurement)
             obj.performPrediction(sysModel);
-            obj.performUpdate(measModel, measurements);
+            obj.performUpdate(measModel, measurement);
         end
-        
-        function checkMeasurements(obj, measurements)
-            if ~Checks.isMat(measurements)
-                obj.error('InvalidMeasurements', ...
-                          'measurements must be a matrix.');
+    end
+    
+    methods (Sealed, Access = 'protected')
+        function checkMeasurementVector(obj, measurement)
+            if ~Checks.isColVec(measurement)
+                obj.error('InvalidMeasurement', ...
+                          'measurement must be a column vector.');
             end
         end
         
@@ -434,6 +437,22 @@ classdef Filter < handle & matlab.mixin.Copyable
             end
         end
         
+        function covSqrt = checkCovPrediction(obj, cov, type)
+            [covSqrt, isNonPos] = chol(cov, 'Lower');
+            
+            if isNonPos
+                obj.ignorePrediction('%s covariance matrix is not positive definite.', type);
+            end
+        end
+        
+        function covSqrt = checkCovUpdate(obj, cov, type)
+            [covSqrt, isNonPos] = chol(cov, 'Lower');
+            
+            if isNonPos
+                obj.ignoreMeas('%s covariance matrix is not positive definite.', type);
+            end
+        end
+        
         function warning(obj, id, msg, varargin)
             msg = sprintf(msg, varargin{:});
             
@@ -518,17 +537,15 @@ classdef Filter < handle & matlab.mixin.Copyable
         end
     end
     
-    properties (Access = 'protected')
-        % Dimension of the current system state.
-        dimState;
-    end
-    
-    properties (Access = 'private')
-        % The filter name / description.
+    properties (SetAccess = 'private', GetAccess = 'protected')
+        % The filter name/description.
         name;
         
-        % The filter color / plotting properties.
+        % The filter color/plotting properties.
         color;
+        
+        % Dimension of the system state.
+        dimState;
     end
     
     properties (Constant, Access = 'private')

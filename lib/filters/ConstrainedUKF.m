@@ -62,7 +62,7 @@ classdef ConstrainedUKF < AbstractCircularFilter
             
             this.ukf.setState(Gaussian(this.state.mu, this.state.C));
             this.ukf.predict(model);
-            [this.state.mu, this.state.C] = this.ukf.getPointEstimate();
+            [this.state.mu, this.state.C] = this.ukf.getStateMeanAndCov();
             
             if norm(this.state.mu)~=0
                 this.state.mu = this.state.mu/norm(this.state.mu);
@@ -102,7 +102,7 @@ classdef ConstrainedUKF < AbstractCircularFilter
             
             this.ukf.setState(Gaussian(this.state.mu, this.state.C));
             this.ukf.update(model, z);
-            [this.state.mu, this.state.C] = this.ukf.getPointEstimate();
+            [this.state.mu, this.state.C] = this.ukf.getStateMeanAndCov();
             
             if norm(this.state.mu)~=0 
                 this.state.mu = this.state.mu/norm(this.state.mu);

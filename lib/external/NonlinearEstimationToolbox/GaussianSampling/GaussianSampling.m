@@ -3,7 +3,6 @@ classdef GaussianSampling < handle & matlab.mixin.Copyable
     % Abstract base class for multivariate Gaussian sampling methods.
     %
     % GaussianSampling Methods:
-    %   GaussianSampling    - Class constructor.
     %   copy                - Copy a GaussianSampling instance.
     %   getStdNormalSamples - Get a set of samples approximating a standard normal distribution.
     %   getSamples          - Get a set of samples approximating a Gaussian distribution.
@@ -12,13 +11,7 @@ classdef GaussianSampling < handle & matlab.mixin.Copyable
     %
     %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
-    %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
-    %
-    %                        Institute for Anthropomatics and Robotics
-    %                        Chair for Intelligent Sensor-Actuator-Systems (ISAS)
-    %                        Karlsruhe Institute of Technology (KIT), Germany
-    %
-    %                        http://isas.uka.de
+    %    Copyright (C) 2015-2017  Jannik Steinbring <nonlinearestimation@gmail.com>
     %
     %    This program is free software: you can redistribute it and/or modify
     %    it under the terms of the GNU General Public License as published by
@@ -34,14 +27,6 @@ classdef GaussianSampling < handle & matlab.mixin.Copyable
     %    along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
     methods
-        function obj = GaussianSampling()
-            % Class constructor.
-            %
-            % Returns:
-            %   << obj (GaussianSampling)
-            %      A new GaussianSampling instance.
-        end
-        
         function [samples, weights, numSamples] = getSamples(obj, gaussian)
             % Get a set of samples approximating a Gaussian distribution.
             %
@@ -57,7 +42,8 @@ classdef GaussianSampling < handle & matlab.mixin.Copyable
             %      Column-wise arranged sample positions approximating the Gaussian distribution.
             %
             %   << weights (Row vector)
-            %      Column-wise arranged corresponding sample weights.
+            %      Either column-wise arranged corresponding sample weights
+            %      or single scalar weight in case of equally weighted samples.
             %
             %   << numSamples (Positive scalar)
             %      Number of samples approximating the Gaussian distribution.
@@ -67,8 +53,8 @@ classdef GaussianSampling < handle & matlab.mixin.Copyable
                       'gaussian must be a Gaussian distribution.');
             end
             
-            [mean, ~, covSqrt] = gaussian.getMeanAndCovariance();
-            dim = gaussian.getDimension();
+            [mean, ~, covSqrt] = gaussian.getMeanAndCov();
+            dim = gaussian.getDim();
             
             % Get standard normal approximation
             [stdNormalSamples, weights, numSamples] = obj.getStdNormalSamples(dim);
@@ -94,7 +80,8 @@ classdef GaussianSampling < handle & matlab.mixin.Copyable
         %      The column-wise arranged sample positions.
         %
         %   << weights (Row vector)
-        %      The column-wise arranged corresponding sample weights.
+        %      Either column-wise arranged corresponding sample weights
+        %      or single scalar weight in case of equally weighted samples.
         %
         %   << numSamples (Positive scalar)
         %      The number of samples.

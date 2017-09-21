@@ -1,8 +1,8 @@
 
-classdef AdditiveNoiseSystemModel < handle
-    % Abstract base class for system models corrupted by additive noise.
+classdef SystemModel < handle
+    % Abstract base class for system models corrupted by arbitrary noise.
     %
-    % AdditiveNoiseSystemModel Methods:
+    % SystemModel Methods:
     %   setNoise       - Set the system noise.
     %   systemEquation - The system equation.
     %   derivative     - Compute the first-order and second-order derivatives of the implemented system equation.
@@ -38,12 +38,13 @@ classdef AdditiveNoiseSystemModel < handle
             if Checks.isClass(noise, 'Distribution')
                 obj.noise = noise;
             else
-                error('AdditiveNoiseSystemModel:InvalidNoise', ...
+                error('SystemModel:InvalidNoise', ...
                       'noise must be a subclass of Distribution.');
             end
         end
         
-        function [stateJacobian, stateHessians] = derivative(obj, nominalState)
+        function [stateJacobian, noiseJacobian, ...
+                  stateHessians, noiseHessians] = derivative(obj, nominalState, nominalNoise)
             % Compute the first-order and second-order derivatives of the implemented system equation.
             %
             % By default, the derivatives are computed using difference quotients.
@@ -54,18 +55,29 @@ classdef AdditiveNoiseSystemModel < handle
             %   >> nominalState (Column vector)
             %      The nominal system state vector.
             %
+            %   >> nominalNoise (Column vector)
+            %      The nominal system noise vector.
+            %
             % Returns:
             %   << stateJacobian (Square matrix)
             %      The Jacobian of the state variables.
             %
+            %   << noiseJacobian (Matrix)
+            %      The Jacobian of the noise variables.
+            %
             %   << stateHessians (3D matrix)
             %      The Hessians of the state variables.
+            %
+            %   << noiseHessians (3D matrix)
+            %      The Hessians of the noise variables.
             
-            if nargout == 1
-                stateJacobian = Utils.diffQuotientState(@obj.systemEquation, nominalState);
+            if nargout <= 2
+                [stateJacobian, noiseJacobian] = Utils.diffQuotientStateAndNoise(@obj.systemEquation, ...
+                                                                                 nominalState, nominalNoise);
             else
-                [stateJacobian, ...
-                 stateHessians] = Utils.diffQuotientState(@obj.systemEquation, nominalState);
+                [stateJacobian, noiseJacobian, ...
+                 stateHessians, noiseHessians] = Utils.diffQuotientStateAndNoise(@obj.systemEquation, ...
+                                                                                 nominalState, nominalNoise);
             end
         end
         
@@ -81,13 +93,13 @@ classdef AdditiveNoiseSystemModel < handle
             %      The simulated temporal system state evolution.
             
             if ~Checks.isColVec(state)
-                error('AdditiveNoiseSystemModel:InvalidSystemState', ...
+                error('SystemModel:InvalidSystemState', ...
                       'state must be a column vector.');
             end
             
             noiseSample = obj.noise.drawRndSamples(1);
             
-            predictedState = obj.systemEquation(state) + noiseSample;
+            predictedState = obj.systemEquation(state, noiseSample);
         end
     end
     
@@ -98,10 +110,13 @@ classdef AdditiveNoiseSystemModel < handle
         %   >> stateSamples (Matrix)
         %      L column-wise arranged state samples.
         %
+        %   >> noiseSamples (Matrix)
+        %      L column-wise arranged system noise samples.
+        %
         % Returns:
         %   << predictedStates (Matrix)
         %      L column-wise arranged predicted state samples.
-        predictedStates = systemEquation(obj, stateSamples);
+        predictedStates = systemEquation(obj, stateSamples, noiseSamples);
     end
     
     properties (SetAccess = 'private', GetAccess = 'public')

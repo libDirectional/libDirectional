@@ -1,24 +1,19 @@
 
-classdef Distribution < handle
+classdef Distribution < handle & matlab.mixin.Copyable
     % Abstract base class for probability distributions.
     %
     % Distribution Methods:
-    %   getDimension         - Get the dimension of the distribution.
-    %   getMeanAndCovariance - Get mean and covariance of the distribution.
-    %   drawRndSamples       - Draw random samples from the distribution.
-    %   logPdf               - Evaluate the logarithmic probability density function (pdf) of the distribution.
+    %   copy           - Copy a distribution instance.
+    %   getDim         - Get the dimension of the distribution.
+    %   getMeanAndCov  - Get mean and covariance matrix of the distribution.
+    %   drawRndSamples - Draw random samples from the distribution.
+    %   logPdf         - Evaluate the logarithmic probability density function (PDF) of the distribution.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
     %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
-    %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
-    %
-    %                        Institute for Anthropomatics and Robotics
-    %                        Chair for Intelligent Sensor-Actuator-Systems (ISAS)
-    %                        Karlsruhe Institute of Technology (KIT), Germany
-    %
-    %                        http://isas.uka.de
+    %    Copyright (C) 2015-2017  Jannik Steinbring <nonlinearestimation@gmail.com>
     %
     %    This program is free software: you can redistribute it and/or modify
     %    it under the terms of the GNU General Public License as published by
@@ -31,7 +26,7 @@ classdef Distribution < handle
     %    GNU General Public License for more details.
     %
     %    You should have received a copy of the GNU General Public License
-    %    aldong with this program.  If not, see <http://www.gnu.org/licenses/>.
+    %    along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
     methods (Abstract)
         % Get the dimension of the distribution.
@@ -39,20 +34,20 @@ classdef Distribution < handle
         % Returns:
         %   << dim (Positive scalar)
         %      The dimension of the distribution.
-        dim = getDimension(obj);
+        dim = getDim(obj);
         
-        % Get mean and covariance of the distribution.
+        % Get mean and covariance matrix of the distribution.
         %
         % Returns:
-        %   << mean (Vector)
+        %   << mean (Column vector)
         %      Mean of the distribution.
         %
-        %   << covariance (Positive definite matrix)
-        %      Covariance of the distribution.
+        %   << cov (Positive definite matrix)
+        %      Covariance matrix of the distribution.
         %
         %   << covSqrt (Square matrix)
-        %      Square root of the distribution's covariance.
-        [mean, covariance, covSqrt] = getMeanAndCovariance(obj);
+        %      Lower Cholesky decomposition of the distribution's covariance matrix.
+        [mean, cov, covSqrt] = getMeanAndCov(obj);
         
         % Draw random samples from the distribution.
         %
@@ -65,7 +60,7 @@ classdef Distribution < handle
         %      Column-wise arranged random samples.
         rndSamples = drawRndSamples(obj, numSamples);
         
-        % Evaluate the logarithmic probability density function (pdf) of the distribution.
+        % Evaluate the logarithmic probability density function (PDF) of the distribution.
         %
         % Parameters:
         %   >> values (Matrix)
@@ -77,9 +72,9 @@ classdef Distribution < handle
         logValues = logPdf(obj, values);
     end
     
-    methods (Access = 'protected')
+    methods (Sealed, Access = 'protected')
         function checkValues(obj, values)
-            dim = obj.getDimension();
+            dim = obj.getDim();
             
             if ~Checks.isFixedRowMat(values, dim)
                 error('Distribution:InvalidValues', ...

@@ -69,7 +69,7 @@ classdef CircularUKF < AbstractCircularFilter
             
             this.ukf.setState(Gaussian(this.state.mu, this.state.C));
             this.ukf.predict(model);
-            [mu_, C_] = this.ukf.getPointEstimate();
+            [mu_, C_] = this.ukf.getStateMeanAndCov();
             
             this.state = GaussianDistribution(mod(mu_, 2*pi), C_);
         end
@@ -145,7 +145,7 @@ classdef CircularUKF < AbstractCircularFilter
             model = MeasModelWrapper(f);
             model.setNoise(Gaussian(gaussMeas.mu, gaussMeas.C));
             this.ukf.update(model, z);
-            [this.state.mu, this.state.C] = this.ukf.getPointEstimate();
+            [this.state.mu, this.state.C] = this.ukf.getStateMeanAndCov();
             
             this.state.mu = mod(this.state.mu,2*pi);
         end

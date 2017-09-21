@@ -4,17 +4,16 @@ classdef Utils
     %
     % Utils Methods:
     %   getMeanAndCov             - Compute sample mean and sample covariance.
-    %   getMeanCovAndCrossCov     - Compute sample mean, covariance, and cross-covariance.
+    %   getGMMeanAndCov           - Compute mean and covariance matrix of a Gaussian mixture.
     %   kalmanUpdate              - Perform a Kalman update.
     %   decomposedStateUpdate     - Perform an update for a system state decomposed into two parts A and B.
     %   blockDiag                 - Create a block diagonal matrix.
-    %   baseBlockDiag             - Create a block diagonal matrix.
     %   drawGaussianRndSamples    - Draw random samples from a multivariate Gaussian distribution.
     %   resampling                - Perform a simple resampling.
     %   systematicResampling      - Perform a systematic resampling.
+    %   getGaussianKLD            - Compute Kullback-Leibler divergence (KLD) between two Gaussian distributions.
+    %   getGaussianL2Distance     - Compute L2 distance between two Gaussian distributions.
     %   rndOrthogonalMatrix       - Creates a random orthogonal matrix of the specified dimension.
-    %   getStateSamples           - Get a set of samples approximating a Gaussian distributed system state.
-    %   getStateNoiseSamples      - Get a set of samples approximating a jointly Gaussian distributed system state and (system/measurement) noise.
     %   diffQuotientState         - Compute first-order and second-order difference quotients of a function at the given nominal system state.
     %   diffQuotientStateAndNoise - Compute first-order and second-order difference quotients of a function at the given nominal system state and nominal noise.
     
@@ -22,13 +21,8 @@ classdef Utils
     %
     %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
-    %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
-    %
-    %                        Institute for Anthropomatics and Robotics
-    %                        Chair for Intelligent Sensor-Actuator-Systems (ISAS)
-    %                        Karlsruhe Institute of Technology (KIT), Germany
-    %
-    %                        http://isas.uka.de
+    %    Copyright (C) 2015-2017  Jannik Steinbring <nonlinearestimation@gmail.com>
+    %                             Florian Rosenthal <florian.rosenthal@kit.edu>
     %
     %    This program is free software: you can redistribute it and/or modify
     %    it under the terms of the GNU General Public License as published by
@@ -52,8 +46,9 @@ classdef Utils
             %      Column-wise arranged samples.
             %
             %   >> weights (Row vector)
-            %      Column-wise arranged corresponding normalized sample weights.
-            %      If no weights are passed, all samples are assumed
+            %      Either column-wise arranged corresponding normalized sample weights
+            %      or single scalar weight in case of equally weighted samples.
+            %      If no weights are passed, all samples are also assumed
             %      to be equally weighted.
             %
             % Returns:
@@ -64,16 +59,20 @@ classdef Utils
             %      The sample covariance matrix.
             
             if nargin < 2
+                % All samples are assumed to be equally weighted
                 numSamples = size(samples, 2);
-                
+                weights    = 1 / numSamples;
+            end
+            
+            if numel(weights) == 1
                 % Compute mean
-                mean = sum(samples, 2) / numSamples;
+                mean = sum(samples, 2) * weights;
                 
                 % Compute covariance
                 if nargout > 1
-                    diffSamples = bsxfun(@minus, samples, mean);
+                    zeroMeanSamples = bsxfun(@minus, samples, mean);
                     
-                    cov = (diffSamples * diffSamples') / numSamples;
+                    cov = (zeroMeanSamples * zeroMeanSamples') * weights;
                 end
             else
                 % Compute mean
@@ -81,114 +80,71 @@ classdef Utils
                 
                 % Compute covariance
                 if nargout > 1
-                    diffSamples = bsxfun(@minus, samples, mean);
+                    zeroMeanSamples = bsxfun(@minus, samples, mean);
                     
                     % Weights can be negative => we have to treat them separately
                     
                     % Positive weights
                     idx = weights >= 0;
                     
-                    sqrtWeights         = sqrt(weights(idx));
-                    weightedDiffSamples = bsxfun(@times, diffSamples(:, idx), sqrtWeights);
+                    sqrtWeights             = sqrt(weights(idx));
+                    weightedZeroMeanSamples = bsxfun(@times, zeroMeanSamples(:, idx), sqrtWeights);
                     
-                    cov = weightedDiffSamples * weightedDiffSamples';
+                    cov = weightedZeroMeanSamples * weightedZeroMeanSamples';
                     
                     % Negative weights
                     if ~all(idx)
                         idx = ~idx;
                         
-                        sqrtWeights         = sqrt(abs(weights(idx)));
-                        weightedDiffSamples = bsxfun(@times, diffSamples(:, idx), sqrtWeights);
+                        sqrtWeights             = sqrt(abs(weights(idx)));
+                        weightedZeroMeanSamples = bsxfun(@times, zeroMeanSamples(:, idx), sqrtWeights);
                         
-                        cov = cov - weightedDiffSamples * weightedDiffSamples';
+                        cov = cov - weightedZeroMeanSamples * weightedZeroMeanSamples';
                     end
                 end
             end
         end
         
-        function [measMean, measCov, ...
-                  stateMeasCrossCov] = getMeanCovAndCrossCov(stateMean, stateSamples, ...
-                                                             measSamples, weights)
-            % Compute sample mean, covariance, and cross-covariance.
+        function [mean, cov] = getGMMeanAndCov(means, covariances, weights)
+            % Compute mean and covariance matrix of a Gaussian mixture.
             %
             % Parameters:
-            %   >> stateMean (Column vector)
-            %      State mean.
+            %   >> means (Matrix)
+            %      Column-wise arranged means of the Gaussian mixture components.
             %
-            %   >> stateSamples (Matrix)
-            %      Column-wise arranged state samples.
-            %
-            %   >> measSamples (Matrix)
-            %      Column-wise arranged measurement samples.
+            %   >> covariances (3D matrix containing positive definite matrices)
+            %      Slice-wise arranged covariance matrices of the Gaussian mixture components.
             %
             %   >> weights (Row vector)
-            %      Column-wise arranged corresponding normalized sample weights.
-            %      If no weights are passed, all samples are assumed
-            %      to be equally weighted.
+            %      Row-wise arranged normalized weights of the Gaussian mixture components.
+            %      If no weights are passed, all Gaussian mixture components are assumed to be equally weighted.
             %
             % Returns:
-            %   << measMean (Column vector)
-            %      The sample measurement mean.
+            %   << mean (Column vector)
+            %      The mean of the Gaussian mixture.
             %
-            %   << measCov (Positive definite matrix)
-            %      The sample measurement covariance matrix.
-            %
-            %   << stateMeasCrossCov (Matrix)
-            %      The sample state measurement cross-covariance matrix.
+            %   << cov (Positive definite matrix)
+            %      The covariance matrix of the Gaussian mixture.
             
-            if nargin < 4
-                numSamples = size(stateSamples, 2);
+            numComponents = size(means, 2);
+            
+            if nargin < 3
+                [mean, covMeans] = Utils.getMeanAndCov(means);
                 
-                % Compute measurement mean
-                measMean = sum(measSamples, 2) / numSamples;
-                
-                % Compute measurement covariance
-                diffMeasSamples = bsxfun(@minus, measSamples, measMean);
-                
-                measCov = (diffMeasSamples * diffMeasSamples') / numSamples;
-                
-                % Compute state measurement cross-covariance
-                diffStateSamples = bsxfun(@minus, stateSamples, stateMean);
-                
-                stateMeasCrossCov = (diffStateSamples * diffMeasSamples') / numSamples;
+                cov = covMeans + sum(covariances, 3) / numComponents;
             else
-                % Compute measurement mean
-                measMean = measSamples * weights';
+                [mean, covMeans] = Utils.getMeanAndCov(means, weights);
                 
-                % Compute measurement covariance and state measurement cross-covariance
-                diffMeasSamples  = bsxfun(@minus, measSamples, measMean);
-                diffStateSamples = bsxfun(@minus, stateSamples, stateMean);
+                weightedCovs = bsxfun(@times, covariances, ...
+                                      reshape(weights, [1 1 numComponents]));
                 
-                % Weights can be negative => we have to treat them separately
-                
-                % Positive weights
-                idx = weights >= 0;
-                
-                sqrtWeights              = sqrt(weights(idx));
-                weightedDiffMeasSamples  = bsxfun(@times, diffMeasSamples(:, idx), sqrtWeights);
-                weightedDiffStateSamples = bsxfun(@times, diffStateSamples(:, idx), sqrtWeights);
-                
-                measCov = weightedDiffMeasSamples * weightedDiffMeasSamples';
-                
-                stateMeasCrossCov = weightedDiffStateSamples * weightedDiffMeasSamples';
-                
-                % Negative weights
-                if ~all(idx)
-                    idx = ~idx;
-                    
-                    sqrtWeights              = sqrt(abs(weights(idx)));
-                    weightedDiffMeasSamples  = bsxfun(@times, diffMeasSamples(:, idx), sqrtWeights);
-                    weightedDiffStateSamples = bsxfun(@times, diffStateSamples(:, idx), sqrtWeights);
-                    
-                    measCov = measCov - weightedDiffMeasSamples * weightedDiffMeasSamples';
-                    
-                    stateMeasCrossCov = stateMeasCrossCov - weightedDiffStateSamples * weightedDiffMeasSamples';
-                end
+                cov = covMeans + sum(weightedCovs, 3);
             end
         end
         
         function [updatedStateMean, ...
-                  updatedStateCov] = kalmanUpdate(stateMean, stateCov, measurement, ...
+                  updatedStateCov, ...
+                  sqMeasMahalDist] = kalmanUpdate(stateMean, stateCov, measurement, ...
                                                   measMean, measCov, stateMeasCrossCov)
             % Perform a Kalman update.
             %
@@ -217,22 +173,33 @@ classdef Utils
             %
             %   << updatedStateCov (Positive definite matrix)
             %      Posterior state covariance matrix.
+            %
+            %   << sqMeasMahalDist (Scalar)
+            %      Squared Mahalanobis distance of the measurement.
             
-            [measCovSqrt, isNonPos] = chol(measCov);
+            [measCovSqrt, isNonPos] = chol(measCov, 'Lower');
             
             if isNonPos
                 error('Utils:InvalidMeasurementCovariance', ...
                       'Measurement covariance matrix is not positive definite.');
             end
             
-            % Compute Kalman gain
-            A = stateMeasCrossCov / measCovSqrt;
+            A = stateMeasCrossCov / measCovSqrt';
+            
+            innovation = measurement - measMean;
+            
+            t = measCovSqrt \ innovation;
             
             % Compute updated state mean
-            updatedStateMean = stateMean + A * (measCovSqrt' \ (measurement - measMean));
+            updatedStateMean = stateMean + A * t;
             
             % Compute updated state covariance
             updatedStateCov = stateCov - A * A';
+            
+            % Compute squared Mahalanobis distance of the measurement
+            if nargout == 3
+                sqMeasMahalDist = t' * t;
+            end
         end
         
         function [updatedStateMean, ...
@@ -306,27 +273,6 @@ classdef Utils
             %      Block diagonal matrix.
             
             blockMat = kron(speye(numRepetitions), matrix);
-        end
-        
-        function blockMat = baseBlockDiag(matrixBase, matrixDiag, numRepetitions)
-            % Create a block diagonal matrix.
-            %
-            % Parameters:
-            %   >> matrixBase (Matrix)
-            %      Matrix.
-            %
-            %   >> matrixDiag (Matrix)
-            %      Matrix of same size as matrixBase.
-            %
-            %   >> numRepetitions (Positive scalar)
-            %      Number of matrix repetitions along the diagonal.
-            %
-            % Returns:
-            %   << blockMat (Matrix)
-            %      Block diagonal matrix.
-            
-            blockMat = repmat(matrixBase, numRepetitions, numRepetitions) + ...
-                       Utils.blockDiag(matrixDiag, numRepetitions);
         end
         
         function rndSamples = drawGaussianRndSamples(mean, covSqrt, numSamples)
@@ -440,6 +386,103 @@ classdef Utils
             rndSamples = samples(:, idx);
         end
         
+        function value = getGaussianKLD(meanA, meanB, covA, covSqrtA, covSqrtB)
+            % Compute Kullback-Leibler divergence (KLD) between two Gaussian distributions.
+            %
+            % Note: the KLD is not symmetric.
+            %
+            % Parameters:
+            %   >> meanA (Column vector)
+            %      Mean of Gaussian A.
+            %
+            %   >> meanB (Column vector)
+            %      Mean of Gaussian B.
+            %
+            %   >> covA (Positive definite matrix)
+            %      Covariance matrix of Gaussian A.
+            %
+            %   >> covSqrtA (Square matrix)
+            %      Lower Cholesky decomposition of covariance matrix of Gaussian A.
+            %
+            %   >> covSqrtB (Square matrix)
+            %      Lower Cholesky decomposition of covariance matrix of Gaussian B.
+            %
+            % Returns:
+            %   << value (Scalar)
+            %      Computed Kullback-Leibler divergence.
+            
+            if isequal(meanA, meanB) && isequal(covSqrtA, covSqrtB)
+                % Handle trivial case of equal Gaussians
+                value = 0;
+            else
+                dim         = size(meanA, 1);
+                invCovSqrtB = covSqrtB \ eye(dim);
+                invCovB     = invCovSqrtB' * invCovSqrtB;
+                
+                tracePart       = trace(invCovB * covA);
+                mahalanobisPart = sum((invCovSqrtB * (meanA - meanB)).^2);
+                logDetPart      = sum(log(diag(covSqrtB))) - sum(log(diag(covSqrtA)));
+                
+                value = logDetPart + 0.5 * (tracePart + mahalanobisPart - dim);
+            end
+        end
+        
+        function value = getGaussianL2Distance(meanA, meanB, covA, covB, covSqrtA, covSqrtB)
+            % Compute L2 distance between two Gaussian distributions.
+            %
+            % Parameters:
+            %   >> meanA (Column vector)
+            %      Mean of Gaussian A.
+            %
+            %   >> meanB (Column vector)
+            %      Mean of Gaussian B.
+            %
+            %   >> covA (Positive definite matrix)
+            %      Covariance matrix of Gaussian A.
+            %
+            %   >> covB (Positive definite matrix)
+            %      Covariance matrix of Gaussian B.
+            %
+            %   >> covSqrtA (Square matrix)
+            %      Lower Cholesky decomposition of covariance matrix of Gaussian A.
+            %
+            %   >> covSqrtB (Square matrix)
+            %      Lower Cholesky decomposition of covariance matrix of Gaussian B.
+            %
+            % Returns:
+            %   << value (Scalar)
+            %      Computed L2 distance.
+            
+            if isequal(meanA, meanB) && isequal(covA, covB)
+                % Handle trivial case of equal Gaussians
+                value = 0;
+            else
+                dim              = size(meanA, 1);
+                factor           = (4 * pi)^(0.5 * dim);
+                sqrtDetCovA      = prod(diag(covSqrtA));
+                sqrtDetCovB      = prod(diag(covSqrtB));
+                covSumSqrt       = chol(covA + covB, 'Lower');
+                invCovSumSqrt    = covSumSqrt \ eye(dim);
+                sqrtDetInvCovSum = prod(diag(invCovSumSqrt));
+                
+                normPart         = 1 / (factor * sqrtDetCovA) + 1 / (factor * sqrtDetCovB);
+                mahalanobisPart  = sum((invCovSumSqrt * (meanA - meanB)).^2);
+                innerProductPart = (sqrtDetInvCovSum / (2 * pi)^(0.5 * dim)) * exp(-0.5 * mahalanobisPart);
+                
+                diff = normPart - 2 * innerProductPart;
+                
+                if (diff < 0)
+                    % Due to numercial issues, we cannot compute a valid,
+                    % i.e., non-negative, distance. Hence, we simply set
+                    % the distance to zero, which implies that we assume
+                    % both Gaussians to be identical.
+                    value = 0;
+                else
+                    value = sqrt(diff);
+                end
+            end
+        end
+        
         function rndMat = rndOrthogonalMatrix(dim)
             % Creates a random orthogonal matrix of the specified dimension.
             %
@@ -458,101 +501,6 @@ classdef Utils
             D = diag(sign(diag(R)));
             
             rndMat = Q * D;
-        end
-        
-        function [stateSamples, ...
-                  weights, ...
-                  numSamples] = getStateSamples(sampling, stateMean, stateCovSqrt)
-            % Get a set of samples approximating a Gaussian distributed system state.
-            %
-            % The number of samples, their positions, and their weights are determined (and
-            % controlled) by the respective Gaussian sampling technique.
-            %
-            % Parameters:
-            %   >> sampling (Subclass of GaussianSampling)
-            %      Gaussian sampling technique that controls the sample generation.
-            %
-            %   >> stateMean (Column vector)
-            %      State mean.
-            %
-            %   >> stateCovSqrt (Square matrix)
-            %      Square root of the state covariance, e.g., the lower matrix of a Cholesky decomposition.
-            %
-            % Returns:
-            %   << stateSamples (Matrix)
-            %      Column-wise arranged sample positions approximating the Gaussian system state.
-            %
-            %   << weights (Row vector)
-            %      Column-wise arranged corresponding sample weights.
-            %
-            %   << numSamples (Positive scalar)
-            %      Number of samples approximating the Gaussian system state.
-            
-            dimState = size(stateMean, 1);
-            
-            % Get standard normal approximation
-            [stdNormalSamples, weights, numSamples] = sampling.getStdNormalSamples(dimState);
-            
-            % Generate state samples
-            stateSamples = stateCovSqrt * stdNormalSamples;
-            stateSamples = bsxfun(@plus, stateSamples, stateMean);
-        end
-        
-        function [stateSamples, ...
-                  noiseSamples, ...
-                  weights, ...
-                  numSamples] = getStateNoiseSamples(sampling, stateMean, stateCovSqrt, ...
-                                                     noiseMean, noiseCovSqrt)
-            % Get a set of samples approximating a jointly Gaussian distributed system state and (system/measurement) noise.
-            %
-            % It is assumed that state and noise are mutually independent.
-            %
-            % The number of samples, their positions, and their weights are determined (and
-            % controlled) by the respective Gaussian sampling technique.
-            %
-            % Parameters:
-            %   >> sampling (Subclass of GaussianSampling)
-            %      Gaussian sampling technique that controls the sample generation.
-            %
-            %   >> stateMean (Column vector)
-            %      State mean.
-            %
-            %   >> stateCovSqrt (Square matrix)
-            %      Square root of the state covariance, e.g., the lower matrix of a Cholesky decomposition.
-            %
-            %   >> noiseMean (Column vector)
-            %      Noise mean.
-            %
-            %   >> noiseCovSqrt (Square matrix)
-            %      Square root of the noise covariance, e.g., the lower matrix of a Cholesky decomposition.
-            %
-            % Returns:
-            %   << stateSamples (Matrix)
-            %      Column-wise arranged sample positions approximating the system state.
-            %
-            %   << noiseSamples (Matrix)
-            %      Column-wise arranged samples approximating the noise.
-            %
-            %   << weights (Row vector)
-            %      Column-wise arranged corresponding sample weights.
-            %
-            %   << numSamples (Positive scalar)
-            %      Number of samples approximating the Gaussian joint distribution.
-            
-            dimState    = size(stateMean, 1);
-            dimNoise    = size(noiseMean, 1);
-            dimAugState = dimState + dimNoise;
-            
-            % Get standard normal approximation
-            [stdNormalSamples, weights, numSamples] = sampling.getStdNormalSamples(dimAugState);
-            
-            % Generate state samples
-            stateSamples = stateCovSqrt * stdNormalSamples(1:dimState, :);
-            stateSamples = bsxfun(@plus, stateSamples, stateMean);
-            
-            % Generate noise samples
-            noiseSamples = noiseCovSqrt * stdNormalSamples(dimState+1:end, :);
-            noiseSamples = bsxfun(@plus, noiseSamples, noiseMean);
         end
         
         function [stateJacobian, stateHessians] = diffQuotientState(func, nominalState, step)

@@ -51,7 +51,7 @@ classdef HypersphericalUKF < AbstractHypersphericalFilter
             
             this.ukf.setState(Gaussian(this.state.mu, this.state.C));
             this.ukf.predict(model);
-            [this.state.mu, this.state.C] = this.ukf.getPointEstimate();
+            [this.state.mu, this.state.C] = this.ukf.getStateMeanAndCov();
             
             % normalize mean
             if norm(this.state.mu)~=0
@@ -74,7 +74,11 @@ classdef HypersphericalUKF < AbstractHypersphericalFilter
             noiseWeights = noiseWeights/sum(noiseWeights); %normalize weights
             
             % get UKF samples
-            [stateSamples, stateWeights, ~] = Utils.getStateSamples(GaussianSamplingUKF, this.state.mu, chol(this.state.C)');
+            ukfSampling = GaussianSamplingUKF();
+            [stateSamples, stateWeights, numGaussianSamples] = ukfSampling.getSamples(Gaussian(this.state.mu, this.state.C));
+            if isscalar(stateWeights)
+                stateWeights = repmat(stateWeights, 1, numGaussianSamples);
+            end
             k = 1;
             for i=1:size(stateSamples,2)
                 for j=1:size(noiseSamples,2)
@@ -122,7 +126,7 @@ classdef HypersphericalUKF < AbstractHypersphericalFilter
             
             this.ukf.setState(Gaussian(this.state.mu, this.state.C));
             this.ukf.update(model, z);
-            [this.state.mu, this.state.C] = this.ukf.getPointEstimate();
+            [this.state.mu, this.state.C] = this.ukf.getStateMeanAndCov();
             
             if norm(this.state.mu)~=0 
                 this.state.mu = this.state.mu/norm(this.state.mu);

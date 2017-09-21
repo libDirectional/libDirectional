@@ -1,11 +1,10 @@
 
-classdef AdditiveNoiseMeasurementModel < Likelihood
-    % Abstract base class for measurement models corrupted by additive noise.
+classdef MeasurementModel < handle
+    % Abstract base class for measurement models corrupted by arbitrary noise.
     %
-    % AdditiveNoiseMeasurementModel Methods:
+    % MeasurementModel Methods:
     %   setNoise            - Set the measurement noise.
     %   measurementEquation - The measurement equation.
-    %   logLikelihood       - Evaluate the logarithmic likelihood function.
     %   derivative          - Compute the first-order and second-order derivatives of the implemented measurement equation.
     %   simulate            - Simulate a measurement for the given system state.
     
@@ -39,56 +38,13 @@ classdef AdditiveNoiseMeasurementModel < Likelihood
             if Checks.isClass(noise, 'Distribution')
                 obj.noise = noise;
             else
-                error('AdditiveNoiseMeasurementModel:InvalidNoise', ...
+                error('MeasurementModel:InvalidNoise', ...
                       'noise must be a subclass of Distribution.');
             end
         end
         
-        function logValues = logLikelihood(obj, stateSamples, measurement)
-            % Evaluate the logarithmic likelihood function.
-            %
-            % Parameters:
-            %   >> stateSamples (Matrix)
-            %      L column-wise arranged state samples.
-            %
-            %   >> measurement (Column vector)
-            %      The measurement vector.
-            %
-            % Returns:
-            %   << logValues (Row vector)
-            %      L column-wise arranged logarithmic likelihood function values.
-            
-            if ~Checks.isColVec(measurement)
-                obj.error('InvalidMeasurement', ...
-                          'measurement must be a column vector.');
-            end
-            
-            dimNoise   = obj.noise.getDim();
-            dimMeas    = size(measurement, 1);
-            numSamples = size(stateSamples, 2);
-            
-            if dimMeas ~= dimNoise
-                error('AdditiveNoiseMeasurementModel:InvalidMeasurementNoise', ...
-                      'Measurement and additive measurement noise with different dimensions.');
-            end
-            
-            % Evaluate deterministic measurement equation
-            deterministicMeas = obj.measurementEquation(stateSamples);
-            
-            % Check computed deterministic measurements
-            if ~Checks.isMat(deterministicMeas, dimMeas, numSamples)
-                error('AdditiveNoiseMeasurementModel:InvalidMeasurements', ...
-                      ['Computed deterministic measurements have to be ' ...
-                       'stored as a matrix of dimension %dx%d.'], ...
-                       dimMeas, numSamples);
-            end
-            
-            values = bsxfun(@minus, measurement, deterministicMeas);
-            
-            logValues = obj.noise.logPdf(values);
-        end
-        
-        function [stateJacobian, stateHessians] = derivative(obj, nominalState)
+        function [stateJacobian, noiseJacobian, ...
+                  stateHessians, noiseHessians] = derivative(obj, nominalState, nominalNoise)
             % Compute the first-order and second-order derivatives of the implemented measurement equation.
             %
             % By default, the derivatives are computed using difference quotients.
@@ -99,18 +55,29 @@ classdef AdditiveNoiseMeasurementModel < Likelihood
             %   >> nominalState (Column vector)
             %      The nominal system state vector.
             %
+            %   >> nominalNoise (Column vector)
+            %      The nominal system noise vector.
+            %
             % Returns:
             %   << stateJacobian (Square matrix)
             %      The Jacobian of the state variables.
             %
+            %   << noiseJacobian (Matrix)
+            %      The Jacobian of the noise variables.
+            %
             %   << stateHessians (3D matrix)
             %      The Hessians of the state variables.
+            %
+            %   << noiseHessians (3D matrix)
+            %      The Hessians of the noise variables.
             
-            if nargout == 1
-                stateJacobian = Utils.diffQuotientState(@obj.measurementEquation, nominalState);
+            if nargout <= 2
+                [stateJacobian, noiseJacobian] = Utils.diffQuotientStateAndNoise(@obj.measurementEquation, ...
+                                                                                 nominalState, nominalNoise);
             else
-                [stateJacobian, ...
-                 stateHessians] = Utils.diffQuotientState(@obj.measurementEquation, nominalState);
+                [stateJacobian, noiseJacobian, ...
+                 stateHessians, noiseHessians] = Utils.diffQuotientStateAndNoise(@obj.measurementEquation, ...
+                                                                                 nominalState, nominalNoise);
             end
         end
         
@@ -126,13 +93,13 @@ classdef AdditiveNoiseMeasurementModel < Likelihood
             %      The simulated measurement.
             
             if ~Checks.isColVec(state)
-                error('AdditiveNoiseMeasurementModel:InvalidSystemState', ...
+                error('MeasurementModel:InvalidSystemState', ...
                       'state must be a column vector.');
             end
             
             noiseSamples = obj.noise.drawRndSamples(1);
             
-            measurement = obj.measurementEquation(state) + noiseSamples;
+            measurement = obj.measurementEquation(state, noiseSamples);
         end
     end
     
@@ -143,10 +110,13 @@ classdef AdditiveNoiseMeasurementModel < Likelihood
         %   >> stateSamples (Matrix)
         %      L column-wise arranged state samples.
         %
+        %   >> noiseSamples (Matrix)
+        %      L column-wise arranged measurement noise samples.
+        %
         % Returns:
         %   << measurements (Matrix)
         %      L column-wise arranged measurement samples.
-        measurements = measurementEquation(obj, stateSamples);
+        measurements = measurementEquation(obj, stateSamples, noiseSamples);
     end
     
     properties (SetAccess = 'private', GetAccess = 'public')

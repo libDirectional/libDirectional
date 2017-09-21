@@ -1,25 +1,21 @@
 
 classdef Gaussian < Distribution
     % This class represents a multivariate Gaussian distribution.
-    % 
+    %
     % Gaussian Methods:
-    %   Gaussian             - Class constructor.
-    %   getDimension         - Get the dimension of the distribution.
-    %   getMeanAndCovariance - Get mean and covariance of the distribution.
-    %   drawRndSamples       - Draw random samples from the distribution.
-    %   logPdf               - Evaluate the logarithmic probability density function (pdf) of the distribution.
+    %   Gaussian       - Class constructor.
+    %   copy           - Copy a distribution instance.
+    %   set            - Set the parameters of the Gaussian distribution.
+    %   getDim         - Get the dimension of the distribution.
+    %   getMeanAndCov  - Get mean and covariance matrix of the distribution.
+    %   drawRndSamples - Draw random samples from the distribution.
+    %   logPdf         - Evaluate the logarithmic probability density function (PDF) of the distribution.
     
     % >> This function/class is part of the Nonlinear Estimation Toolbox
     %
     %    For more information, see https://bitbucket.org/nonlinearestimation/toolbox
     %
-    %    Copyright (C) 2015  Jannik Steinbring <jannik.steinbring@kit.edu>
-    %
-    %                        Institute for Anthropomatics and Robotics
-    %                        Chair for Intelligent Sensor-Actuator-Systems (ISAS)
-    %                        Karlsruhe Institute of Technology (KIT), Germany
-    %
-    %                        http://isas.uka.de
+    %    Copyright (C) 2015-2017  Jannik Steinbring <nonlinearestimation@gmail.com>
     %
     %    This program is free software: you can redistribute it and/or modify
     %    it under the terms of the GNU General Public License as published by
@@ -34,43 +30,116 @@ classdef Gaussian < Distribution
     %    You should have received a copy of the GNU General Public License
     %    along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
-    methods
+    methods (Sealed)
         function obj = Gaussian(mean, covariance)
             % Class constructor.
+            %
+            % The default constructor results an uninitialized Gaussian
+            % distribution of zero dimension.
             %
             % Parameters:
             %   >> mean (Column vector)
             %      Mean vector of the distribution.
-            %      Default: 0.
             %
             %   >> covariance (Positive definite matrix, vector, or 3D matrix of positive definite matrices)
             %      Covariance matrix of the distribution. If a vector is
             %      passed, its values are interpreted as the variances of
             %      a diagonal covariance matrix. If a 3D matrix is passed,
             %      a block diagonal covariance matrix will be constructed.
-            %      Default: 1.
             
             if nargin == 2
                 obj.set(mean, covariance);
             else
-                obj.set(0, 1);
+                % Default distribution information
+                obj.dim         = 0;
+                obj.mean        = [];
+                obj.cov         = [];
+                obj.covSqrt     = [];
+                obj.invCovSqrt  = [];
+                obj.logPdfConst = [];
             end
-            
-            obj.logPdfConst = [];
-            obj.invCovSqrt  = [];
         end
         
-        function dimension = getDimension(obj)
-            dimension = obj.dimension;
+        function set(obj, mean, covariance)
+            % Set the parameters of the Gaussian distribution.
+            %
+            % Parameters:
+            %   >> mean (Column vector)
+            %      Mean vector of the distribution.
+            %
+            %   >> covariance (Positive definite matrix, vector, or 3D matrix of positive definite matrices)
+            %      Covariance matrix of the distribution. If a vector is
+            %      passed, its values are interpreted as the variances of
+            %      a diagonal covariance matrix. If a 3D matrix is passed,
+            %      a block diagonal covariance matrix will be constructed.
+            
+            try
+                if ~Checks.isColVec(mean)
+                    error('Gaussian:InvalidMean', ...
+                          'mean must be a column vector.');
+                end
+                
+                obj.dim         = size(mean, 1);
+                obj.mean        = mean;
+                obj.logPdfConst = [];
+                obj.invCovSqrt  = [];
+                
+                if Checks.isPosVec(covariance, obj.dim);
+                    obj.cov     = diag(covariance);
+                    obj.covSqrt = diag(sqrt(covariance));
+                else
+                    [isCov, obj.covSqrt] = Checks.isCov(covariance, obj.dim);
+                    
+                    if isCov
+                        obj.cov = covariance;
+                    else
+                        [isCov3D, covSqrts] = Checks.isCov3D(covariance);
+                        
+                        if isCov3D
+                            [dimCov, ~, numCovs] = size(covariance);
+                            
+                            if (dimCov * numCovs) ~= obj.dim
+                                error('Gaussian:InvalidCovariance', ...
+                                      'Constructed block covariance matrix has to be of dimension %dx%d.', ...
+                                      obj.dim, obj.dim);
+                            end
+                            
+                            covs     = mat2cell(covariance, dimCov, dimCov, ones(1, numCovs));
+                            covSqrts = mat2cell(covSqrts, dimCov, dimCov, ones(1, numCovs));
+                            
+                            obj.cov     = blkdiag(covs{:});
+                            obj.covSqrt = blkdiag(covSqrts{:});
+                        else
+                            error('Gaussian:InvalidCovariance', ...
+                                  ['covariance must be\n' ...
+                                   '  * a vector of dimension %d containing positive values only, or\n' ...
+                                   '  * a positive definite matrix of dimension %dx%d, or\n' ...
+                                   '  * a 3D matrix of positive definite matrices.'], ...
+                                  obj.dim, obj.dim, obj.dim);
+                        end
+                    end
+                end
+            catch ex
+                % Reset all distribution information
+                obj.dim         = 0;
+                obj.mean        = [];
+                obj.cov         = [];
+                obj.covSqrt     = [];
+                obj.invCovSqrt  = [];
+                obj.logPdfConst = [];
+                
+                ex.rethrow();
+            end
         end
         
-        function [mean, covariance, covSqrt] = getMeanAndCovariance(obj)
-            mean       = obj.mean;
-            covariance = obj.covariance;
-            
-            if nargout >= 3
-                covSqrt = obj.covSqrt;
-            end
+        function dim = getDim(obj)
+            dim = obj.dim;
+        end
+        
+        function [mean, cov, covSqrt] = getMeanAndCov(obj)
+            mean    = obj.mean;
+            cov     = obj.cov;
+            covSqrt = obj.covSqrt;
         end
         
         function rndSamples = drawRndSamples(obj, numSamples)
@@ -87,9 +156,9 @@ classdef Gaussian < Distribution
             obj.checkValues(values);
             
             if isempty(obj.logPdfConst)
-                obj.invCovSqrt = obj.covSqrt \ eye(obj.dimension);
+                obj.invCovSqrt = obj.covSqrt \ eye(obj.dim);
                 
-                logNormConst = obj.dimension * 0.5 * log(2 * pi);
+                logNormConst = obj.dim * 0.5 * log(2 * pi);
                 
                 logSqrtDetCov = sum(log(diag(obj.covSqrt)));
                 
@@ -104,63 +173,23 @@ classdef Gaussian < Distribution
         end
     end
     
-    methods (Access = 'private')
-        function set(obj, mean, covariance)
-            if ~Checks.isColVec(mean)
-                error('Gaussian:InvalidMean', ...
-                      'mean must be a column vector.');
-            end
-            
-            dim = size(mean, 1);
-            
-            obj.dimension = dim;
-            obj.mean      = mean;
-            
-            if Checks.isPosVec(covariance, dim);
-                obj.covariance = diag(covariance);
-                obj.covSqrt    = diag(sqrt(covariance));
-            else
-                [isCov, obj.covSqrt] = Checks.isCov(covariance, dim);
-                
-                if isCov
-                    obj.covariance = covariance;
-                else
-                    [isCov3D, covSqrts] = Checks.isCov3D(covariance);
-                    
-                    if isCov3D
-                        [dimCov, ~, numCovs] = size(covariance);
-                        
-                        if dim ~= (dimCov * numCovs)
-                            error('Gaussian:InvalidCovariance', ...
-                                  'Constructed block covariance matrix has to be of dimension %dx%d.', ...
-                                  dim, dim);
-                        end
-                        
-                        covs     = mat2cell(covariance, dimCov, dimCov, ones(1, numCovs));
-                        covSqrts = mat2cell(covSqrts, dimCov, dimCov, ones(1, numCovs));
-                        
-                        obj.covariance = blkdiag(covs{:});
-                        obj.covSqrt    = blkdiag(covSqrts{:});
-                    else
-                        error('Gaussian:InvalidCovariance', ...
-                              ['covariance must be\n' ...
-                               '  * a vector of dimension %d containing positive values only, or\n' ...
-                               '  * a positive definite matrix of dimension %dx%d, or\n' ...
-                               '  * a 3D matrix of positive definite matrices.'], ...
-                              dim, dim, dim);
-                    end
-                end
-            end
-        end
-    end
-    
     properties (Access = 'private')
-        dimension;
+        % Distribution's dimension.
+        dim;
+        
+        % Mean vector.
         mean;
-        covariance;
+        
+        % Covariance matrix.
+        cov;
+        
+        % Lower Cholesky decomposition of the covariance matrix.
         covSqrt;
         
-        logPdfConst;
+        % Inverse of the lower Cholesky decomposition of the covariance matrix.
         invCovSqrt;
+        
+        % Logarithm of the Gaussian PDF's normalization constant.
+        logPdfConst;
     end
 end
