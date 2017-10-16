@@ -30,4 +30,10 @@ mex logmhg.c
 mex mhg.c
 mex mhgi.c
 cd ..
+
+cd TessellateS3
+compileTessellate
+cd ..
+
+%cd back
 cd ..
