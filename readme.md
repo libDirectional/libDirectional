@@ -130,6 +130,8 @@ libDrectional relies on the following external libraries, which are also include
   * [Faddeva](http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package) (MIT)
   * [Nonlinear Estimation Toolbox](https://bitbucket.org/nonlinearestimation/toolbox) (GPLv3), only the necessary subset is included in externals folder
   * [TesselateS3](https://github.com/gerhardkurz/TessellateS3) (GPLv3)
+  * Modified versions of [Slepian Alpha](http://csdms.colorado.edu/wiki/Model:SLEPIAN_Alpha) and [Slepian Bravo](http://csdms.colorado.edu/wiki/Model:SLEPIAN_Bravo) (GPLv2 or later)
+  * [Wigner3j](https://de.mathworks.com/matlabcentral/fileexchange/20619-wigner3j-symbol) (BSD)
 
 Furthermore, we use the script `circVMcdf` by Shai Revzen (GPLv3). We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in the externals folder as only small parts are used.
 
