@@ -38,7 +38,7 @@ References
 	2004
 
 	Jared Glover and Leslie Pack Kaelbling
-	Tracking 3-{D} Rotations with the Quaternion {B}ingham Filter
+	Tracking 3-D Rotations with the Quaternion Bingham Filter
 	MIT-CSAIL-TR-2013-005
 	2013
 
