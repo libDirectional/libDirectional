@@ -194,7 +194,7 @@ static inline bool my_isinf(double x) { return 1/x == 0.; }
 
 // copysign was introduced in C++11 (and is also in POSIX and C99)
 #  if defined(_WIN32) || defined(__WIN32__)
-#    define copysign _copysign // of course MS had to be different
+#    //define copysign _copysign // of course MS had to be different
 #  elif defined(GNULIB_NAMESPACE) // we are using using gnulib <cmath>
 #    define copysign GNULIB_NAMESPACE::copysign
 #  elif (__cplusplus < 201103L) && !defined(HAVE_COPYSIGN) && !defined(__linux__) && !(defined(__APPLE__) && defined(__MACH__)) && !defined(_AIX)

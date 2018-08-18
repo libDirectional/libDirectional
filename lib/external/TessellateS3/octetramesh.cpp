@@ -5,11 +5,8 @@
 #include <math.h>
 #include "util.h"
 #include "octetramesh.h"
-#include <malloc.h>
 
-#ifdef __GNUC__
-    #include <alloca.h>
-#endif
+
 
 /*
  * Convert an octa-tetrahedral mesh to a tetrahedral mesh.

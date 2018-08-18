@@ -5,5 +5,5 @@ elseif ismac
     mex CFLAGS='-I/usr/include/malloc' tessellate_S3.cpp hypersphere.cpp tetramesh.cpp octetramesh.cpp util.cpp
 else
     %linux
-    mex CFLAGS='$CFLAGS -std=c99' tessellate_S3.cpp hypersphere.cpp tetramesh.cpp octetramesh.cpp util.cpp
+    mex CFLAGS='$CFLAGS' tessellate_S3.cpp hypersphere.cpp tetramesh.cpp octetramesh.cpp util.cpp
 end

@@ -5,10 +5,6 @@
 #include <math.h>
 #include "util.h"
 
-#include <malloc.h>
-#ifdef __GNUC__
-    #include <alloca.h>
-#endif
 
 const color_t colormap[256] =
   {{0, 0, 131},
