@@ -17,11 +17,20 @@ Installation
 Requirements:
 
   * Matlab 2014a or later
-  * a suitable compiler (Visual Studio 2013 Update 4 or later, Visual Studio 2015, Visual Studio 2017, gcc 4.7 or later, XCode)
+  * a suitable compiler (Visual Studio 2013 Update 4 or later, Visual Studio 2015, Visual Studio 2017, MinGW64, gcc 4.7 or later, XCode)
 
 To use libDirectional, add the entire lib-folder including subdirectories to Matlab's search path. Then, change to the lib-folder and run the `compileAll.m` script. This script should compile all mex-files used by libDirectional. 
 
 If you experience any issues, run `mex -setup` and `mex -setup C++` to ensure that you have selected the correct compiler. In case you have trouble compiling with gcc, make sure that you are using a version that is officially supported by MATLAB.
+
+The following toolboxes are recommended for libDirectional:
+
+  *image_toolbox
+  *optimization_toolbox
+  *statistics_toolbox
+  *symbolic_toolbox
+
+The statistics toolbox and the optimization toolbox are fairly widely used, but the other toolboxes are only required for certain very specific features.
 
 Example: Plotting Probability Density Functions
 -----------------------------------------------
