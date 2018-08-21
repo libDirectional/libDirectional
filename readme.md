@@ -25,10 +25,10 @@ If you experience any issues, run `mex -setup` and `mex -setup C++` to ensure th
 
 The following toolboxes are recommended for libDirectional:
 
-  *image_toolbox
-  *optimization_toolbox
-  *statistics_toolbox
-  *symbolic_toolbox
+  * image_toolbox
+  * optimization_toolbox
+  * statistics_toolbox
+  * symbolic_toolbox
 
 The statistics toolbox and the optimization toolbox are fairly widely used, but the other toolboxes are only required for certain very specific features.
 
