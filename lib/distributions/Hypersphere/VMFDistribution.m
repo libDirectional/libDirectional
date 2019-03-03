@@ -32,7 +32,11 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             VMF.kappa = kappa_;
             
             VMF.dim = size(mu_,1);
-            VMF.C = kappa_^(VMF.dim/2-1)/ ( (2*pi)^(VMF.dim/2) * besseli(VMF.dim/2-1, kappa_));
+            if VMF.dim==3
+                VMF.C = kappa_/(4*pi*sinh(kappa_));
+            else
+                VMF.C = kappa_^(VMF.dim/2-1)/ ( (2*pi)^(VMF.dim/2) * besseli(VMF.dim/2-1, kappa_));
+            end
         end
         
         function p = pdf(this, xa)
