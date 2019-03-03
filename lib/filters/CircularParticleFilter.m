@@ -147,7 +147,7 @@ classdef CircularParticleFilter < AbstractCircularFilter & HypertoroidalParticle
             % Proceedings of the 2019 IEEE International Conference on
             % Multisensor Fusion and Integration for Intelligent Systems (MFI 2019),
             % Taipei, Republic of China, May, 2019.
-            likelihoodVal=sum(likelihood.pdf(this.getEstimate.d).*this.getEstimate.w);
+            likelihoodVal = sum(likelihood.pdf(this.getEstimate.d).*this.getEstimate.w);
         end
     end
     
