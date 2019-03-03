@@ -140,6 +140,10 @@ classdef CircularParticleFilter < AbstractCircularFilter & HypertoroidalParticle
             end
             this.wd = WDDistribution(this.wd.sample(length(this.wd.d))); %use SIR.
         end
+        
+        function likelihoodVal=associationLikelihood(this,likelihood)
+            likelihoodVal=sum(likelihood.pdf(this.getEstimate.d).*this.getEstimate.w);
+        end
     end
     
 end

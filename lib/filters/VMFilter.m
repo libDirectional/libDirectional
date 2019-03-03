@@ -359,6 +359,11 @@ classdef VMFilter < AbstractCircularFilter
             %       current estimate
             vm = this.vm;
         end
+        
+        function likelihoodVal=associationLikelihood(this,likelihood)
+            vmEst=this.getEstimate.multiply(likelihood);
+            likelihoodVal=besseli(0,vmEst.kappa)/(2*pi*besseli(0,this.getEstimate.kappa)*besseli(0,likelihood.kappa));
+        end
     end
     
 end

@@ -97,5 +97,14 @@ classdef CircularParticleFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual(wd3a.d, wd3c.d);
             testCase.verifyEqual(wd3a.w, wd3c.w);
         end
+        function testAssociationLikelihood(testCase)
+            wd=WDDistribution([1,2,3],[1/3,1/3,1/3]);
+            pf=CircularParticleFilter(3);
+            pf.setState(wd);
+
+            testCase.verifyEqual(pf.associationLikelihood(CircularUniformDistribution),...
+                1/(2*pi), 'AbsTol', 1E-10);
+            testCase.verifyGreaterThan(pf.associationLikelihood(VMDistribution(2,1)),1/(2*pi));
+        end
     end
 end
