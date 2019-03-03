@@ -280,6 +280,11 @@ classdef FourierFilter < AbstractCircularFilter
         end
         
         function likelihoodVal = associationLikelihood(this, likelihood)
+            % see Florian Pfaff, Kailai Li, and Uwe D. Hanebeck,
+            % Association Likelihoods for Directional Estimation
+            % Proceedings of the 2019 IEEE International Conference on
+            % Multisensor Fusion and Integration for Intelligent Systems (MFI 2019),
+            % Taipei, Republic of China, May, 2019.
             assert(numel(this.getEstimate.a) == numel(likelihood.a));
             assert(numel(this.getEstimate.transformation) == numel(likelihood.transformation));
             

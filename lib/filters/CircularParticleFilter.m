@@ -142,6 +142,11 @@ classdef CircularParticleFilter < AbstractCircularFilter & HypertoroidalParticle
         end
         
         function likelihoodVal=associationLikelihood(this,likelihood)
+            % see Florian Pfaff, Kailai Li, and Uwe D. Hanebeck,
+            % Association Likelihoods for Directional Estimation
+            % Proceedings of the 2019 IEEE International Conference on
+            % Multisensor Fusion and Integration for Intelligent Systems (MFI 2019),
+            % Taipei, Republic of China, May, 2019.
             likelihoodVal=sum(likelihood.pdf(this.getEstimate.d).*this.getEstimate.w);
         end
     end
