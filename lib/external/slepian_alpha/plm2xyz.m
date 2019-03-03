@@ -183,7 +183,7 @@ if ~ischar(lmcosi)
 
           % Get Legendre function values at linearly spaced intervals
           fprintf('Loading precalculated %s\n',fnpl)
-          load(fnpl)
+          load(fnpl,'Plm')
           if ldown==0 % Only store for in memory for ndown==0
             legendreCell{lup+1,nlat+1}=Plm;
             disp('Keeping legendre polynomials in memory, call ''clear plm2xyz'' to free memory.');
