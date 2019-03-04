@@ -359,6 +359,18 @@ classdef VMFilter < AbstractCircularFilter
             %       current estimate
             vm = this.vm;
         end
+        
+        function likelihoodVal=associationLikelihood(this,likelihood)
+            % see Florian Pfaff, Kailai Li, and Uwe D. Hanebeck,
+            % Association Likelihoods for Directional Estimation
+            % Proceedings of the 2019 IEEE International Conference on
+            % Multisensor Fusion and Integration for Intelligent Systems (MFI 2019),
+            % Taipei, Republic of China, May, 2019.
+            vmEst = this.getEstimate.multiply(likelihood);
+            likelihoodVal = besseli(0, vmEst.kappa) ...
+                / (2 * pi * besseli(0, this.getEstimate.kappa)...
+                * besseli(0, likelihood.kappa));
+        end
     end
     
 end

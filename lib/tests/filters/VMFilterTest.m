@@ -158,5 +158,13 @@ classdef VMFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual(vm.mu, vmNonlinCorrectedNoiseIdentity.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmNonlinCorrectedNoiseIdentity.kappa, vmIdentity.kappa, 'RelTol', 1E-10);            
         end
+        
+        function testAssociationLikelihood(testCase)
+            vm1=VMDistribution(3,3);
+            vm2=VMDistribution(1,10);
+            vmfilter=VMFilter;
+            vmfilter.setState(vm1);
+            testCase.verifyEqual(vmfilter.associationLikelihood(vm2), vmfilter.associationLikelihoodNumerical(vm2), 'AbsTol', 1E-10);
+        end
     end
 end
