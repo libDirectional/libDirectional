@@ -16,7 +16,7 @@ function generateSymbolic(D)
         mFileExport(grad_log_c, X, name);
     end
         
-    name = 'cBinghamGradLogNorm';
+    name = 'cBinghamGradNormDividedByNorm';
     filename = mFilePath(D, name);
     if exist(filename, 'file') == 0
         grad_c_divided_by_c = cBinghamGradNormDividedByNormSymbolic(c, X);

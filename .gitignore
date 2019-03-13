@@ -8,10 +8,6 @@ output
 
 .DS_Store
 
-cBinghamNorm?.m
-cBinghamGradLogNorm?.m
-cBinghamGradNormDividedByNorm?.m
-
 Thumbs.db*
 *.asv
 /testResults.tap
