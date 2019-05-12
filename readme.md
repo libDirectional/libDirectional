@@ -154,12 +154,18 @@ Citation
 
 If you use libDirectional in your research, please cite the library using as follows.
 
-	@Misc{kurz2015libdirectional,
-	  Title                    = {libDirectional},
-	  Author                   = {Gerhard Kurz and Igor Gilitschenski and Florian Pfaff and Lukas Drude},
-	  Year                     = {2015},
-	  Url                      = {https://github.com/libDirectional}
-	}
+	@Article{libdirectional,
+  author = {Gerhard Kurz and Igor Gilitschenski and Florian Pfaff and
+            Lukas Drude and Uwe D. Hanebeck and Reinhold Haeb-Umbach
+            and Roland Y. Siegwart},
+  title = {Directional Statistics and Filtering Using {libDirectional}},
+  year = {2019},
+  journal = {Journal of Statistical Software},
+  volume = {89},
+  number = {4},
+  pages = {1--31},
+  doi = {10.18637/jss.v089.i04},
+  } 
 
 
 Contact
@@ -167,9 +173,9 @@ Contact
 
 Lead author: Gerhard Kurz
 
-Mail: gerhard.kurz (at) kit.edu
+Mail: kurz.gerhard (at) gmail.com
 
-Web: [http://isas.uka.de/User:Kurz](http://isas.uka.de/User:Kurz)
+Web: [https://www.gerhardkurz.de](https://www.gerhardkurz.de)
 
 Contributors:
 
