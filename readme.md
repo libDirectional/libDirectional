@@ -154,18 +154,18 @@ Citation
 
 If you use libDirectional in your research, please cite the library using as follows.
 
-	@Article{libdirectional,
-  author = {Gerhard Kurz and Igor Gilitschenski and Florian Pfaff and
-            Lukas Drude and Uwe D. Hanebeck and Reinhold Haeb-Umbach
-            and Roland Y. Siegwart},
-  title = {Directional Statistics and Filtering Using {libDirectional}},
-  year = {2019},
-  journal = {Journal of Statistical Software},
-  volume = {89},
-  number = {4},
-  pages = {1--31},
-  doi = {10.18637/jss.v089.i04},
-  } 
+    @Article{libdirectional,
+    author = {Gerhard Kurz and Igor Gilitschenski and Florian Pfaff and
+              Lukas Drude and Uwe D. Hanebeck and Reinhold Haeb-Umbach
+              and Roland Y. Siegwart},
+    title = {Directional Statistics and Filtering Using {libDirectional}},
+    year = {2019},
+    journal = {Journal of Statistical Software},
+    volume = {89},
+    number = {4},
+    pages = {1--31},
+    doi = {10.18637/jss.v089.i04},
+    }
 
 
 Contact
