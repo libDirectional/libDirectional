@@ -705,6 +705,18 @@ classdef FourierDistribution < AbstractCircularDistribution
                         warning('Conversion:NoFormula', 'No explicit formula available, using FFT to get transformation');
                         f = FourierDistribution.fromFunction(@distribution.pdf, noOfCoefficients, desiredTransformation);
                     end
+                case 'FIGDistribution'
+                    % This also works if not right number as it will be
+                    % padded/truncated automatically.
+                    switch distribution.transformation
+                        case 'identity'
+                            vals = distribution.gridValues;
+                        case 'sqrt'
+                            vals = distribution.gridValues^.2;
+                        otherwise
+                            error('Transformation currently unsupported');
+                    end
+                    f = FourierDistribution.fromFunctionValues(vals', noOfCoefficients, desiredTransformation);
                 otherwise
                     warning('Conversion:NoFormula', 'No explicit formula available, using FFT to get transformation');
                     f = FourierDistribution.fromFunction(@distribution.pdf, noOfCoefficients, desiredTransformation);
