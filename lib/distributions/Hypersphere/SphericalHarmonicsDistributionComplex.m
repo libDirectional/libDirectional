@@ -297,6 +297,13 @@ classdef SphericalHarmonicsDistributionComplex < AbstractSphericalHarmonicsDistr
             assert(isa(dist, 'AbstractHypersphericalDistribution') && dist.dim == 3, 'dist must be a distribution on the sphere.');
             shd = SphericalHarmonicsDistributionComplex.fromFunctionViaIntegralCart(@(x)dist.pdf(x), degree, transformation);
         end
+        function shd = fromDistribution(dist, degree, transformation)
+            % For compatibility with other interface
+            if nargin == 2 % Default to identity
+                transformation = 'identity';
+            end
+            shd = SphericalHarmonicsDistributionComplex.fromDistributionFast(dist, degree, transformation);
+        end
         function shd = fromDistributionFast(dist, degree, transformation)
             % Just a convenience function to call from function
             if nargin == 2 % Default to identity
