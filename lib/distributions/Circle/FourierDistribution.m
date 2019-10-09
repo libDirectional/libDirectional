@@ -706,8 +706,9 @@ classdef FourierDistribution < AbstractCircularDistribution
                         f = FourierDistribution.fromFunction(@distribution.pdf, noOfCoefficients, desiredTransformation);
                     end
                 case 'FIGDistribution'
-                    % This also works if not right number as it will be
-                    % padded/truncated automatically.
+                    % This also works if not the number of coefficients is
+                    % not identical to the number of grid points because
+                    % padding and truncation is done automatically.
                     switch distribution.transformation
                         case 'identity'
                             vals = distribution.gridValues;

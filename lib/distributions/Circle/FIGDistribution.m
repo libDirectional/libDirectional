@@ -116,7 +116,12 @@ classdef FIGDistribution < AbstractCircularDistribution
         end
         
         function f = multiply(this, f2)
-            % Multiplies two transformed fourier pdfs (returns transformed result)
+            % Implements an operation approximating the multiplication and
+            % subsequent normalization of the densities represented by the 
+            % values on the grid. The interpolation of the result is NOT
+            % going to be identical to actual normalized multiplication of
+            % the interpolation of the original two vectors of values on
+            % the grid.
             if ~strcmp(this.transformation, f2.transformation)
                 error('Multiply:differentTransformations', 'Transformations do not match, transform before using multiply');
             end
@@ -131,7 +136,11 @@ classdef FIGDistribution < AbstractCircularDistribution
         end
         
         function f = convolve(this, f2)
-            % Multiplies two transformed fourier pdfs (returns transformed result)
+            % Implements an operation approximating the convolution of the
+            % densities represented by the values on the grid. The
+            % interpolation of the result is NOT going to be identical to
+            % the actual convolution of the interpolation of the original 
+            % two vectors of values on the grid.
             if ~strcmp(this.transformation, f2.transformation)
                 error('Convolve:differentTransformations', 'Transformations do not match, transform before using multiply');
             end
