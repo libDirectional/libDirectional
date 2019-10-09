@@ -7,8 +7,8 @@ classdef ToroidalUniformDistribution < AbstractToroidalDistribution & Hypertoroi
             this@HypertoroidalUniformDistribution(2);
         end
         
-        function cu = shift(~,~)
-            cu = ToroidalUniformDistribution;
+        function tu = shift(~,~)
+            tu = ToroidalUniformDistribution;
         end
     end
 end
