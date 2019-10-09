@@ -266,7 +266,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
             
         end
         
-        function showUpadateViaIFFTCouldBeIdentical(testCase)
+        function showUpdateViaIFFTCouldBeIdentical(testCase)
             % Show that if we padded before the IFFT, we could obtain the
             % same multiplication result.
             noCoeffs = 3;
