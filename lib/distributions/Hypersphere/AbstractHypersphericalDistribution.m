@@ -11,7 +11,7 @@ classdef AbstractHypersphericalDistribution
     end
     
     methods
-        function plot(this, faces, gridFaces)
+        function h = plot(this, faces, gridFaces)
             % Plots the pdf of a hyperspherical distribution
             %
             % Parameters:
@@ -25,7 +25,7 @@ classdef AbstractHypersphericalDistribution
                     phi = linspace(0,2*pi,320);
                     x = [cos(phi); sin(phi)];
                     p = this.pdf(x);
-                    plot(phi, p);
+                    h = plot(phi, p);
                 case 3
                     % plot sphere, pdf is represented by color on sphere
                     
@@ -51,11 +51,13 @@ classdef AbstractHypersphericalDistribution
                     
                     holdStatus=ishold;
                     % Plot spheres
+                    h = [];
                     if gridFaces > 0
-                        surf(xSphereOuter, ySphereOuter, zSphereOuter, max(max(cSphere))*ones(size(xSphereOuter)), 'FaceColor', 'none');
+                        h = [h, ...
+                            surf(xSphereOuter, ySphereOuter, zSphereOuter, max(max(cSphere))*ones(size(xSphereOuter)), 'FaceColor', 'none')];
                         hold on;
                     end
-                    surf(xSphereInner, ySphereInner, zSphereInner, cSphere,'EdgeColor', 'none');
+                    h = [h, surf(xSphereInner, ySphereInner, zSphereInner, cSphere,'EdgeColor', 'none')];
                     axis equal
                     colorbar
                     if ~holdStatus
