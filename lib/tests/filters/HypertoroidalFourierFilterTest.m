@@ -167,7 +167,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             global enableExpensive
             if ~islogical(enableExpensive) || ~enableExpensive, return; end
             noiseDistribution = ToroidalWNDistribution([1; 2], [1, -0.3; -0.3, 4]);
-            coeffsPerDim = 101;
+            coeffsPerDim = 71;
             f = @a2D;
             % Initialize variable this to make sure that fTrans can be
             % used as inHypertoroidalFourierFilter
@@ -199,7 +199,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             
             
             testCase.verifyEqual(fTransVals, hfdTransIdVals, 'AbsTol', 5E-7);
-            testCase.verifyEqual(fTransVals, hfdTransSqrtVals, 'AbsTol', 5E-7);
+            testCase.verifyEqual(fTransVals, hfdTransSqrtVals, 'AbsTol', 2E-6);
             
             
             function [x1Propagated, x2Propagated] = a2D(x1, x2)
