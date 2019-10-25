@@ -10,6 +10,10 @@ classdef AbstractHypersphericalFilter < handle
     methods (Abstract)
         setState(this, state)
         est = getEstimate(this)
-        mean = getEstimateMean(this)
+    end
+    methods 
+        function mean = getEstimateMean(this)
+            mean = this.getEstimate.meanDirection;
+        end
     end
 end

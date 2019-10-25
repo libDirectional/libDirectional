@@ -67,6 +67,12 @@ classdef AbstractHypersphericalDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(sum(s2.^2,1), ones(1,n), 'RelTol', 1E-10);
         end
         
+        function testMeanDirectionNumerical(testCase)
+            mu = 1/sqrt(2)*[1;1;0];
+            vmf = VMFDistribution(mu,1);
+            testCase.verifyEqual(vmf.meanDirectionNumerical, mu, 'AbsTol', 1e-6);
+        end
+        
         function testDistances(testCase)
             for dim=2:4
                 dist1=VMFDistribution([1;0;zeros(dim-2,1)],2);

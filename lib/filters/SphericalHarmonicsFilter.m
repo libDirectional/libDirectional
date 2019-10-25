@@ -40,7 +40,7 @@ classdef SphericalHarmonicsFilter < AbstractHypersphericalFilter
         end
         
         function mean = getEstimateMean(this)
-            mean = this.state.mean;
+            mean = this.state.meanDirection;
         end
         
         function predictIdentity(this, sysNoise)
@@ -56,7 +56,7 @@ classdef SphericalHarmonicsFilter < AbstractHypersphericalFilter
         function updateIdentity(this, measNoise, z)
             % Splitting the noise into a noise term and a measurement is not a
             % universal solution. This function was added for interface
-            % compatibility of the VMF Filter. If z is used, measNoise needs to be
+            % compatibility with the VMF Filter. If z is used, measNoise needs to be
             % zonal with rotational symmetry around the z-axis and have a
             % mean of [0;0;1].
             % It is possible to use 0 or [0;0;1] as measurement if no rotation should be

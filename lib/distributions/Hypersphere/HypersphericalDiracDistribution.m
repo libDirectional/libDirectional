@@ -163,6 +163,11 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             % Placeholder, pdf does not exist for Dirac distributions
             error('PDF:UNDEFINED', 'pdf is not defined')
         end     
+        
+        function mu = meanDirection(this)
+            vecSum = sum(this.d.*this.w, 2);
+            mu = vecSum/norm(vecSum);
+        end
     end
 end
 

@@ -47,7 +47,7 @@ classdef SphericalHarmonicsDistributionReal < AbstractSphericalHarmonicsDistribu
             shdComplexRot = shdComplex.rotate(alpha, beta, gamma);
             shd = shdComplexRot.toSphericalHarmonicsDistributionReal;
         end
-        function mu = mean(this)
+        function mu = meanDirection(this)
             if ~strcmp(this.transformation, 'identity')
                 error('Transformation currently not supported')
             end

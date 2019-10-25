@@ -68,6 +68,40 @@ classdef AbstractHypersphericalDistribution
             end
         end
         
+        function mu = meanDirection(this)
+            % Calculate mean direction of pdf
+            % Returns:
+            %   mu (vector)
+            %       mean direction
+            mu = meanDirectionNumerical(this);
+        end
+        
+        function mu = meanDirectionNumerical(this)
+            % Calculate mean direction of pdf
+            % Returns:
+            %   mu (vector)
+            %       mean direction
+            mu=NaN(3,1);
+            for i=1:3
+                f = @(x) x(i,:).*this.pdf(x);
+                r=1;
+                
+                % spherical coordinates
+                fangles = @(phi1,phi2) f([ ...
+                r.*sin(phi1).*sin(phi2); ...
+                r.*cos(phi1).*sin(phi2); ...
+                r.*cos(phi2); ...
+                ]);
+
+                g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
+                mu(i) = integral2(g, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+            end
+            if norm(mu)<1e-9
+                warning('Density may not have actually have a mean direction because integral yields a point very close to the origin.')
+            end
+            mu = mu/norm(mu);
+        end
+        
         function i = integral(this)
             % Calculate integral of pdf to check normalization
             % (should always be 1)
@@ -318,7 +352,7 @@ classdef AbstractHypersphericalDistribution
             %
             % Parameters:
             %   other (AbstractHypersphericalDistribution)
-            %       distribution to compare to
+            %       distribution to compare with
             % Returns:
             %   dist (scalar)
             %       total variation distance of this distribution to other distribution
