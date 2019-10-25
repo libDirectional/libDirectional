@@ -18,7 +18,7 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             
             % Check parameters
             assert(size(C_,1)==size(C_,2), 'C must be dim x dim');
-            assert(isequal(C_,C_'), 'C must be symmetric');
+            assert(issymmetric(C_), 'C must be symmetric');
             assert(all(eig(C_)>0), 'C must be positive definite');
             assert(isequal(size(mu_),[size(C_,2),1]), 'mu must be dim x 1'); 
             
