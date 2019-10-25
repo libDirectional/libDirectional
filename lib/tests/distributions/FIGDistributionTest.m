@@ -1,0 +1,344 @@
+classdef FIGDistributionTest < matlab.unittest.TestCase
+    methods(Static)
+        function testGridConversion(testCase, dist, coeffs, enforceNonnegative, tolerance)
+            figd = FIGDistribution.fromDistribution(dist, coeffs, enforceNonnegative);
+            % Test grid values
+            xvals = linspace(0, 2*pi, coeffs+1);
+            xvals(end) = [];
+            testCase.verifyEqual(figd.pdf(xvals), dist.pdf(xvals), 'AbsTol', tolerance);
+            % Test approximation of pdf
+            xvals = -2 * pi:0.01:3 * pi;
+            testCase.verifyEqual(figd.pdf(xvals), dist.pdf(xvals), 'AbsTol', tolerance);
+        end
+    end
+    
+    methods(Test)
+        % Test conversions
+        function testVMToGridId(testCase)
+            mu = 0.4;
+            for kappa = .1:.1:2
+                dist = VMDistribution(mu, kappa);
+                FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
+            end
+        end
+        function testVMToGridSqrt(testCase)
+            mu = 0.5;
+            for kappa = .1:.1:2
+                dist = VMDistribution(mu, kappa);
+                FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
+            end
+        end
+        function testWNToGridId(testCase)
+            mu = 0.8;
+            for sigma = .2:.1:2
+                dist = WNDistribution(mu, sigma);
+                FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
+            end
+        end
+        function testWNToGridSqrt(testCase)
+            mu = 0.9;
+            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
+            for sigma = .2:.1:2
+                dist = WNDistribution(mu, sigma);
+                FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
+            end
+            warning(warningSettings);
+        end
+        function testWCToGridId(testCase)
+            mu = 1.2;
+            for gamma = .8:.1:3
+                dist = WCDistribution(mu, gamma);
+                FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-7);
+            end
+        end
+        
+        function testWCToGridSqrt(testCase)
+            mu = 1.3;
+            warningSettings = warning('off', 'Conversion:ApproximationHypergeometric');
+            for gamma = .8:.1:3
+                dist = WCDistribution(mu, gamma);
+                FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-7);
+            end
+            warning(warningSettings);
+        end
+        
+        function testWEToGridId(testCase)
+            % Treat differently due to lack of continuity
+            warningSettings=warning('off','Normalization:notNormalized');
+            for lambda=.1:.1:2
+                xvals=-2*pi:0.01:3*pi;
+                xvals=xvals(mod(xvals,2*pi)>0.5 & mod(xvals,2*pi)<(2*pi-0.5));
+                dist=WEDistribution(lambda);
+                gd=FIGDistribution.fromDistribution(dist,3001, false);
+                testCase.verifySize(gd.gridValues,[3001,1]);
+                testCase.verifyEqual(gd.pdf(xvals),dist.pdf(xvals),'AbsTol', 5E-3);
+            end
+            warning(warningSettings);
+        end
+        function testWEToGridSqrt(testCase)
+            % For sqrt, same applies as to identity
+            warningSettings=warning('off','Normalization:notNormalized');
+            for lambda=.1:.1:2
+                xvals=-2*pi:0.01:3*pi;
+                xvals=xvals(mod(xvals,2*pi)>0.5 & mod(xvals,2*pi)<(2*pi-0.5));
+                dist=WEDistribution(lambda);
+                gd=FIGDistribution.fromDistribution(dist,3001, true);
+                testCase.verifySize(gd.gridValues,[3001,1]);
+                testCase.verifyEqual(gd.pdf(xvals),dist.pdf(xvals),'AbsTol', 5E-3);
+            end
+            warning(warningSettings);
+        end
+        function testWLToGridId(testCase)
+            % Only test parameter combinations that don't result in too
+            % abrupt changes in pdf values
+            for lambda=0.1:0.2:1
+                for kappa=0.1:0.5:4
+                    dist=WLDistribution(lambda,kappa);
+                    FIGDistributionTest.testGridConversion(testCase,dist,1001,false,1E-3);
+                end
+            end
+        end
+        function testWLToFourierSqrt(testCase)
+            warningSettings=warning('off','Conversion:NoFormulaSqrt');
+            for lambda=0.1:0.2:1
+                for kappa=0.1:0.5:4
+                    dist=WLDistribution(lambda,kappa);
+                    FIGDistributionTest.testGridConversion(testCase,dist,1001,true,1E-3);
+                end
+            end
+            warning(warningSettings);
+        end
+        function testCircularUniformToGridId(testCase)
+            dist = CircularUniformDistribution();
+            FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
+        end
+        function testCircularUniformToGridSqrt(testCase)
+            dist = CircularUniformDistribution();
+            FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
+        end
+        
+        function testGCMToGridId(testCase)
+            vm = VMDistribution(1, 2);
+            wn = WNDistribution(2, 1);
+            dist = CircularMixture({vm, wn}, [0.3, 0.7]);
+            FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
+        end
+        function testGCMToGridSqrt(testCase)
+            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
+            vm = VMDistribution(1, 2);
+            wn = WNDistribution(2, 1);
+            dist = CircularMixture({vm, wn}, [0.3, 0.7]);
+            FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
+            warning(warningSettings);
+        end
+        function testCCDToGridId(testCase)
+            warningSettings = warning('off', 'Conversion:NoFormula');
+            vm = VMDistribution(1, 2);
+            dist = CustomCircularDistribution(@(x)vm.pdf(x));
+            FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
+            warning(warningSettings);
+        end
+        function testCCDToGridSqrt(testCase)
+            warningSettings = warning('off', 'Conversion:NoFormula');
+            vm = VMDistribution(1, 2);
+            dist = CustomCircularDistribution(@(x)vm.pdf(x));
+            FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
+            warning(warningSettings);
+        end
+        
+        function testFromFunction(testCase)
+            xvals = -2 * pi:0.01:3 * pi;
+            for kappa = 0.1:0.3:4
+                vm = VMDistribution(3, kappa);
+                fd = FIGDistribution.fromFunction(@(x)vm.pdf(x), 501, true);
+                testCase.verifyEqual(fd.pdf(xvals), vm.pdf(xvals), 'AbsTol', 1E-8);
+            end
+        end
+        function testFromFunctionValues(testCase)
+            xvals = -2 * pi:0.01:3 * pi;
+            vm = VMDistribution(3, 1);
+            fvals = vm.pdf(linspace(0, 2*pi, 100))';
+            fvals(end) = [];
+            fd1 = FIGDistribution.fromFunctionValues(fvals, 99, true);
+            % Test truncation in fromFunction
+            fvals = vm.pdf(linspace(0, 2*pi, 101))';
+            fvals(end) = [];
+            fd2 = FIGDistribution.fromFunctionValues(fvals, 50, true);
+            testCase.verifyEqual(fd1.pdf(xvals), vm.pdf(xvals), 'AbsTol', 1E-8);
+            testCase.verifyEqual(fd2.pdf(xvals), vm.pdf(xvals), 'AbsTol', 1E-8);
+        end
+        
+        % Test operations for prediction and filter steps
+        function testMultiplyVM(testCase)
+            for currEnforcement = [false, true]
+                xvals = -2 * pi:0.01:3 * pi;
+                for kappa1 = 0.1:0.3:4
+                    for kappa2 = 0.1:0.3:4
+                        dist1 = VMDistribution(0, kappa1);
+                        dist2 = VMDistribution(0, kappa2);
+                        f1 = FIGDistribution.fromDistribution(dist1, 101, currEnforcement);
+                        f2 = FIGDistribution.fromDistribution(dist2, 101, currEnforcement);
+                        fFiltered = f1.multiply(f2);
+                        distResult = dist1.multiply(dist2);
+                        testCase.verifyEqual(fFiltered.pdf(xvals), distResult.pdf(xvals), 'AbsTol', 1E-8);
+                    end
+                end
+            end
+        end
+        function testConvolveWN(testCase)
+            xvals = -2 * pi:0.01:3 * pi;
+            for currEnforcement = [false, true]
+                for sigma1 = 0.1:0.3:4
+                    for sigma2 = 0.1:0.3:4
+                        dist1 = WNDistribution(0, sigma1);
+                        dist2 = WNDistribution(0, sigma2);
+                        f1 = FIGDistribution.fromDistribution(dist1, 101, currEnforcement);
+                        f2 = FIGDistribution.fromDistribution(dist2, 101, currEnforcement);
+                        fPredicted = f1.convolve(f2);
+                        distResult = dist1.convolve(dist2);
+                        testCase.verifyEqual(fPredicted.pdf(xvals), distResult.pdf(xvals), 'AbsTol', 1E-8);
+                    end
+                end
+            end
+        end
+        
+        function testMomentsGridSqrtPredictionVM(testCase)
+            for kappa1 = [1,2] %0.1:0.3:4
+                for kappa2 = [1,2] %0.1:0.3:4
+                    vm1 = VMDistribution(0, kappa1);
+                    vm2 = VMDistribution(0, kappa2);
+                    vmRes = vm1.convolve(vm2);
+                    f1 = FIGDistribution.fromDistribution(vm1, 101, true);
+                    f2 = FIGDistribution.fromDistribution(vm2, 101, true);
+                    fPredicted = f1.convolve(f2);
+                    testCase.verifyEqual(fPredicted.trigonometricMoment(1), vmRes.trigonometricMoment(1), 'AbsTol', 1E-8);
+                end
+            end
+        end
+        % CDF tests
+        function testCdfIdentityStartZero(testCase)
+            fd = FIGDistribution.fromDistribution(VMDistribution(1, 3), 101, false);
+            xvals = 0:0.01:2 * pi;
+            intValsNumerically = arrayfun(@(xend)integral(@(x)fd.pdf(x), 0, xend), xvals);
+            testCase.verifyEqual(fd.cdf(xvals, 0), intValsNumerically, 'AbsTol', 1E-8);
+        end
+        function testCdfSqrtStartZero(testCase)
+            fd = FIGDistribution.fromDistribution(VMDistribution(1, 3), 101, true);
+            xvals = 0:0.01:2 * pi;
+            intValsNumerically = arrayfun(@(xend)integral(@(x)fd.pdf(x), 0, xend), xvals);
+            testCase.verifyEqual(fd.cdf(xvals, 0), intValsNumerically, 'AbsTol', 1E-8);
+        end
+        function testCdfIdentityStartNonzero(testCase)
+            fd = FIGDistribution.fromDistribution(VMDistribution(1, 3), 101, false);
+            xvals = 0:0.01:2 * pi;
+            startingPoint = 1;
+            intValsNumerically = [arrayfun(@(xend)integral(@(x)fd.pdf(x), 0, xend)+integral(@(x)fd.pdf(x), startingPoint, 2*pi), xvals(xvals < startingPoint)), ...
+                arrayfun(@(xend)integral(@(x)fd.pdf(x), startingPoint, xend), xvals(xvals >= startingPoint))];
+            testCase.verifyEqual(fd.cdf(xvals, startingPoint), intValsNumerically, 'AbsTol', 1E-8);
+        end
+        % Other tests
+        function testTruncation(testCase)
+            vm = VMDistribution(3, 1);
+            fd1 = FIGDistribution.fromDistribution(vm, 100, true);
+            testCase.verifyWarning(@()fd1.truncate(102), 'Truncate:TooFewGridPoints');
+            warningSettings = warning('off', 'Truncate:TooFewGridPoints');
+            fd2 = fd1.truncate(102);
+            testCase.verifySize(fd2.gridValues,[102,1]);
+            warning(warningSettings);
+            fd3 = fd2.truncate(51);
+            testCase.verifySize(fd3.gridValues,[51,1]);
+        end
+        function testMoments(testCase)
+            vm = VMDistribution(2, 1);
+            fd1 = FIGDistribution.fromDistribution(vm, 15, false);
+            fd2 = FIGDistribution.fromDistribution(vm, 15, true);
+            for i = -2:3
+                vmMoment = vm.trigonometricMoment(i);
+                testCase.verifyEqual(fd1.trigonometricMoment(i), vmMoment, 'AbsTol', 1E-6);
+                testCase.verifyEqual(fd1.trigonometricMomentNumerical(i), vmMoment, 'AbsTol', 1E-6);
+                testCase.verifyEqual(fd2.trigonometricMoment(i), vmMoment, 'AbsTol', 1E-6);
+                testCase.verifyEqual(fd2.trigonometricMomentNumerical(i), vmMoment, 'AbsTol', 1E-6);
+            end
+            testCase.verifyEqual(fd1.trigonometricMoment(16), 0);
+            testCase.verifyEqual(fd2.trigonometricMoment(30), 0);
+        end
+        
+        function testNormalizationAfterTruncation(testCase)
+            dist = VMDistribution(0, 5);
+            fdNonnegative = FIGDistribution.fromDistribution(dist, 1000, true);
+            testCase.verifyEqual(integral(@(x)fdNonnegative.pdf(x), 0, 2*pi), 1, 'RelTol', 1E-4);
+            warnStruct = warning('off', 'Truncate:DownsampleViaFourier');
+            fdSqrtTrunc = fdNonnegative.truncate(7);
+            warning(warnStruct);
+            % Verify that use of .truncate results in a normalized density
+            testCase.verifyEqual(integral(@(x)fdSqrtTrunc.pdf(x), 0, 2*pi), 1, 'RelTol', 1E-4);
+            % Verify that no warning is given due to normalization in
+            % Fourier
+            testCase.verifyWarningFree(@()integral(@(x)fdSqrtTrunc.pdf(x), 0, 2*pi));
+        end
+        %}
+        function testIntegral(testCase)
+            dist = VMDistribution(0, 5);
+            for transformation = {false, true}
+                warningSetting = warning('off', 'Normalization:cannotTest');
+                fd = FIGDistribution.fromDistribution(dist, 15, [transformation{:}]);
+                warning(warningSetting);
+                testCase.verifyEqual(fd.integral(0, 1.5), fd.integralNumerical(0, 1.5), 'RelTol', 1E-8);
+                testCase.verifyEqual(fd.integral(1.5, 0), fd.integralNumerical(1.5, 0), 'RelTol', 1E-8);
+                testCase.verifyEqual(fd.integral(10, -10), fd.integralNumerical(10, -10), 'RelTol', 1E-8);
+            end
+        end
+        function testPdfOnGrid(testCase)
+            for transformation = {false, true}
+                dist = VMDistribution(0, 5);
+                fd = FIGDistribution.fromDistribution(dist, 15, [transformation{:}]);
+                [vals, xgrid] = fd.pdfOnGrid(15);
+                testCase.verifyEqual(vals, fd.pdf(xgrid), 'RelTol', 1E-8);
+            end
+        end
+        
+        function testShift(testCase)
+            vm = VMDistribution(1, 10);
+            vmShift = VMDistribution(2, 10);
+            gdId = FIGDistribution.fromDistribution(vm, 51, false);
+            gdSqrt = FIGDistribution.fromDistribution(vm, 51, true);
+            gdIdShift = gdId.shift(1);
+            gdSqrtShift = gdSqrt.shift(1);
+            
+            testCase.verifyClass(gdIdShift, 'FIGDistribution');
+            testCase.verifyClass(gdSqrtShift, 'FIGDistribution');
+            
+            xvals = 0:0.01:2 * pi;
+            testCase.verifyEqual(gdIdShift.pdf(xvals), vmShift.pdf(xvals), 'AbsTol', 1E-6);
+            testCase.verifyEqual(gdSqrtShift.pdf(xvals), vmShift.pdf(xvals), 'AbsTol', 1E-6);
+        end
+        function testPdfViaSinc(testCase)
+            dist = WNDistribution(pi, 1);
+            noPoints = 5;
+            currTrans = false;
+            gd = FIGDistribution.fromDistribution(dist, noPoints, currTrans);
+            gd.enforcePdfNonnegative = false;
+
+            stepSize=2*pi/noPoints;
+            evalAt=linspace(0,2*pi,100);
+            % Only considering sinc function at points from 0 to 2*pi (this
+            % yields lowest quality)
+            xvals = linspace(0,2*pi,noPoints+1);
+            fvals = [gd.gridValues;gd.gridValues(1)];
+            sincFun = @(x)arrayfun(@(xCurr)sinc(xCurr/stepSize-xvals/stepSize)*fvals, x);
+            testCase.verifyEqual(sincFun(evalAt), gd.pdf(evalAt), 'AbsTol', 0.003);
+            % Considering sinc function at points from -2*pi to 4*pi
+            % (higher quality)
+            xvals = linspace(-2*pi, 4*pi, noPoints*3 + 1);
+            fvals = [repmat(gd.gridValues,3,1);gd.gridValues(1)];
+            sincFun = @(x)arrayfun(@(xCurr)sinc(xCurr/stepSize-xvals/stepSize)*fvals, x);
+            testCase.verifyEqual(sincFun(evalAt), gd.pdf(evalAt), 'AbsTol', 0.0005);
+            % Considering sinc function at points from -4*pi to 6*pi
+            % (even higher quality)
+            xvals = linspace(-4*pi, 6*pi, noPoints*5 + 1);
+            fvals = [repmat(gd.gridValues,5,1);gd.gridValues(1)];
+            sincFun = @(x)arrayfun(@(xCurr)sinc(xCurr/stepSize-xvals/stepSize)*fvals, x);
+            testCase.verifyEqual(sincFun(evalAt), gd.pdf(evalAt), 'AbsTol', 0.0002);
+        end
+    end
+end
