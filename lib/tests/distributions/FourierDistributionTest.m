@@ -197,7 +197,7 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(fd1.pdf(xvals), vm.pdf(xvals), 'AbsTol', 1E-8);
             testCase.verifyEqual(fd2.pdf(xvals), vm.pdf(xvals), 'AbsTol', 1E-8);
         end
-        % Test oeprations for prediction and filter steps
+        % Test operations for prediction and filter steps
         function testMultiplyVM(testCase)
             for transformation={'identity', 'sqrt'}
                 currTrans=[transformation{:}];

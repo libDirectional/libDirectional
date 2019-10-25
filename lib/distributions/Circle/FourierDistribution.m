@@ -249,7 +249,7 @@ classdef FourierDistribution < AbstractCircularDistribution
                     a0 = this.a(1);
                     if a0 < 0
                         warning('Normalization:negative', 'a0 is negative. This can either be caused by a user error or due to negativity caused by non-square rooted version');
-                    elseif abs(a0 < 1e-200) % Tolerance has to be that low to avoid unnecessary errors on multiply
+                    elseif abs(a0) < 1e-200 % Tolerance has to be that low to avoid unnecessary errors on multiply
                         error('Normalization:almostZero', 'a0 is too close to zero, this usually points to a user error');
                     elseif (abs(a0-1/pi) > 1e-4)
                         warning('Normalization:notNormalized', 'Coefficients apparently do not belong to normalized density. Normalizing...');
