@@ -8,8 +8,8 @@ classdef SphericalHarmonicsFilterTest < matlab.unittest.TestCase
                 
                 vmf1 = VMFDistribution([0; 1; 0], 1);
                 vmf2 = VMFDistribution([0; 0; 1], 0.1);
-                shd1 = SphericalHarmonicsDistributionComplex.fromDistributionFast(vmf1, 30);
-                shd2 = SphericalHarmonicsDistributionComplex.fromDistributionFast(vmf2, 30);
+                shd1 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf1, 30);
+                shd2 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf2, 30);
                 
                 warnStruct = warning('off', 'SphericalHarmonicsFilter:rotationRequired');
                 vmfFilter.setState(vmf1);
@@ -93,10 +93,10 @@ classdef SphericalHarmonicsFilterTest < matlab.unittest.TestCase
             densityInit = VMFDistribution([1; 1; 0]/sqrt(2), 2);
             sysNoise = VMFDistribution([0; 0; 1], 1);
             
-            shdInitId = SphericalHarmonicsDistributionComplex.fromDistributionFast(densityInit, degree, 'identity');
-            shdInitSqrt = SphericalHarmonicsDistributionComplex.fromDistributionFast(densityInit, degree, 'sqrt');
-            shdNoiseId = SphericalHarmonicsDistributionComplex.fromDistributionFast(sysNoise, degree, 'identity');
-            shdNoiseSqrt = SphericalHarmonicsDistributionComplex.fromDistributionFast(sysNoise, degree, 'sqrt');
+            shdInitId = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(densityInit, degree, 'identity');
+            shdInitSqrt = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(densityInit, degree, 'sqrt');
+            shdNoiseId = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(sysNoise, degree, 'identity');
+            shdNoiseSqrt = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(sysNoise, degree, 'sqrt');
             
             shFilter1 = SphericalHarmonicsFilter(degree, 'identity');
             shFilter2 = SphericalHarmonicsFilter(degree, 'sqrt');

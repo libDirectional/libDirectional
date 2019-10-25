@@ -24,7 +24,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             %       concentration parameter (>=0)
             epsilon = 1E-6;
             assert(size(mu_,2) == 1, 'mu must be a column vector');
-            assert(size(mu_,1) >= 2, 'mu must be at least 2 for the circular case');
+            assert(size(mu_,1) >= 2, 'mu must be at least two-dimensinal for the circular case');
             assert(abs(norm(mu_) - 1)<epsilon, 'mu must be a normalized');
             assert(kappa_>=0, 'kappa must be postive');
             
@@ -51,6 +51,10 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             assert (size(xa,1) == size(this.mu,1));
             
             p = this.C * exp( this.kappa * this.mu' * xa);
+        end
+        
+        function mu = meanDirection(this)
+           mu = this.mu;
         end
         
         function samples = sampleDeterministic(this)

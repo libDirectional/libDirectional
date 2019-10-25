@@ -127,16 +127,6 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
             %       current estimate            
             wd = this.wd;
         end
-        
-        function mean=getEstimateMean(this)
-            % Return mean of current estimate 
-            %
-            % Returns:
-            %   mean (column vector)
-            %       current estimate mean (normalized)
-            vecSum = sum(this.wd.d.*repmat(this.wd.w,this.dim,1),2);
-            mean = vecSum/norm(vecSum);
-        end
     end
     
 end

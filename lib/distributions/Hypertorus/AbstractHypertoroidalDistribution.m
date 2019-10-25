@@ -68,6 +68,11 @@ classdef AbstractHypertoroidalDistribution
             m = mod(atan2(imag(a),real(a)), 2*pi);
         end
         
+        function m = meanDirection(this)
+            % More general name for circular mean.
+            m = circularMean(this);
+        end
+        
         function m = trigonometricMoment(this, n)
             % Calculate n-th trigonometric moment, i.e., 
             % E([e^(inx_1); e^(inx_2);...^e(inx_d)])

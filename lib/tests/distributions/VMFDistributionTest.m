@@ -181,6 +181,12 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(g.mu, vmf.mu);
         end
         
+        function testMeanDirection(testCase)
+            mu = 1/sqrt(2)*[1;1;0];
+            vmf = VMFDistribution(mu,1);
+            testCase.verifyEqual(vmf.meanDirection, mu, 'AbsTol', 1e-13);
+        end
+        
         function testHellinger(testCase)
             % 2D
             vmf1 = VMFDistribution([1,0]', 0.9);

@@ -153,7 +153,7 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(cd2.totalVariationDistanceNumerical(cd),0, 'RelTol', 1E-10);
             
             wd3=WDDistribution([d d],[w/2 w/2]);
-            cd3=wd2.toContinuousVoronoi;
+            cd3=wd3.toContinuousVoronoi;
             testCase.verifyEqual(cd3.totalVariationDistanceNumerical(cd),0, 'RelTol', 1E-10);
         end
         

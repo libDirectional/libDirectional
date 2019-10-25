@@ -312,13 +312,13 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
         function testTransformViaCoefficients(testCase)
             degree = 21;
             % Test identity -> sqrt
-            shd = SphericalHarmonicsDistributionComplex.fromDistributionFast( ...
+            shd = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
                 VMFDistribution([1; 1; 0]/sqrt(2), 2), degree, 'identity');
             shdSqrt = shd.transformViaCoefficients('sqrt', degree);
             testCase.verifyEqual(shdSqrt.totalVariationDistanceNumerical(shd), 0, 'AbsTol', 1E-14);
             testCase.verifySize(shdSqrt.coeffMat, [degree + 1, 2 * degree + 1]);
             % Test sqrt -> identity
-            shd = SphericalHarmonicsDistributionComplex.fromDistributionFast( ...
+            shd = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast( ...
                 VMFDistribution([1; 1; 0]/sqrt(2), 2), degree, 'sqrt');
             shdId = shd.transformViaCoefficients('square', degree-1);
             testCase.verifySize(shdId.coeffMat, [(degree - 1) + 1, 2 * (degree - 1) + 1]);
@@ -331,8 +331,8 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             wignercycle(10);
             warningSetting = warning('off', 'Normalization:notNormalized');
             for transformation = {'identity', 'sqrt'}
-                shd1 = SphericalHarmonicsDistributionComplex.fromDistributionFast(VMFDistribution([1; 1; 1]/sqrt(3), 2), 5, [transformation{:}]);
-                shd2 = SphericalHarmonicsDistributionComplex.fromDistributionFast(VMFDistribution([1; 1; -1]/sqrt(3), 2), 5, [transformation{:}]);
+                shd1 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([1; 1; 1]/sqrt(3), 2), 5, [transformation{:}]);
+                shd2 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([1; 1; -1]/sqrt(3), 2), 5, [transformation{:}]);
                 warning(warningSetting);
                 shdMultFast = shd1.multiply(shd2);
                 shdMultCoeff = shd1.multiplyViaCoefficients(shd2);
@@ -356,11 +356,11 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             % transformation, given a sufficiently high number of
             % coefficients.
             degree = 21;
-            thisId = SphericalHarmonicsDistributionComplex.fromDistributionFast(VMFDistribution([1; 1; 0]/sqrt(2), 2), degree, 'identity');
-            otherId = SphericalHarmonicsDistributionComplex.fromDistributionFast(VMFDistribution([0; 0; 1], 1), degree, 'identity');
+            thisId = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([1; 1; 0]/sqrt(2), 2), degree, 'identity');
+            otherId = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([0; 0; 1], 1), degree, 'identity');
             
-            this = SphericalHarmonicsDistributionComplex.fromDistributionFast(VMFDistribution([1; 1; 0]/sqrt(2), 2), degree, 'sqrt');
-            other = SphericalHarmonicsDistributionComplex.fromDistributionFast(VMFDistribution([0; 0; 1], 1), degree, 'sqrt');
+            this = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([1; 1; 0]/sqrt(2), 2), degree, 'sqrt');
+            other = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([0; 0; 1], 1), degree, 'sqrt');
             
             convolutionResultId = thisId.convolve(otherId);
             convolutionResultSqrt = this.convolve(other);
@@ -442,22 +442,22 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
         end
         function testMean(testCase)
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; 0, 1, 0]);
-            testCase.verifyEqual(shd.mean, [0; 0; 1], 'AbsTol', 1E-6);
+            testCase.verifyEqual(shd.meanDirection, [0; 0; 1], 'AbsTol', 1E-6);
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; 0, -1, 0]);
-            testCase.verifyEqual(shd.mean, [0; 0; -1], 'AbsTol', 1E-6);
+            testCase.verifyEqual(shd.meanDirection, [0; 0; -1], 'AbsTol', 1E-6);
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; 1i * sqrt(1/2), 0, 1i * sqrt(1/2)]);
-            testCase.verifyEqual(shd.mean, [0; 1; 0], 'AbsTol', 1E-6);
+            testCase.verifyEqual(shd.meanDirection, [0; 1; 0], 'AbsTol', 1E-6);
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; -1i * sqrt(1/2), 0, -1i * sqrt(1/2)]);
-            testCase.verifyEqual(shd.mean, [0; -1; 0], 'AbsTol', 1E-6);
+            testCase.verifyEqual(shd.meanDirection, [0; -1; 0], 'AbsTol', 1E-6);
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; sqrt(1/2), 0, -sqrt(1/2)]);
-            testCase.verifyEqual(shd.mean, [1; 0; 0], 'AbsTol', 1E-6);
+            testCase.verifyEqual(shd.meanDirection, [1; 0; 0], 'AbsTol', 1E-6);
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; -sqrt(1/2), 0, sqrt(1/2)]);
-            testCase.verifyEqual(shd.mean, [-1; 0; 0], 'AbsTol', 1E-6);
+            testCase.verifyEqual(shd.meanDirection, [-1; 0; 0], 'AbsTol', 1E-6);
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; -1i * sqrt(1/2) - sqrt(1/2), 0, -1i * sqrt(1/2) + sqrt(1/2)]);
-            testCase.verifyEqual(shd.mean, 1/sqrt(2)*[-1; -1; 0], 'AbsTol', 1E-6);
+            testCase.verifyEqual(shd.meanDirection, 1/sqrt(2)*[-1; -1; 0], 'AbsTol', 1E-6);
             shd = SphericalHarmonicsDistributionComplex([1 / sqrt(4*pi), NaN, NaN; 1i * sqrt(1/2) + sqrt(1/2), 1, 1i * sqrt(1/2) - sqrt(1/2)]);
-            testCase.verifyEqual(shd.mean, 1/sqrt(3)*[1; 1; 1], 'AbsTol', 1E-6);
-            testCase.verifyTrue(isreal(shd.mean));
+            testCase.verifyEqual(shd.meanDirection, 1/sqrt(3)*[1; 1; 1], 'AbsTol', 1E-6);
+            testCase.verifyTrue(isreal(shd.meanDirection));
         end
         function integralAnalytical(testCase)
             coeffRand = rand(1, 9);
@@ -468,14 +468,14 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             warning(warningSettings);
             testCase.verifyEqual(shd.integralAnalytical, shd.integral, 'AbsTol', 1E-6);
         end
-        function testFromDistributionFast(testCase)
+        function testfromDistributionNumericalFast(testCase)
             [phi, theta] = meshgrid(linspace(0, 2*pi, 30), linspace(-pi/2, pi/2, 30));
             [x, y, z] = sph2cart(phi(:)', theta(:)', 1);
             dists = {VMFDistribution([1; 0; 0], 1), VMFDistribution([0; 1; 0], 2), VMFDistribution([0; 0; 1], 3), ...
                 HypersphericalMixture({VMFDistribution([1; 1; 1]/sqrt(3), 3), VMFDistribution([1; 0; 0], 2)}, [0.5, 0.5])};
             for transformation = {'identity', 'sqrt'}
                 for i = 1:numel(dists)
-                    shd = SphericalHarmonicsDistributionComplex.fromDistributionFast(dists{i}, 21, [transformation{:}]);
+                    shd = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(dists{i}, 21, [transformation{:}]);
                     testCase.verifyEqual(dists{i}.pdf([x; y; z]), shd.pdf([x; y; z]), 'AbsTol', 1E-6)
                 end
             end

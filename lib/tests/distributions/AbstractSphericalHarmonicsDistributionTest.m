@@ -19,29 +19,29 @@ classdef AbstractSphericalHarmonicsDistributionTest < matlab.unittest.TestCase
                 shdZonalCurr = shdZonals{i};
                 shdtmp = shdRandomCurr.convolve(shdZonalCurr);
                 testCase.verifySize(shdtmp.coeffMat, [7, 13]);
-                testCase.verifyEqual(shdtmp.mean, shdRandomCurr.mean, 'AbsTol', 1E-10);
-                testCase.verifyEqual(shdtmp.mean, shdRandomCurr.mean, 'AbsTol', 1E-4);
+                testCase.verifyEqual(shdtmp.meanDirection, shdRandomCurr.meanDirection, 'AbsTol', 1E-10);
+                testCase.verifyEqual(shdtmp.meanDirection, shdRandomCurr.meanDirection, 'AbsTol', 1E-4);
                 
                 shdtmp = shdRandomCurr.convolve(shdZonalCurr.truncate(5));
                 testCase.verifySize(shdtmp.coeffMat, [6, 11]);
-                testCase.verifyEqual(shdtmp.mean, shdRandomCurr.mean, 'AbsTol', 1E-10);
+                testCase.verifyEqual(shdtmp.meanDirection, shdRandomCurr.meanDirection, 'AbsTol', 1E-10);
                 testCase.verifyEqual(shdtmp.integralNumerical, 1, 'AbsTol', 1E-4);
                 
                 shdtmp = shdRandomCurr.convolve(shdZonalCurr.truncate(4));
                 testCase.verifySize(shdtmp.coeffMat, [5, 9]);
-                testCase.verifyEqual(shdtmp.mean, shdRandomCurr.mean, 'AbsTol', 1E-10);
+                testCase.verifyEqual(shdtmp.meanDirection, shdRandomCurr.meanDirection, 'AbsTol', 1E-10);
                 testCase.verifyEqual(shdtmp.integralNumerical, 1, 'AbsTol', 1E-4);
                 
                 shdRandomTrunc = shdRandomCurr.truncate(5);
                 shdtmp = shdRandomTrunc.convolve(shdZonalCurr);
                 testCase.verifySize(shdtmp.coeffMat, [6, 11]);
-                testCase.verifyEqual(shdtmp.mean, shdRandomCurr.mean, 'AbsTol', 1E-10);
+                testCase.verifyEqual(shdtmp.meanDirection, shdRandomCurr.meanDirection, 'AbsTol', 1E-10);
                 testCase.verifyEqual(shdtmp.integralNumerical, 1, 'AbsTol', 1E-4);
                 
                 shdRandomTrunc = shdRandomCurr.truncate(4);
                 shdtmp = shdRandomTrunc.convolve(shdZonalCurr);
                 testCase.verifySize(shdtmp.coeffMat, [5, 9]);
-                testCase.verifyEqual(shdtmp.mean, shdRandomCurr.mean, 'AbsTol', 1E-10);
+                testCase.verifyEqual(shdtmp.meanDirection, shdRandomCurr.meanDirection, 'AbsTol', 1E-10);
                 testCase.verifyEqual(shdtmp.integralNumerical, 1, 'AbsTol', 1E-4);
             end
         end
@@ -56,7 +56,7 @@ classdef AbstractSphericalHarmonicsDistributionTest < matlab.unittest.TestCase
             kappaBeforePredict = 1;
             
             fBeforePredict = VMFDistribution([0; 1; 0], kappaBeforePredict);
-            shdBeforePredict = SphericalHarmonicsDistributionComplex.fromDistributionFast(fBeforePredict, order);
+            shdBeforePredict = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(fBeforePredict, order);
             
             fTran = @(mu, xkk)vmfpdf(xkk, mu, kappaTran);
             r = 1;
@@ -80,7 +80,7 @@ classdef AbstractSphericalHarmonicsDistributionTest < matlab.unittest.TestCase
             
             chd = CustomHypersphericalDistribution(fpredArrayfun, 3);
             
-            shdTrans = SphericalHarmonicsDistributionComplex.fromDistributionFast(VMFDistribution([0; 0; 1], kappaTran), order);
+            shdTrans = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([0; 0; 1], kappaTran), order);
             shdRes = shdBeforePredict.convolve(shdTrans);
             
             testCase.verifyEqual(shdRes.hellingerDistanceNumerical(chd), 0, 'AbsTol', 1E-10);

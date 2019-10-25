@@ -273,7 +273,7 @@ classdef SphericalHarmonicsDistributionComplex < AbstractSphericalHarmonicsDistr
             shd = this;
             shd.coeffMat = coeffMatRot; % Do not use constructor to skip normalization test
         end
-        function mu = mean(this)
+        function mu = meanDirection(this)
             if ~(size(this.coeffMat) > 1)
                 error('Too few coefficients available to calculate the mean');
             end
@@ -302,9 +302,13 @@ classdef SphericalHarmonicsDistributionComplex < AbstractSphericalHarmonicsDistr
             if nargin == 2 % Default to identity
                 transformation = 'identity';
             end
-            shd = SphericalHarmonicsDistributionComplex.fromDistributionFast(dist, degree, transformation);
+            if isa(dist,'SphericalGridDistribution')
+                shd = SphericalHarmonicsDistributionComplex.fromGrid(this.fvals, this.grid, transformation);
+            else
+                shd = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(dist, degree, transformation);
+            end
         end
-        function shd = fromDistributionFast(dist, degree, transformation)
+        function shd = fromDistributionNumericalFast(dist, degree, transformation)
             % Just a convenience function to call from function
             if nargin == 2 % Default to identity
                 transformation = 'identity';
