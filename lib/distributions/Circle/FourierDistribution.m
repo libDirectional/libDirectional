@@ -249,7 +249,7 @@ classdef FourierDistribution < AbstractCircularDistribution
                     a0 = this.a(1);
                     if a0 < 0
                         warning('Normalization:negative', 'a0 is negative. This can either be caused by a user error or due to negativity caused by non-square rooted version');
-                    elseif abs(a0 < 1e-200) % Tolerance has to be that low to avoid unnecessary errors on multiply
+                    elseif abs(a0) < 1e-200 % Tolerance has to be that low to avoid unnecessary errors on multiply
                         error('Normalization:almostZero', 'a0 is too close to zero, this usually points to a user error');
                     elseif (abs(a0-1/pi) > 1e-4)
                         warning('Normalization:notNormalized', 'Coefficients apparently do not belong to normalized density. Normalizing...');
@@ -705,6 +705,19 @@ classdef FourierDistribution < AbstractCircularDistribution
                         warning('Conversion:NoFormula', 'No explicit formula available, using FFT to get transformation');
                         f = FourierDistribution.fromFunction(@distribution.pdf, noOfCoefficients, desiredTransformation);
                     end
+                case 'FIGDistribution'
+                    % This also works if the number of coefficients is
+                    % not identical to the number of grid points because
+                    % padding and truncation is done automatically.
+                    switch distribution.transformation
+                        case 'identity'
+                            vals = distribution.gridValues;
+                        case 'sqrt'
+                            vals = distribution.gridValues^.2;
+                        otherwise
+                            error('Transformation currently unsupported');
+                    end
+                    f = FourierDistribution.fromFunctionValues(vals', noOfCoefficients, desiredTransformation);
                 otherwise
                     warning('Conversion:NoFormula', 'No explicit formula available, using FFT to get transformation');
                     f = FourierDistribution.fromFunction(@distribution.pdf, noOfCoefficients, desiredTransformation);
