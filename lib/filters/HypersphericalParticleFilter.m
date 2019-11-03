@@ -65,7 +65,7 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
             %calculate effect of (additive) noise
             noiseModified=noiseDistribution;
             for i=1:length(this.wd.d)
-                noiseModified.mu=this.wd.d(:,i);
+                noiseModified.mu=wdF.d(:,i);
                 wdF.d(:,i)=noiseModified.sample(1);
             end
             this.wd = wdF;
