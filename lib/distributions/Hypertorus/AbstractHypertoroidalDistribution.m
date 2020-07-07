@@ -1,4 +1,4 @@
-classdef AbstractHypertoroidalDistribution
+classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
     % Base class for distributions on the hypertorus [0,2pi)^dim (Cartesian
     % product of dim circles)
     
