@@ -51,16 +51,20 @@ classdef FIGFilterTest < matlab.unittest.TestCase
         end
         
         function testUpdateNonlinear(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             z = 3;
             likelihood = @(z, x)1 ./ (abs(x-z) + .1);
             for currEnforcement = [false, true]
                 filter = FIGFilter(23, currEnforcement);
                 hfd1 = FIGDistribution.fromDistribution(VMDistribution(3, 2), 23, currEnforcement);
                 filter.setState(hfd1);
-                warning('off', 'Normalization:notNormalized')
                 filter.updateNonlinear(likelihood, z);
-                warning('on', 'Normalization:notNormalized')
-                testCase.verifyEqual(filter.getEstimateMean, z, 'AbsTol', 0.2); % The mean should stay approximately equal, but not entirely
+                % The mean should stay approximately equal, but not entirely
+                testCase.verifyEqual(filter.getEstimateMean, z, 'AbsTol', 0.2);
+                % Verify that it is normalized by validating no
+                % normalization is perform when converting to Fourier-based
+                % representation
+                testCase.verifyWarningFree(@()filter.getEstimate.integral);
             end
         end
     end

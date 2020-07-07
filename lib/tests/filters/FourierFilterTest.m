@@ -29,12 +29,13 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         function testPrediction(testCase)
             % Validity of operation is tested in Fourier class, only test
             % filter interface
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             for transformation = {'identity', 'sqrt'}
                 filter = FourierFilter(101, [transformation{:}]);
                 vm = VMDistribution(3, 2);
-                warnstruct = warning('off', 'Predict:automaticConversion');
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
                 filter.predictIdentity(vm);
-                warning(warnstruct);
+                fixture.teardown;
                 fd1 = FourierDistribution.fromDistribution(CircularUniformDistribution(), 101, [transformation{:}]);
                 fd2 = fd1.convolve(FourierDistribution.fromDistribution(vm, 101, [transformation{:}]));
                 testCase.verifyLength(filter.fd.a, 51);
@@ -46,13 +47,14 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         
         function testUpdateIdentity(testCase)
             % As above, only test filter interface
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             for transformation = {'identity', 'sqrt'}
                 filter = FourierFilter(101, [transformation{:}]);
                 vmMultiply = VMDistribution(3, 2);
                 vmFilter = VMDistribution(0, 2);
-                warnstruct = warning('off', 'Update:automaticConversion');
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
                 filter.updateIdentity(vmFilter, 3);
-                warning(warnstruct);
+                fixture.teardown;
                 fd1 = FourierDistribution.fromDistribution(CircularUniformDistribution(), 101, [transformation{:}]);
                 fd2 = fd1.multiply(FourierDistribution.fromDistribution(vmMultiply, 101, [transformation{:}]));
                 fd3 = fd2.truncate(101);
@@ -65,20 +67,22 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         end
         
         function testUpdateNonlinear(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             z = 3;
             likelihood = @(z, x)1 ./ (abs(x-z) + .1);
             for transformation = {'identity', 'sqrt'}
                 filter = FourierFilter(23, [transformation{:}]);
                 hfd1 = FourierDistribution.fromDistribution(VMDistribution(3, 2), 23, [transformation{:}]);
                 filter.setState(hfd1);
-                warning('off', 'Normalization:notNormalized')
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
                 filter.updateNonlinear(likelihood, z);
-                warning('on', 'Normalization:notNormalized')
+                fixture.teardown;
                 testCase.verifyEqual(filter.getEstimateMean, z, 'AbsTol', 0.2); % The mean should stay approximately equal, but not entirely
             end
         end
         
         function testUpdateNonlinearViaIFFT(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             z = 3;
             likelihood = @(z, x)1 ./ (abs(x-z) + .1);
             noCoeffs = 501;
@@ -88,10 +92,10 @@ classdef FourierFilterTest < matlab.unittest.TestCase
                 hfd1 = FourierDistribution.fromDistribution(VMDistribution(3, 2), noCoeffs, [transformation{:}]);
                 filter1.setState(hfd1);
                 filter2.setState(hfd1);
-                warning('off', 'Normalization:notNormalized')
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
                 filter1.updateNonlinear(likelihood, z);
                 filter2.updateNonlinearViaIFFT(likelihood, z);
-                warning('on', 'Normalization:notNormalized')
+                fixture.teardown;
                 % Given a high number of coefficients, the results should
                 % be similar
                 testCase.verifyEqual(filter1.fd.totalVariationDistanceNumerical(filter2.fd), ...
@@ -100,6 +104,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         end
         
         function testPredictNonlinearForLinear(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             densityInit = VMDistribution(3, 5);
             fNoiseDist = VMDistribution(0.5, 10);
             noCoeffs = 31;
@@ -109,7 +114,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
                 fourierFilterNl = FourierFilter(noCoeffs, [transformation{:}]);
                 fourierFilterNl.setState(FourierDistribution.fromDistribution(densityInit, noCoeffs, [transformation{:}]));
                 
-                warnstruct = warning('off', 'Predict:automaticConversion');
+                testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
                 fourierFilterLin.predictIdentity(fNoiseDist)
                 fourierFilterNl.predictNonlinear(@(x)x, fNoiseDist, true)
                 testCase.verifyEqual(fourierFilterLin.getEstimate.kldNumerical(fourierFilterNl.getEstimate), 0, 'AbsTol', 1E-8);
@@ -118,7 +123,6 @@ classdef FourierFilterTest < matlab.unittest.TestCase
                 fourierFilterLin.predictIdentity(fNoiseDistShifted)
                 fourierFilterNl.predictNonlinear(@(x)x+1, fNoiseDist, false)
                 testCase.verifyEqual(fourierFilterLin.getEstimate.kldNumerical(fourierFilterNl.getEstimate), 0, 'AbsTol', 1E-8);
-                warning(warnstruct);
             end
         end
         
@@ -136,6 +140,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         end
         
         function testTransitionDensity(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             fNoiseDist = VMDistribution(0.5, 10);
@@ -145,12 +150,12 @@ classdef FourierFilterTest < matlab.unittest.TestCase
             a = aGen(4);
             
             fTrans = @(xkk, xk)reshape(fNoiseDist.pdf(xkk(:)'-a(xk(:)')), size(xk));
-            warnStruct = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             hfdTransId = ToroidalFourierDistribution.fromFunction(fTrans, noCoeffs*[1, 1], 'identity');
             hfdTransId.C = 2 * pi * hfdTransId.C;
             hfdTransSqrt = ToroidalFourierDistribution.fromFunction(fTrans, noCoeffs*[1, 1], 'sqrt');
             hfdTransSqrt.C = sqrt(2*pi) * hfdTransSqrt.C;
-            warning(warnStruct);
+            fixture.teardown;
             
             [xVals, yVals] = meshgrid(linspace(0, 2*pi, 50));
             fTransVals = reshape(fTrans(xVals(:)', yVals(:)'), size(xVals));
@@ -162,6 +167,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         end
         
         function testJointDensity(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             fNoiseDist = VMDistribution(0.5, 10);
@@ -176,10 +182,10 @@ classdef FourierFilterTest < matlab.unittest.TestCase
             
             fTrans = @(xkk, xk)reshape(fNoiseDist.pdf(xkk(:)'-a(xk(:)')), size(xk));
             % Not correctly scaled here.
-            warnStruct = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             hfdTransId = ToroidalFourierDistribution.fromFunction(fTrans, noCoeffs*[1, 1], 'identity');
             hfdTransSqrt = ToroidalFourierDistribution.fromFunction(fTrans, noCoeffs*[1, 1], 'sqrt');
-            warning(warnStruct);
+            fixture.teardown;
             
             fJoint = @(xkk, xk)fTrans(xkk, xk) .* reshape(densityInit.pdf(xk(:)'), size(xk));
             % Initially first and overwrite C (this ensures no additional
@@ -205,6 +211,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         end
         
         function testTruncatePredictionJointId(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test that using truncation with .valid when using the
             % identity transformation is valid
             fNoiseDist = VMDistribution(0.5, 10);
@@ -218,9 +225,9 @@ classdef FourierFilterTest < matlab.unittest.TestCase
             
             fTrans = @(xkk, xk)reshape(fNoiseDist.pdf(xkk(:)'-a(xk(:)')), size(xk));
             % Not correctly scaled here.
-            warnStruct = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             hfdTransId = ToroidalFourierDistribution.fromFunction(fTrans, noCoeffs*[1, 1], 'identity');
-            warning(warnStruct);
+            fixture.teardown;
             
             % Initially first and overwrite C (this ensures no additional
             % normalization takes place)

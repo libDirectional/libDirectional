@@ -1,15 +1,7 @@
 classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
     % Base class for distributions on the hypertorus [0,2pi)^dim (Cartesian
     % product of dim circles)
-    
-    properties
-        dim       % Dimension, dim=1 is a circle, dim=2 a torus.
-    end
-    
-    methods (Abstract)
-        % Evaluate pdf at positions stored in xa
-        pdf(this, xa);
-    end 
+    % Convention for Dimension: dim=1 is a circle, dim=2 a torus.
     
     methods
         function p = plot(this, varargin)

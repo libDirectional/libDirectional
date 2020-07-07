@@ -3,8 +3,8 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
     % weights w.
     
     properties
-        d
-        w
+        d  % (dim x L)
+        w  % ( 1  x L)
     end
     
     methods

@@ -1,10 +1,10 @@
-classdef AbstractAxialFilter < handle
+classdef (Abstract) AbstractAxialFilter < AbstractFilter
     % Abstract base class for filters on the hypersphere with antipodal symmetry
     
     properties
         compositionOperator % denoted by "\oplus" in our papers
         compositionOperatorDerivative
-        dim %dimension (dim=2 -> circle/complex numbers, dim=4 -> quaternions)
+        % dimension (dim=2 -> circle/complex numbers, dim=4 -> quaternions)
     end
     
     methods ( Access = protected )

@@ -2,6 +2,7 @@ classdef SphericalHarmonicsFilterTest < matlab.unittest.TestCase
     
     methods(Test)
         function testUpdateIdentity(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             for transformation = {'identity', 'sqrt'}
                 shdFilter = SphericalHarmonicsFilter(30, [transformation{:}]);
                 vmfFilter = VMFFilter();
@@ -11,13 +12,13 @@ classdef SphericalHarmonicsFilterTest < matlab.unittest.TestCase
                 shd1 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf1, 30);
                 shd2 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf2, 30);
                 
-                warnStruct = warning('off', 'SphericalHarmonicsFilter:rotationRequired');
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('SphericalHarmonicsFilter:rotationRequired'));
                 vmfFilter.setState(vmf1);
                 vmfFilter.updateIdentity(vmf2, [1; 0; 0]);
                 
                 shdFilter.setState(shd1);
                 shdFilter.updateIdentity(shd2, [1; 0; 0]);
-                warning(warnStruct);
+                fixture.teardown;
                 
                 testCase.verifyEqual(vmfFilter.getEstimateMean, shdFilter.getEstimateMean, 'AbsTol', 1E-10);
             end

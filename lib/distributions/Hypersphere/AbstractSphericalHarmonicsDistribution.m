@@ -1,4 +1,4 @@
-classdef AbstractSphericalHarmonicsDistribution < AbstractHypersphericalDistribution
+classdef (Abstract) AbstractSphericalHarmonicsDistribution < AbstractHypersphericalDistribution
     
     % see Florian Pfaff, Gerhard Kurz, and Uwe D. Hanebeck,
     % Filtering on the Unit Sphere Using Spherical Harmonics

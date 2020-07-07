@@ -1,4 +1,4 @@
-% This example evaluates stochastics sampling of circular densities.
+% This example evaluates stochastic sampling of circular densities.
 %
 % Three different sampling methods are compared, a native sample for the
 % respective density, a generic Metropolis-Hastings sampler, and a sampler

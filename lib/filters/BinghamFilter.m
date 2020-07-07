@@ -94,7 +94,7 @@ classdef BinghamFilter < AbstractAxialFilter
             %       measurement on the unit hypersphere
             assert(isa(Bv, 'BinghamDistribution'));
             assert(Bv.dim == this.B.dim);
-            assert(all(size(z) == [this.B.dim, 1]));
+            assert(isequal(size(z), [this.B.dim, 1]));
             assert(abs(norm(z) - 1) < 1E-10);
             
             conjugate = @(q) [q(1); -q(2:end)];
