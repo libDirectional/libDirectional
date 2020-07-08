@@ -1,12 +1,8 @@
-classdef FIGFilter < AbstractCircularFilter
+classdef FIGFilter < AbstractCircularFilter & AbstractGridFilter
     % Implementation of the Fourier-interpreted grid filter.
     % see Florian Pfaff, Kailai Li, and Uwe D. Hanebeck,
     % Fourier Filters, Grid Filters, and the Fourier-Interpreted Grid Filter,
     % Proceedings of the 22nd International Conference on Information Fusion (Fusion 2019), Ottawa, Canada, July, 2019.
-    
-    properties
-        gd FIGDistribution
-    end
     
     methods
         function this = FIGFilter(noOfCoefficients, enforcePdfNonnegative)
@@ -15,37 +11,7 @@ classdef FIGFilter < AbstractCircularFilter
                 enforcePdfNonnegative logical = true
             end
             this.gd = FIGDistribution.fromDistribution(CircularUniformDistribution(), noOfCoefficients, enforcePdfNonnegative);
-        end
-        
-        function setState(this, gd_)
-            % Sets the current system state
-            %
-            % Parameters:
-            %   gd_ (AbstractCircularDistribution)
-            %       new state
-            assert(isa(gd_, 'AbstractCircularDistribution'));
-            if ~(isa(gd_, 'FIGDistribution'))
-                warning('setState:nonGrid', 'gd_ is not a FIGDistribution. Transforming with a number of coefficients that is equal to that of the filter.');
-                gd_ = FIGDistribution.fromDistribution(gd_, numel(this.gd.gridValues), this.gd.enforcePdfNonnegative);
-            else
-                if ~isequal(size(this.gd.gridValues), size(gd_.gridValues))
-                    warning('setState:noOfGridValuesDiffer', 'New density has different number of coefficients.')
-                end
-            end
-            this.gd = gd_;
-        end
-        
-        function gd = getEstimate(this)
-            % Return current estimate
-            %
-            % Returns:
-            %   gd (FIGDistribution)
-            %       current estimate
-            gd = this.gd;
-        end
-        
-        function mean = getEstimateMean(this)
-            mean = this.gd.circularMean;
+            this.dim = 1;
         end
         
         function predictIdentity(this, dSys)
@@ -118,15 +84,6 @@ classdef FIGFilter < AbstractCircularFilter
         function predictNonlinearViaTransitionDensity(this, fTrans, truncateJointSqrt) %#ok<INUSD>
             error('Currently unsupported');
         end
-        
-        function updateNonlinear(this, likelihood, z) %measurement z, likelihood(z,x)=P(Z|X)
-            fdMeas = FIGDistribution.fromFunction( ...
-                ... % Assume likelihood can use implicit expansion (for scalars also possible in older Matlab versions)
-                @(x)reshape(likelihood(z, x(:)'), size(x)), ...
-                numel(this.gd.gridValues), this.gd.enforcePdfNonnegative);
-            this.updateIdentity(fdMeas, zeros(size(z)));
-        end
-        
     end
     
 end

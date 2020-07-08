@@ -1,4 +1,4 @@
-classdef FIGDistribution < AbstractCircularDistribution
+classdef FIGDistribution < AbstractCircularDistribution & AbstractGridDistribution
     % This density representation is used by the Fourier-interpreted grid
     % filter. The density is represented using function values on a grid.
     % The interpolation is performed using Fourier series. This class is
@@ -7,10 +7,6 @@ classdef FIGDistribution < AbstractCircularDistribution
     % see Florian Pfaff, Kailai Li, and Uwe D. Hanebeck,
     % Fourier Filters, Grid Filters, and the Fourier-Interpreted Grid Filter,
     % Proceedings of the 22nd International Conference on Information Fusion (Fusion 2019), Ottawa, Canada, July, 2019.
-    properties
-        gridValues (:,1) double {mustBeReal, mustBeNonnegative}
-        enforcePdfNonnegative logical
-    end
     methods
         function this = FIGDistribution(gridValues, enforcePdfNonnegative)
             arguments
@@ -34,8 +30,8 @@ classdef FIGDistribution < AbstractCircularDistribution
                 noCoeffs = noCoeffs + 1;
             end
             if this.enforcePdfNonnegative
-               % Use square root to enforce nonnegative values
-               fd = FourierDistribution.fromFunctionValues(this.gridValues', noCoeffs, 'sqrt');
+                % Use square root to enforce nonnegative values
+                fd = FourierDistribution.fromFunctionValues(this.gridValues', noCoeffs, 'sqrt');
             else
                 fd = FourierDistribution.fromFunctionValues(this.gridValues', noCoeffs, 'identity');
             end
@@ -88,17 +84,12 @@ classdef FIGDistribution < AbstractCircularDistribution
         
         function p = value(this, xa)
             % Value when interpreted as a pmf
-            gridPoints = (0:2 * pi / numel(this.gridValues):2 * pi - 2 * pi / numel(this.gridValues))';
-            p = (repmat(xa, 1, 5) == gridPoints)' * this.gridValues;
+            p = (xa == this.grid)' * this.gridValues;
         end
         
-        function f = multiply(this, f2)
-            % Multiplies two transformed fourier pdfs (returns transformed result)
-            assert(this.enforcePdfNonnegative == f2.enforcePdfNonnegative);
-            assert(numel(this.gridValues) == numel(f2.gridValues));
-            warnStruct = warning('off', 'Normalization:notNormalized');
-            f = FIGDistribution(this.gridValues.*f2.gridValues, this.enforcePdfNonnegative);
-            warning(warnStruct);
+        function gridPoints = grid(this)
+            % For compatibility with other GridDistributions
+            gridPoints = (0:2 * pi / numel(this.gridValues):2 * pi - 2 * pi / numel(this.gridValues))';
         end
         
         function f = convolve(this, f2)
@@ -135,18 +126,7 @@ classdef FIGDistribution < AbstractCircularDistribution
         
         function f = normalize(this)
             tol = 1e-4;
-            integral = 2 * pi * mean(this.gridValues);
-            f = this;
-            if any(this.gridValues < 0)
-                warning('Normalization:negative', 'There are negative values. This usualy points to a user error.');
-            elseif abs(integral) < 1e-200 % Tolerance has to be that low to avoid unnecessary errors on multiply
-                error('Normalization:almostZero', 'Sum of grid vallues is too close to zero, this usually points to a user error.');
-            elseif abs(integral-1) > tol
-                warning('Normalization:notNormalized', 'Grid values apparently do not belong to normalized density. Normalizing...');
-            else
-                return % Normalized, return original density
-            end
-            f = FIGDistribution(f.gridValues/integral, this.enforcePdfNonnegative);
+            f = normalize@AbstractGridDistribution(this,tol);
         end
         
         function gd = shift(this, angle)
@@ -185,7 +165,6 @@ classdef FIGDistribution < AbstractCircularDistribution
             fvals = fvals(1:step:end);
             gd = FIGDistribution(fvals, enforcePdfNonnegative);
         end
-        
         
     end
     

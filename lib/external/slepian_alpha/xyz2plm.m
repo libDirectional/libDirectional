@@ -55,35 +55,24 @@ function [lmcosi,dw]=xyz2plm(fthph,L,method,lat,lon,cnd)
 % See also PLM2XYZ, PLM2SPEC, PLOTPLM, etc.
 %
 % Previously modified by fjsimons-at-alum.mit.edu, 09/04/2014
-% Last modified by Florian Pfaff for libDirectional, 10/04/2016
+% Last modified by Florian Pfaff for libDirectional, 21/10/2019
+arguments 
+    fthph (:,:) double
+    L (1,1) {mustBeInteger} = -1 % Will be overwritten if -1
+    method char = 'im'
+    lat double = zeros(0,1)
+    lon double = zeros(0,1)
+    cnd (1,1) double = 1e-6
+end
 persistent legendreCell
 t0=clock;
-
-switch nargin
-    case 1
-        method='im';
-        lat=[];
-        lon=[];
-        cnd=[];
-    case 2
-        method='im';
-        lat=[];
-        lon=[];
-        cnd=[];
-    case 3
-        lat=[];
-        lon=[];
-        cnd=[];
-    case 4
-        lon=[];
-        cnd=[];
-    case 5
-        cnd=[];
+if nargin<3 && numel(fthph)>1 % If lat and lon are not given and is only single elementary, enforce matrix
+    assert(size(fthph,1)>1 && size(fthph,2)>1);
+else
+    assert(numel(lat)==numel(fthph) && numel(lon)==numel(fthph) || (numel(lat)*numel(lon))==numel(fthph));
 end
 
 dw=[];
-
-as=0;
 % If no grid is specified, assumes equal spacing and complete grid
 if isempty(lat) && isempty(lon)
   % Test if data is 2D, and periodic over longitude
@@ -96,7 +85,7 @@ if isempty(lat) && isempty(lon)
   Lnyq=min([ceil((nlon-1)/2) nlat-1]);
   % Colatitude and its increment
   theta=linspace(0,pi,nlat);
-  as=1; % Equally spaced
+  canUseSaved=true; % Equally spaced
   % Calculate latitude/longitude sampling interval; no wrap-around left
   dtheta=pi/(nlat-1);
   dphi=2*pi/nlon;
@@ -113,6 +102,7 @@ if isempty(lat) && isempty(lon)
 elseif isempty(lon)
   % If only latitudes are specified; make equal spacing longitude grid
   % Latitudes can be unequally spaced for 'im', 'irr' and 'gl'.
+  canUseSaved=false;
   fthph=reduntest(fthph);
   theta=(90-lat)*pi/180;
   dtheta=(lat(1)-lat(2))*pi/180;
@@ -121,6 +111,7 @@ elseif isempty(lon)
   dphi=2*pi/nlon;
   Lnyq=min([ceil((nlon-1)/2) ceil(pi/dtheta)]);
 else
+  canUseSaved=false;
   % Irregularly sampled data
   fthph=fthph(:);
   theta=(90-lat)*pi/180;
@@ -135,11 +126,11 @@ else
 end
 
 % Decide on the Nyquist frequency
-if nargin==1
+if L==-1
     L=Lnyq;
 end
 % Never use Libbrecht algorithm... found out it wasn't that good
-libb=0;
+libb=false;
 %disp(sprintf('Lnyq= %i ; expansion out to degree L= %i',Lnyq,L))
 
 if L>Lnyq || nlat<(L+1)
@@ -164,14 +155,14 @@ switch method
   error('Specify valid method')
 end
 
-if size(legendreCell,1)>L && size(legendreCell,2)>length(x) && ~isempty(legendreCell{L+1,length(x)+1}) 
+if canUseSaved && size(legendreCell,1)>L && size(legendreCell,2)>length(x) && ~isempty(legendreCell{L+1,length(x)+1}) 
     Plm=legendreCell{L+1,length(x)+1};
 else
     mfn=mfilename('fullpath');
     fnpl=fullfile(mfn(1:end-8),'LEGENDRE',sprintf('LSSM-%i-%i.mat',L,length(x))); % Expect in folder of xyz2plm
     
-    if exist(fnpl,'file')==2 && as==1
-      load(fnpl)
+    if exist(fnpl,'file')==2 && canUseSaved
+      load(fnpl,'Plm')
     else  
       % Evaluate Legendre polynomials at selected points
       Plm=NaN(length(x),addmup(L));
@@ -181,7 +172,7 @@ else
       in1=0;
       in2=1;
       for l=0:L
-        if libb==0
+        if ~libb
           Plm(:,in1+1:in2)=(legendre(l,x(:)','sch')*sqrt(2*l+1))';
         else
           Plm(:,in1+1:in2)=(libbrecht(l,x(:)','sch')*sqrt(2*l+1))';
@@ -195,12 +186,14 @@ else
       if L>200
         delete(h)
       end
-      if as==1
+      if canUseSaved
         save(fnpl,'Plm')
       end
     end
-    legendreCell{L+1,length(x)+1}=Plm;
-    disp('Keeping legendre polynomials in memory, call ''clear xyz2plm'' to free memory.');
+    if canUseSaved
+        legendreCell{L+1,length(x)+1}=Plm;
+        disp('Keeping legendre polynomials in memory, call ''clear xyz2plm'' to free memory.');
+    end
 end
 
 switch method
@@ -252,7 +245,7 @@ switch method
   end
  case 'simpson'
   % Loop over the degrees. Could go up to l=nlon if you want
-  for l=0:L,
+  for l=0:L
     % Integrate over theta using Simpson's rule
     clm=simpson(theta,...
 		repmat(sin(theta(:)),1,l+1).*a(:,1:l+1).*Plm(:,in1+1:in2));
@@ -267,7 +260,7 @@ switch method
   end
  case 'gl'
   % Loop over the degrees. Could go up to l=nlon if you want
-  for l=0:L,
+  for l=0:L
     % Integrate over theta using Gauss-Legendre integration
     clm=sum(a(:,1:l+1).*(diag(w)*Plm(:,in1+1:in2)));
     slm=sum(b(:,1:l+1).*(diag(w)*Plm(:,in1+1:in2)));

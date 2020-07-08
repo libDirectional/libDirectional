@@ -145,7 +145,12 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
             warning(warningSettings);
         end
-        
+        function testValue(testCase)
+            vm = VMDistribution(3, 1);
+            fd = FIGDistribution.fromDistribution(vm, 99, true);
+            testCase.verifyEqual(fd.value(0), vm.pdf(0), 'AbsTol', 1e-16);
+            testCase.verifyEqual(fd.value(eps), 0, 'AbsTol', 1e-16);
+        end
         function testFromFunction(testCase)
             xvals = -2 * pi:0.01:3 * pi;
             for kappa = 0.1:0.3:4
@@ -180,6 +185,7 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
                         f2 = FIGDistribution.fromDistribution(dist2, 101, currEnforcement);
                         fFiltered = f1.multiply(f2);
                         distResult = dist1.multiply(dist2);
+                        testCase.verifyWarningFree(@()fFiltered.pdf(xvals));
                         testCase.verifyEqual(fFiltered.pdf(xvals), distResult.pdf(xvals), 'AbsTol', 1E-8);
                     end
                 end

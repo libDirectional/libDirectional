@@ -1,14 +1,15 @@
 classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
     methods(Test)
         function testNormalization(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             testCase.verifyWarning(@()SphericalHarmonicsDistributionComplex(1), 'Normalization:notNormalized');
             testCase.verifyError(@()SphericalHarmonicsDistributionComplex(0), 'Normalization:almostZero');
             coeffRand = rand(1, 9);
             unnormalizedCoeffs = [coeffRand(1), NaN, NaN, NaN, NaN; coeffRand(2) + 1i * coeffRand(3), coeffRand(4), -coeffRand(2) + 1i * coeffRand(3), NaN, NaN; ...
                 coeffRand(5) + 1i * coeffRand(6), coeffRand(7) + 1i * coeffRand(8), coeffRand(9), -coeffRand(7) + 1i * coeffRand(8), coeffRand(5) - 1i * coeffRand(6)];
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             shd = SphericalHarmonicsDistributionComplex(unnormalizedCoeffs);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyEqual(shd.integral, 1, 'AbsTol', 1E-5);
             % Enforce unnormalized coefficients and compare ratio
             [phi, theta] = deal(rand(1, 10)*2*pi, rand(1, 10)*pi-pi/2);
@@ -34,19 +35,20 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             end
         end
         function testTruncation(testCase)
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             coeffRand = rand(1, 9);
             unnormalizedCoeffs = [coeffRand(1), NaN, NaN, NaN, NaN; coeffRand(2) + 1i * coeffRand(3), coeffRand(4), -coeffRand(2) + 1i * coeffRand(3), NaN, NaN; ...
                 coeffRand(5) + 1i * coeffRand(6), coeffRand(7) + 1i * coeffRand(8), coeffRand(9), -coeffRand(7) + 1i * coeffRand(8), coeffRand(5) - 1i * coeffRand(6)];
             cshd = SphericalHarmonicsDistributionComplex(unnormalizedCoeffs);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyWarning(@()cshd.truncate(4), 'Truncate:TooFewCoefficients');
-            warningSettings = warning('off', 'Truncate:TooFewCoefficients');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
             cshd2 = cshd.truncate(4);
             testCase.verifySize(cshd2.coeffMat, [5, 9]);
             testCase.verifyTrue(all(isnan(cshd2.coeffMat(5, :)) | cshd2.coeffMat(5, :) == 0));
             cshd3 = cshd.truncate(5);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifySize(cshd3.coeffMat, [6, 11]);
             testCase.verifyTrue(all(all(isnan(cshd3.coeffMat(5:6, :)) | cshd3.coeffMat(5:6, :) == 0)));
             cshd4 = cshd2.truncate(3);
@@ -232,25 +234,27 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             testConversion(testCase, [1, NaN, NaN, NaN, NaN, NaN, NaN; 0, 0, 0, NaN, NaN, NaN, NaN; 0, 0, 0, 0, 0, NaN, NaN; 1 / sqrt(2), 0, 0, 0, 0, 0, -1 / sqrt(2)]);
         end
         function testTransformationViaIntegral(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
             if ~islogical(enableExpensive) || ~enableExpensive, return; end
             % Test approximating a VMF
             dist = VMFDistribution([0; -1; 0], 10);
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             shd = SphericalHarmonicsDistributionComplex.fromFunctionViaIntegralCart(@(x)dist.pdf(x), 11);
-            warning(warningSettings);
+            fixture.teardown;
             points = rand(3, 10000);
             testCase.verifyEqual(shd.pdf(points), dist.pdf(points), 'AbsTol', 2E-3);
             
             % Test approximating a spherical harmonic distrubution
             dist = SphericalHarmonicsDistributionComplex([sqrt(1/pi) / 2, NaN, NaN, NaN, NaN, NaN, NaN; 0, 0, 0, NaN, NaN, NaN, NaN; 0, 0, 0, 0, 0, NaN, NaN; 1 / sqrt(2), 0, 0, 0, 0, 0, -1 / sqrt(2)]);
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             shd = SphericalHarmonicsDistributionComplex.fromFunctionViaIntegralCart(@(x)dist.pdf(x), 3);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyEqual(shd.pdf(points), dist.pdf(points), 'AbsTol', 1E-6);
             testCase.verifyEqual(shd.coeffMat, dist.coeffMat, 'AbsTol', 1E-6);
         end
         function testCovergence(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
             if ~islogical(enableExpensive), enableExpensive = false; end
             if enableExpensive
@@ -259,14 +263,13 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
                 noDiffs = 3;
             end
             dist = VMFDistribution([0; -1; 0], 10);
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             diffs = NaN(noDiffs, 1);
             for i = 2:noDiffs + 1
                 shd = SphericalHarmonicsDistributionComplex.fromFunctionViaIntegralCart(@(x)dist.pdf(x), i);
                 diffs(i-1) = shd.totalVariationDistanceNumerical(dist);
             end
             testCase.verifyLessThan(diff(diffs), 0);
-            warning(warningSettings);
         end
         function testMultiplicationFixedCoeffs(testCase)
             [phi, theta] = meshgrid(linspace(0, 2*pi, 100), linspace(-pi/2, pi/2, 100));
@@ -328,12 +331,13 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             testCase.verifyEqual(shdId.totalVariationDistanceNumerical(shd), 0, 'AbsTol', 1E-14);
         end
         function testMultiplicationViaTransform(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             wignercycle(10);
-            warningSetting = warning('off', 'Normalization:notNormalized');
             for transformation = {'identity', 'sqrt'}
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
                 shd1 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([1; 1; 1]/sqrt(3), 2), 5, [transformation{:}]);
                 shd2 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(VMFDistribution([1; 1; -1]/sqrt(3), 2), 5, [transformation{:}]);
-                warning(warningSetting);
+                fixture.teardown;
                 shdMultFast = shd1.multiply(shd2);
                 shdMultCoeff = shd1.multiplyViaCoefficients(shd2);
                 
@@ -346,7 +350,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
                 testCase.verifyEqual(shdMultFastDeg10.pdf([x; y; z]), shdMultCoeffDeg10.pdf([x; y; z]), 'AbsTol', 1E-6);
                 % Verify that the above test actually is of use (i.e., there is
                 % a difference when respecting degree up to 10 instead)
-                testCase.verifyTrue(any(shdMultFast.pdf([x; y; z])-shdMultCoeffDeg10.pdf([x; y; z])) > 1E-6);
+                testCase.verifyTrue(any(shdMultFast.pdf([x; y; z])-shdMultCoeffDeg10.pdf([x; y; z]) > 1E-6));
             end
         end
         function testConvolutionForSqrt(testCase)
@@ -460,12 +464,13 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             testCase.verifyTrue(isreal(shd.meanDirection));
         end
         function integralAnalytical(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             coeffRand = rand(1, 9);
             unnormalizedCoeffs = [coeffRand(1), NaN, NaN, NaN, NaN; coeffRand(2) + 1i * coeffRand(3), coeffRand(4), -coeffRand(2) + 1i * coeffRand(3), NaN, NaN; ...
                 coeffRand(5) + 1i * coeffRand(6), coeffRand(7) + 1i * coeffRand(8), coeffRand(9), -coeffRand(7) + 1i * coeffRand(8), coeffRand(5) - 1i * coeffRand(6)];
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             shd = SphericalHarmonicsDistributionComplex(unnormalizedCoeffs);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyEqual(shd.integralAnalytical, shd.integral, 'AbsTol', 1E-6);
         end
         function testfromDistributionNumericalFast(testCase)
@@ -480,12 +485,34 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
                 end
             end
         end
+        function testFromGrid(testCase)
+            dist = HypersphericalMixture(...
+                {VMFDistribution(1/sqrt(2)*[-1;0;1],2),VMFDistribution([0;-1;0],2)},[0.5,0.5]);
+            sgd = SphericalGridDistribution.fromDistribution(dist, 1012, 'sh_grid');
+            
+            % Test without providing grid
+            deg = (-6+sqrt(36-8*(4-numel(sgd.gridValues))))/4;
+            shd1Id = SphericalHarmonicsDistributionComplex.fromGrid(reshape(sgd.gridValues,deg+2,2*deg+2));
+            shd1Sqrt = SphericalHarmonicsDistributionComplex.fromGrid(reshape(sgd.gridValues,deg+2,2*deg+2), [], 'sqrt');
+            % Test when providing grid
+            shd2Id = SphericalHarmonicsDistributionComplex.fromGrid(sgd.gridValues, sgd.grid);
+            shd2Sqrt = SphericalHarmonicsDistributionComplex.fromGrid(sgd.gridValues, sgd.grid, 'sqrt');
+            
+            [phi, theta] = meshgrid(linspace(0, 2*pi, 10), linspace(-pi/2, pi/2, 10));
+            [x, y, z] = sph2cart(phi(:)', theta(:)', 1);
+            
+            testCase.verifyEqual(shd1Id.pdf([x; y; z]), dist.pdf([x; y; z]), 'AbsTol', 1E-11);
+            testCase.verifyEqual(shd1Sqrt.pdf([x; y; z]), dist.pdf([x; y; z]), 'AbsTol', 1E-11);
+            testCase.verifyEqual(shd2Id.pdf([x; y; z]), dist.pdf([x; y; z]), 'AbsTol', 1E-11);
+            testCase.verifyEqual(shd2Sqrt.pdf([x; y; z]), dist.pdf([x; y; z]), 'AbsTol', 1E-11);
+        end
     end
     methods
         function testConversion(testCase, coeffMat)
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             cshd = SphericalHarmonicsDistributionComplex(coeffMat);
-            warning(warningSettings);
+            fixture.teardown;
             rshd = cshd.toSphericalHarmonicsDistributionReal;
             [phi, theta] = meshgrid(linspace(0, 2*pi, 10), linspace(-pi/2, pi/2, 10));
             [x, y, z] = sph2cart(phi(:)', theta(:)', 1);

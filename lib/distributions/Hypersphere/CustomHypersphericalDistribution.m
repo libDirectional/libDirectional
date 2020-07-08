@@ -1,9 +1,5 @@
-classdef CustomHypersphericalDistribution < AbstractHypersphericalDistribution
+classdef CustomHypersphericalDistribution < AbstractHypersphericalDistribution & CustomDistribution
     % Hyperspherical distribution with custom pdf.
-    
-    properties
-        f
-    end
     
     methods
         function this = CustomHypersphericalDistribution(f_,dim_)
@@ -17,10 +13,7 @@ classdef CustomHypersphericalDistribution < AbstractHypersphericalDistribution
             %   dim_ (scalar)
             %       dimension of the real space in which the hypersphere is
             %       embedded
-            assert(isa(f_, 'function_handle'),'f must be given as a function handle');
-            assert(isscalar(dim_) && dim_>=1,'Dimension must be a scalar greater or equal to 1.');
-            this.dim = dim_;
-            this.f = f_;
+            this@CustomDistribution(f_,dim_);
         end
         
         function p = pdf(this, xa)
@@ -34,6 +27,7 @@ classdef CustomHypersphericalDistribution < AbstractHypersphericalDistribution
             %       value of the pdf at each location
             assert(size(xa,1)==this.dim);
             p = this.f(xa);
+            assert(isequal(size(p),[1,size(xa,2)])); % Validate output format of pdf is as expected
         end
         
     end

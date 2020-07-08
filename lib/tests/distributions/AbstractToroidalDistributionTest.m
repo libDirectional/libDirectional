@@ -1,6 +1,4 @@
 classdef AbstractToroidalDistributionTest< matlab.unittest.TestCase    
-    properties
-    end
     
     methods (Test)
         function testAbstractToroidalDistribution(testCase)           
