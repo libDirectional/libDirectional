@@ -68,20 +68,22 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
         end
         
         function testUpdateNonlinear2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             z = [1; 3];
             for transformation = {'identity', 'sqrt'}
                 filter = HypertoroidalFourierFilter([23, 25], [transformation{:}]);
                 hfd1 = HypertoroidalFourierDistribution.fromDistribution(ToroidalVMSineDistribution([1; 3], [0.3; 0.5], 0.5), [23, 25], [transformation{:}]);
                 likelihood = @(z, x)1 ./ (sum(abs(x-z)) + .1);
                 filter.setState(hfd1);
-                warning('off', 'Normalization:notNormalized')
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
                 filter.updateNonlinear(likelihood, z);
-                warning('on', 'Normalization:notNormalized')
+                fixture.teardown;
                 testCase.verifyEqual(filter.getEstimateMean, z, 'AbsTol', 0.2); % The mean should stay approximately equal, but not entirely
             end
         end
         
         function testPredictNonlinearForLinear1D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture 
             densityInit = VMDistribution(3, 5);
             fNoiseDist = VMDistribution(0.5, 10);
             noCoeffs = 31;
@@ -91,7 +93,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
                 fourierFilterNl = HypertoroidalFourierFilter(noCoeffs, [transformation{:}]);
                 fourierFilterNl.setState(HypertoroidalFourierDistribution.fromDistribution(densityInit, noCoeffs, [transformation{:}]));
                 
-                warnstruct = warning('off', 'Predict:automaticConversion');
+                testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
                 fourierFilterLin.predictIdentity(fNoiseDist)
                 fourierFilterNl.predictNonlinear(@(x)x, fNoiseDist, true)
                 testCase.verifyEqual(fourierFilterLin.getEstimate.kldNumerical(fourierFilterNl.getEstimate), 0, 'AbsTol', 1E-8);
@@ -100,11 +102,11 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
                 fourierFilterLin.predictIdentity(fNoiseDistShifted)
                 fourierFilterNl.predictNonlinear(@(x)x+1, fNoiseDist, false)
                 testCase.verifyEqual(fourierFilterLin.getEstimate.kldNumerical(fourierFilterNl.getEstimate), 0, 'AbsTol', 1E-8);
-                warning(warnstruct);
             end
         end
         
         function testPredictNonlinearForLinear2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             densityInit = HypertoroidalWNDistribution([3; 3], eye(2));
             fNoiseDist = HypertoroidalWNDistribution([0; 0], [1, 0.1; 0.1, 1]);
             noCoeffs = [15, 15];
@@ -119,7 +121,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
                 fourierFilterNl = HypertoroidalFourierFilter(noCoeffs, [transformation{:}]);
                 fourierFilterNl.setState(HypertoroidalFourierDistribution.fromDistribution(densityInit, noCoeffs, [transformation{:}]));
                 
-                warnstruct = warning('off', 'Predict:automaticConversion');
+                testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
                 fourierFilterLin.predictIdentity(fNoiseDist);
                 fourierFilterNl.predictNonlinear(@(varargin)varargin{:}, fNoiseDist);
                 testCase.verifyEqual(fourierFilterNl.hfd.transformation, [transformation{:}]);
@@ -130,7 +132,6 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
                 fourierFilterNl.predictNonlinear(@(x, y)deal(x+1, y+1), fNoiseDist);
                 testCase.verifyEqual(fourierFilterNl.hfd.transformation, [transformation{:}]);
                 testCase.verifyEqual(fourierFilterLin.getEstimate.C, fourierFilterNl.getEstimate.C, 'AbsTol', tol);
-                warning(warnstruct);
             end
         end
         
@@ -162,6 +163,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
         end
         
         function testTransitionDensity2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             global enableExpensive
@@ -174,12 +176,12 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             this = struct('hfd', []);
             this.hfd = HypertoroidalFourierDistribution(diag([zeros(1, 50), 1 / (2 * pi)^2, zeros(1, 50)]), 'identity');
             
-            warnStruct = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             hfdTransId = HypertoroidalFourierDistribution.fromFunction( ...
                 @fTrans, coeffsPerDim*ones(1, 2*noiseDistribution.dim), 'identity');
             hfdTransSqrt = HypertoroidalFourierDistribution.fromFunction( ...
                 @fTrans, coeffsPerDim*ones(1, 2*noiseDistribution.dim), 'sqrt');
-            warning(warnStruct);
+            fixture.teardown;
             
             hfdTransId.C = (2 * pi)^noiseDistribution.dim * hfdTransId.C;
             hfdTransSqrt.C = sqrt(2*pi)^noiseDistribution.dim * hfdTransSqrt.C;
@@ -232,6 +234,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
         end
         
         function testJointDensity2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             global enableExpensive
@@ -245,12 +248,12 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             this = struct('hfd', []);
             this.hfd = HypertoroidalFourierDistribution(diag([zeros(1, 50), 1 / (2 * pi)^2, zeros(1, 50)]), 'identity');
             
-            warnStruct = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             hfdTransId = HypertoroidalFourierDistribution.fromFunction( ...
                 @fTrans, coeffsPerDim*ones(1, 2*noiseDistribution.dim), 'identity');
             hfdTransSqrt = HypertoroidalFourierDistribution.fromFunction( ...
                 @fTrans, coeffsPerDim*ones(1, 2*noiseDistribution.dim), 'sqrt');
-            warning(warnStruct);
+            fixture.teardown;
             
             densityInit = ToroidalWNDistribution([3 * 2 / pi; pi], [3, 0.3; 0.3, 1]);
             hfdInitId = HypertoroidalFourierDistribution.fromDistribution(densityInit, coeffVector, 'identity');
@@ -318,6 +321,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
         end
         
         function testTruncatePredictionJointId2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test that using truncation with .valid when using the
             % identity transformation is valid
             noiseDistribution = ToroidalWNDistribution([1; 2], [1, -0.3; -0.3, 4]);
@@ -329,10 +333,10 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             this = struct('hfd', []);
             this.hfd = HypertoroidalFourierDistribution(diag([zeros(1, 50), 1 / (2 * pi)^2, zeros(1, 50)]), 'identity');
             
-            warnStruct = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             hfdTransId = HypertoroidalFourierDistribution.fromFunction( ...
                 @fTrans, coeffsPerDim*ones(1, 2*noiseDistribution.dim), 'identity');
-            warning(warnStruct);
+            fixture.teardown;
             
             densityInit = ToroidalWNDistribution([3 * 2 / pi; pi], [3, 0.3; 0.3, 1]);
             hfdInitId = HypertoroidalFourierDistribution.fromDistribution(densityInit, coeffVector, 'identity');

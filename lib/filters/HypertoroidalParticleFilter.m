@@ -6,7 +6,7 @@ classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter
     end
     
     methods
-        function this = HypertoroidalParticleFilter(nParticles,dim)
+        function this = HypertoroidalParticleFilter(nParticles, dim)
             % Constructor
             %
             % Parameters:

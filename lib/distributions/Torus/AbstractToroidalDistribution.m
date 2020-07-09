@@ -1,4 +1,4 @@
-classdef AbstractToroidalDistribution < AbstractHypertoroidalDistribution
+classdef (Abstract) AbstractToroidalDistribution < AbstractHypertoroidalDistribution
     % Abstract base class for distributions on the torus (S1 x S1)
     % The torus is parameterized as [0,2*pi)^2
     

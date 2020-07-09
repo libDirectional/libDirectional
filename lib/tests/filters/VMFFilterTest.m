@@ -35,7 +35,7 @@ classdef VMFFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual([cos(vmPredictIdentity.mu); sin(vmPredictIdentity.mu)], vmfPredictIdentity.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmPredictIdentity.kappa, vmfPredictIdentity.kappa, 'RelTol', 1E-10);
             
-            %% predict nonlinear with identify as function
+            %% predict nonlinear with identity as function
             filter.setState(vmf);
             filter.predictNonlinear(@(x) x, vmfNoise);
             vmfPredictNonLinear = filter.getEstimate();
@@ -82,7 +82,7 @@ classdef VMFFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual(vmf.mu, vmfPredictIdentity.mu, 'RelTol', 1E-10);
             testCase.verifyLessThanOrEqual(vmfPredictIdentity.kappa, vmf.kappa);
             
-            %% predict nonlinear with identify as function
+            %% predict nonlinear with identity as function
             filter.setState(vmf);
             filter.predictNonlinear(@(x) x, vmfNoise);
             vmfPredictNonLinear = filter.getEstimate();

@@ -1,4 +1,4 @@
-% This example analyzes the results obtain from the  Metropolis-Hastings 
+% This example analyzes the results obtained from the  Metropolis-Hastings 
 % algorithm. If the burn-in and/or skipping paramters are chosen too small, 
 % a significant correlation can be introduced in the samples.
 

@@ -1,4 +1,4 @@
-classdef AbstractComplexHypersphericalDistribution
+classdef (Abstract) AbstractComplexHypersphericalDistribution
     % Abstract base class for distributions on the hypershere (Sd)
     
     properties

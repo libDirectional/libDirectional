@@ -45,7 +45,8 @@ classdef HypersphericalUniformDistribution < AbstractHypersphericalDistribution
                 s(1,:) = r.*cos(phi);
                 s(2,:) = r.*sin(phi);
             else
-                s=cell2mat(cellfun(@(x){x/norm(x)},num2cell(randn(this.dim,n),1)));
+                samplesUnnorm = randn(this.dim,n);
+                s = samplesUnnorm./vecnorm(samplesUnnorm);
             end
         end
     end 

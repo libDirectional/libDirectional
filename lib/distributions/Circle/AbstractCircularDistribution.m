@@ -1,4 +1,4 @@
-classdef AbstractCircularDistribution < AbstractHypertoroidalDistribution
+classdef (Abstract) AbstractCircularDistribution < AbstractHypertoroidalDistribution
     % AbstractCircularDistribution abstract base class for distributions on
     % the circle S1, or equivalently SO(2). The circle is parameterized as
     % [0,2pi).
