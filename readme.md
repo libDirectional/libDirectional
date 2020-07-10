@@ -16,8 +16,8 @@ Installation
 
 Requirements:
 
-  * Matlab 2014a or later
-  * a suitable compiler (Visual Studio 2013 Update 4 or later, Visual Studio 2015, Visual Studio 2017, MinGW64, gcc 4.7 or later, XCode)
+  * Matlab 2019b or later
+  * a suitable compiler (Visual Studio 2015, Visual Studio 2017, MinGW64, gcc 4.7 or later, XCode)
 
 To use libDirectional, add the entire lib-folder including subdirectories to Matlab's search path. Then, change to the lib-folder and run the `compileAll.m` script. This script should compile all mex-files used by libDirectional. 
 
@@ -141,6 +141,7 @@ libDrectional relies on the following external libraries, which are also include
   * [TesselateS3](https://github.com/gerhardkurz/TessellateS3) (GPLv3)
   * Modified versions of [Slepian Alpha](http://csdms.colorado.edu/wiki/Model:SLEPIAN_Alpha) and [Slepian Bravo](http://csdms.colorado.edu/wiki/Model:SLEPIAN_Bravo) (GPLv2 or later)
   * [Wigner3j](https://de.mathworks.com/matlabcentral/fileexchange/20619-wigner3j-symbol) (BSD)
+  * A modified version of the Recursive Zonal Equal Area Sphere Partitioning Toolbox [eq_sphere_partitions] http://eqsp.sourceforge.net/ (MIT)
 
 Furthermore, we use the script `circVMcdf` by Shai Revzen (GPLv3). We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in the externals folder as only small parts are used.
 

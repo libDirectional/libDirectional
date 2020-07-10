@@ -1,7 +1,5 @@
 classdef AbstractCircularDistributionTest< matlab.unittest.TestCase
-    properties
-    end
-    
+   
     methods (Test)
         function testAbstractCircularDistribution(testCase)
             x = 0:6;

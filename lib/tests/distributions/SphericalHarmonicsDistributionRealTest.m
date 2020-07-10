@@ -1,12 +1,13 @@
 classdef SphericalHarmonicsDistributionRealTest < matlab.unittest.TestCase
     methods(Test)
         function testNormalization(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             testCase.verifyWarning(@()SphericalHarmonicsDistributionReal(1), 'Normalization:notNormalized');
             testCase.verifyError(@()SphericalHarmonicsDistributionReal(0), 'Normalization:almostZero');
-            warningSettings = warning('off', 'Normalization:notNormalized');
             unnormalizedCoeffs = rand(3, 5);
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             shd = SphericalHarmonicsDistributionReal(unnormalizedCoeffs);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyEqual(shd.integral, 1, 'AbsTol', 1E-6);
             % Enforce unnormalized coefficients and compare ratio
             [phi, theta] = deal(rand(1, 10)*2*pi, rand(1, 10)*pi-pi/2);
@@ -17,16 +18,17 @@ classdef SphericalHarmonicsDistributionRealTest < matlab.unittest.TestCase
             testCase.verifyEqual(diff(valsNormalized./valsUnnormalized), zeros(1, size(x, 2)-1), 'AbsTol', 1E-6);
         end
         function testTruncation(testCase)
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             rshd = SphericalHarmonicsDistributionReal(rand(4, 7));
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyWarning(@()rshd.truncate(4), 'Truncate:TooFewCoefficients');
-            warningSettings = [warningSettings, warning('off', 'Truncate:TooFewCoefficients')];
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
             rshd2 = rshd.truncate(4);
             testCase.verifySize(rshd2.coeffMat, [5, 9]);
             testCase.verifyTrue(all(isnan(rshd2.coeffMat(5, :)) | rshd2.coeffMat(5, :) == 0));
             rshd3 = rshd.truncate(5);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifySize(rshd3.coeffMat, [6, 11]);
             testCase.verifyTrue(all(all(isnan(rshd3.coeffMat(5:6, :)) | rshd3.coeffMat(5:6, :) == 0)));
             rshd4 = rshd2.truncate(3);
@@ -209,18 +211,20 @@ classdef SphericalHarmonicsDistributionRealTest < matlab.unittest.TestCase
             testConversion(testCase, rand(4, 7));
         end
         function testConversionToComplexAndBack(testCase)
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             rshd = SphericalHarmonicsDistributionReal(rand(4, 7));
-            warning(warningSettings);
+            fixture.teardown;
             cshd = rshd.toSphericalHarmonicsDistributionComplex;
             rshd2 = cshd.toSphericalHarmonicsDistributionReal;
             testCase.verifyEqual(rshd2.coeffMat, rshd.coeffMat, 'AbsTol', 1E-6);
         end
         function integralAnalytical(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             unnormalizedCoeffs = rand(3, 5);
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             shd = SphericalHarmonicsDistributionReal(unnormalizedCoeffs);
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyEqual(shd.integralAnalytical, shd.integral, 'AbsTol', 1E-6);
         end
         
@@ -256,9 +260,10 @@ classdef SphericalHarmonicsDistributionRealTest < matlab.unittest.TestCase
     end
     methods
         function testConversion(testCase, coeffMat)
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             rshd = SphericalHarmonicsDistributionReal(coeffMat);
-            warning(warningSettings);
+            fixture.teardown;
             cshd = rshd.toSphericalHarmonicsDistributionComplex;
             [phi, theta] = deal(rand(1, 10)*2*pi, rand(1, 10)*pi-pi/2);
             [x, y, z] = sph2cart(phi, theta, 1);

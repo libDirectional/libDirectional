@@ -409,5 +409,9 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
             end
         end
         
+        function s = getManifoldSize(this)
+            s = (2*pi)^(this.dim);
+        end
+        
     end
 end

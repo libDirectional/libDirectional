@@ -1,14 +1,6 @@
-classdef AbstractHypersphericalDistribution
+classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
     % Abstract base class for distributions on the hypershere (S^dim)
-    
-    properties
-        dim       % Dimension  (dim=2 => circle, dim=3 => sphere, ...)
-    end
-    
-    methods (Abstract)
-        % Evaluate pdf at positions stored in xa
-        pdf(this, xa);
-    end
+    % Convention for Dimension: dim=2 is a circle, dim=3 a sphere.
     
     methods
         function h = plot(this, faces, gridFaces)
@@ -81,20 +73,57 @@ classdef AbstractHypersphericalDistribution
             % Returns:
             %   mu (vector)
             %       mean direction
-            mu=NaN(3,1);
-            for i=1:3
-                f = @(x) x(i,:).*this.pdf(x);
-                r=1;
-                
-                % spherical coordinates
-                fangles = @(phi1,phi2) f([ ...
-                r.*sin(phi1).*sin(phi2); ...
-                r.*cos(phi1).*sin(phi2); ...
-                r.*cos(phi2); ...
-                ]);
+            mu = NaN(this.dim,1);
+            switch this.dim
+                case 2
+                    for i=1:2
+                        f = @(x) x(i,:).*this.pdf(x);
+                        fAngles = @(phi) reshape(f([cos(phi(:)'); sin(phi(:)')]),size(phi));
+                        mu(i) = integral(fAngles,0,2*pi, 'AbsTol', 0.01);
+                    end
+                case 3
+                    for i=1:3
+                        f = @(x) x(i,:).*this.pdf(x);
+                        r = 1;
 
-                g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
-                mu(i) = integral2(g, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                        % spherical coordinates
+                        fangles = @(phi1,phi2) f([ ...
+                        r.*sin(phi1).*sin(phi2); ...
+                        r.*cos(phi1).*sin(phi2); ...
+                        r.*cos(phi2); ...
+                        ]);
+
+                        g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
+                        mu(i) = integral2(g, 0, 2*pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                    end
+                case 4
+                    % use matlab integration
+                    for i=1:4
+                        f = @(x) x(i,:).*this.pdf(x);
+                        r = 1;
+
+                        % hyperspherical coordinates
+                        fangles = @(phi1,phi2,phi3) f([ ...
+                        r.*sin(phi1).*sin(phi2).*sin(phi3); ...
+                        r.*cos(phi1).*sin(phi2).*sin(phi3); ...
+                        r.*cos(phi2).*sin(phi3); ...
+                        r.*cos(phi3)
+                        ]);
+
+                        g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
+                        ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
+
+                        mu(i) = integral3(ga, 0, 2*pi, 0, pi, 0, pi, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                    end
+                otherwise
+                    % use monte carlo integration
+                    Sd = AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
+                    
+                    n = 10000; % number of samples for integration
+                    r = HypersphericalUniformDistribution(this.dim).sample(n);
+                    p = this.pdf(r);
+                    
+                    mu = r*p'/n * Sd;
             end
             if norm(mu)<1e-9
                 warning('Density may not have actually have a mean direction because integral yields a point very close to the origin.')
@@ -158,8 +187,7 @@ classdef AbstractHypersphericalDistribution
             else
                 % use monte carlo integration
                 n = 10000; % number of samples for integration
-                r = randn(this.dim,n); % normal distribution
-                r = r./repmat(sqrt(sum(r.^2)),this.dim,1); % normalize on unit sphere
+                r = HypersphericalUniformDistribution(this.dim).sample(n);
                 p = this.pdf(r);
                 Sd = AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
                 i = sum(p)/n * Sd; % average value of pdf times surface area of unit sphere
@@ -224,8 +252,29 @@ classdef AbstractHypersphericalDistribution
             end
         end
         
+        function m = mode(this)
+            % Calculate the mode by finding maximum of PDF numerically 
+            % Returns:
+            %   m (column vector)
+            %       mode of the distribution 
+            m = this.modeNumerical(); % fallback to numerical calculation (nonlinear optimization)
+        end
+        
+        function m = modeNumerical(this)
+            % Calculate the mode by finding maximum of PDF numerically 
+            % Returns:
+            %   m (column vector)
+            %       mode of the distribution 
+            fun = @(s) -this.pdf(polar2cart(s)); % objective function 
+            s0 = rand(this.dim-1,1)*pi; % initial point 
+            options = optimoptions('fminunc', 'Display','notify-detailed', 'OptimalityTolerance',1e-12, 'MaxIterations',2000, 'StepTolerance',1e-12 ); 
+            % find maximum of density by numerical optimization in spherical coordinates 
+            m = fminunc(fun, s0, options);  
+            m = polar2cart(m); % convert optimum to Cartesian coordinates 
+        end
+        
         function s = sample(this, n)
-            % Stocahastic sampling
+            % Stochastic sampling
             % Fall back to Metropolis Hastings by default
             %
             % Parameters:
@@ -292,6 +341,18 @@ classdef AbstractHypersphericalDistribution
             %todo handle bimodality
             s = s(:,burnin+1:skipping:end);
         end        
+        
+        function s = sampleDeterministic(this)
+            % Deterministic sampling
+            % Fall back to spherical LCD DMD-to-DMD deterministic sampling by default 
+            % Use small number of samples according to UKF
+            %
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column    
+            n = (this.dim-1)*2 + 1;
+            s = sampleDeterministicLCD(this, n);
+        end
         
         function dist = hellingerDistanceNumerical(this, other)
             % Numerically calculates the Hellinger distance to another
@@ -398,6 +459,35 @@ classdef AbstractHypersphericalDistribution
             end
         end
         
+        function [s,info] = sampleDeterministicLCD(this, n)
+            % Spherical LCD DMD-to-DMD deterministic sampling algorithm
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of samples
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column
+            %   info (struct)
+            %       more details: generated reference samples, optimization output 
+            %
+            % https://www.overleaf.com/read/bjchtykkytdf
+            % Daniel Frisch, Kailai Li, and Uwe D. Hanebeck 
+            % Optimal Reduction of Dirac Mixture Densities on the 2-sphere 
+            % IFAC 2020, Berlin 
+            validateattributes(n, {'double'}, {'scalar','nonnegative','real','finite','integer'})
+            assert(this.dim==3, 'Spherical LCD Distance is currently not supported in this dimension.') 
+            % obtain stochastic reference samples
+            nRef = n*100; 
+            sRef = this.sample(nRef); % (3 x nRef) [x;y;z]
+            % DMD object, with equally weighted samples 
+            DMD = HypersphericalDiracDistribution(sRef);
+            % get LCD sample reduction
+            [s,info] = DMD.sampleDeterministicLCD(n);
+        end
+        function s = getManifoldSize(this)
+            s = AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
+        end
     end
     
     methods (Static)
@@ -414,10 +504,22 @@ classdef AbstractHypersphericalDistribution
             % Returns:
             %   surfaceArea (scalar)
             %       the surface area of the sphere
-            surfaceArea = 2 * pi^((dimension)/2)/gamma((dimension)/2); 
+            
+            % Use switch to avoid calling gamma function for lower
+            % dimensions
+            switch dimension
+                case 2
+                    surfaceArea = 2 * pi;
+                case 3
+                    surfaceArea = 4 * pi;
+                case 4
+                    surfaceArea = 2 * pi^2;
+                otherwise
+                    surfaceArea = 2 * pi^((dimension)/2)/gamma((dimension)/2); 
+            end
         end
         
-        function h=plotSphere(varargin)
+        function h = plotSphere(varargin)
             % Plots a sphere
             %
             % Returns:
@@ -431,7 +533,7 @@ classdef AbstractHypersphericalDistribution
             y=get(h,'ydata');
             z=get(h,'zdata');
             delete(h)
-            xKeep=x(1:skipx:end,:); % Only plot some of the lines as grid would be too find otherwise
+            xKeep=x(1:skipx:end,:); % Only plot some of the lines as grid would be too fine otherwise
             yKeep=y(1:skipx:end,:);
             zKeep=z(1:skipx:end,:);
             lineHandles=line(xKeep',yKeep',zKeep','color',0.7*[1 1 1]);

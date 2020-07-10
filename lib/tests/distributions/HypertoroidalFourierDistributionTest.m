@@ -9,12 +9,13 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         end
         
         function testNormalization2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             unnormalizedCoeffs2D = fftshift(fftn(rand(3, 7)+0.5));
             unnormalizedCoeffs2D(2, 4) = 1;
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             hfdId = HypertoroidalFourierDistribution(unnormalizedCoeffs2D, 'identity');
             hfdSqrt = HypertoroidalFourierDistribution(unnormalizedCoeffs2D, 'sqrt');
-            warning(warningSettings);
+            fixture.teardown;
             testCase.verifyEqual(integral2(@(x, y)reshape(hfdId.pdf([x(:)'; y(:)']), size(x)), 0, 2*pi, 0, 2*pi), 1, 'RelTol', 1E-4);
             testCase.verifyEqual(integral2(@(x, y)reshape(hfdSqrt.pdf([x(:)'; y(:)']), size(x)), 0, 2*pi, 0, 2*pi), 1, 'RelTol', 1E-4);
             % Test warnings
@@ -23,15 +24,16 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         end
         
         function testNormalization3D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
             if ~islogical(enableExpensive), enableExpensive = false;end
             if enableExpensive
                 unnormalizedCoeffs3D = fftshift(fftn(rand(3, 11, 7)+0.5));
                 unnormalizedCoeffs3D(2, 6, 4) = 1;
-                warningSettings = warning('off', 'Normalization:notNormalized');
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
                 hfdId = HypertoroidalFourierDistribution(unnormalizedCoeffs3D, 'identity');
                 hfdSqrt = HypertoroidalFourierDistribution(unnormalizedCoeffs3D, 'sqrt');
-                warning(warningSettings);
+                fixture.teardown;
                 testCase.verifyEqual(integral3(@(x, y, z)reshape(hfdId.pdf([x(:)'; y(:)'; z(:)']), size(x)), 0, 2*pi, 0, 2*pi, 0, 2*pi), 1, 'RelTol', 1E-4);
                 testCase.verifyEqual(integral3(@(x, y, z)reshape(hfdSqrt.pdf([x(:)'; y(:)'; z(:)']), size(x)), 0, 2*pi, 0, 2*pi, 0, 2*pi), 1, 'RelTol', 1E-4);
             end
@@ -76,6 +78,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         end
         
         function testFromFunction2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
             if ~islogical(enableExpensive), enableExpensive = false;end
             if enableExpensive
@@ -93,10 +96,10 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
                             @(x, y)reshape(tvm.pdf([x(:)'; y(:)']), size(x)), coeffs, 'identity');
                         hfdSqrt = HypertoroidalFourierDistribution.fromFunction( ...
                             @(x, y)reshape(tvm.pdf([x(:)'; y(:)']), size(x)), coeffs, 'sqrt');
-                        warnstruct = warning('off', 'Normalization:cannotTest');
+                        fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
                         hfdLog = HypertoroidalFourierDistribution.fromFunction( ...
                             @(x, y)reshape(tvm.pdf([x(:)'; y(:)']), size(x)), coeffs, 'log');
-                        warning(warnstruct);
+                        fixture.teardown;
                         testCase.verifyClass(hfdId, 'HypertoroidalFourierDistribution');
                         testCase.verifyClass(hfdSqrt, 'HypertoroidalFourierDistribution');
                         testCase.verifyClass(hfdLog, 'HypertoroidalFourierDistribution');
@@ -105,9 +108,9 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
                         testCase.verifySize(hfdLog.C, coeffs);
                         testCase.verifyEqual(tvm.pdf([xTest(:)'; yTest(:)']), hfdId.pdf([xTest(:)'; yTest(:)']), 'AbsTol', 1E-5);
                         testCase.verifyEqual(tvm.pdf([xTest(:)'; yTest(:)']), hfdSqrt.pdf([xTest(:)'; yTest(:)']), 'AbsTol', 1E-6);
-                        warnstruct = warning('off', 'pdf:mayNotBeNormalized');
+                        fixture = testCase.applyFixture(SuppressedWarningsFixture('pdf:mayNotBeNormalized'));
                         testCase.verifyEqual(tvm.pdf([xTest(:)'; yTest(:)']), hfdLog.pdf([xTest(:)'; yTest(:)']), 'AbsTol', 1E-6);
-                        warning(warnstruct);
+                        fixture.teardown;
                     end
                 end
             end
@@ -222,6 +225,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         end
         
         function testMultiply2DWithoutTruncation(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
             if ~islogical(enableExpensive), enableExpensive = false;end
             if enableExpensive
@@ -229,8 +233,8 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             else
                 [xTest, yTest] = meshgrid(0:1:2*pi);
             end
-            warning('off', 'pdf:mayNotBeNormalized');
-            warning('off', 'Normalization:cannotTest');
+            testCase.applyFixture(SuppressedWarningsFixture('pdf:mayNotBeNormalized'));
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             
             tvm1 = ToroidalVMSineDistribution([1; 3], [0.3; 0.5], 0.5);
             tvm2 = ToroidalVMSineDistribution([1; 4], [0.8; 1.5], 0.2);
@@ -244,9 +248,11 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             hfdMultid = hfd1id.multiply(hfd2id, [17, 15]+[15, 17]-1);
             hfdMultsqrt = hfd1sqrt.multiply(hfd2sqrt, [17, 15]+[15, 17]-1);
             
-            warnstruct = [warning('off', 'Truncate:TooFewCoefficients'), warning('off', 'Multiply:NotNormalizing')];
+            fixture1 = testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
+            fixture2 = testCase.applyFixture(SuppressedWarningsFixture('Multiply:NotNormalizing'));
             hfdMultlog = hfd1log.multiply(hfd2log, [17, 17]);
-            warning(warnstruct);
+            fixture1.teardown;
+            fixture2.teardown;
             
             testCase.verifyClass(hfdMultid, 'HypertoroidalFourierDistribution');
             testCase.verifyClass(hfdMultsqrt, 'HypertoroidalFourierDistribution');
@@ -268,9 +274,6 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(valFourierSqrt, valTrueApprox, 'AbsTol', 1E-7);
             normConstLog = 1 / integral2(@(x, y)reshape(hfdMultlog.pdf([x(:)'; y(:)']), size(x)), 0, 2*pi, 0, 2*pi);
             testCase.verifyEqual(valFourierLog*normConstLog, valTrueApprox, 'AbsTol', 1E-6);
-            
-            warning('on', 'pdf:mayNotBeNormalized');
-            warning('on', 'Normalization:cannotTest');
         end
         
         function testMultiply3DWithoutTruncation(testCase)
@@ -308,17 +311,18 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         end
         
         function testConvolve2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             tvm1 = ToroidalVMSineDistribution([1; 2], [0.3; 0.5], 0.5);
             tvm2 = ToroidalVMSineDistribution([1; 4], [0.8; 1.5], 0.2);
             hfd1id = HypertoroidalFourierDistribution.fromDistribution(tvm1, [17, 15], 'identity');
             hfdtid = HypertoroidalFourierDistribution.fromDistribution(tvm2, [15, 17], 'identity');
             hfd1sqrt = HypertoroidalFourierDistribution.fromDistribution(tvm1, [17, 15], 'sqrt');
             hfdtsqrt = HypertoroidalFourierDistribution.fromDistribution(tvm2, [15, 17], 'sqrt');
-            warnstruct = warning('off', 'Normalization:cannotTest');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             hfd1log = HypertoroidalFourierDistribution.fromDistribution(tvm1, [17, 15], 'log');
             hfdtlog = HypertoroidalFourierDistribution.fromDistribution(tvm2, [15, 17], 'log');
             testCase.verifyError(@()hfd1log.convolve(hfdtlog, [15, 13]), 'transformation:unrecognizedTransformation');
-            warning(warnstruct);
+            fixture.teardown;
             
             hfd2id = hfd1id.convolve(hfdtid, [15, 13]);
             hfd2sqrt = hfd1sqrt.convolve(hfdtsqrt, [15, 13]);
@@ -394,14 +398,15 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(hfdSqrt.integral([0; -1], [3 * pi; 5 * pi]), tfdSqrt.integral([0; -1], [3 * pi; 5 * pi]), 'AbsTol', 1E-4);
         end
         function testIntegral3D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test against integral
             C = [0.7, 0.4, 0.2; 0.4, 0.6, 0.1; 0.2, 0.1, 1];
             mu = [1; 2; 5];
             coeffs = [5, 9, 7];
-            warningSettings = warning('off', 'Normalization:notNormalized'); % Very coarse approximation, lack of normalization is to be expected
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized')); % Very coarse approximation, lack of normalization is to be expected
             hfdId = HypertoroidalFourierDistribution.fromDistribution(HypertoroidalWNDistribution(mu, C), coeffs, 'identity');
             hfdSqrt = HypertoroidalFourierDistribution.fromDistribution(HypertoroidalWNDistribution(mu, C), coeffs, 'sqrt');
-            warning(warningSettings);
+            fixture.teardown;
             
             global enableExpensive
             if ~islogical(enableExpensive), enableExpensive = false;end

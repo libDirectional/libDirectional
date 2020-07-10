@@ -116,7 +116,7 @@ classdef (Abstract) AbstractCircularDistribution < AbstractHypertoroidalDistribu
             else
                 h=0;
             end
-            p2 = stem3(cos(theta), sin(theta), ftheta, 'Marker', 'none',varargin{:});
+            p2 = stem3(cos(theta), sin(theta), ftheta, 'Marker', 'none');
             if h==1
                 hold off
             end

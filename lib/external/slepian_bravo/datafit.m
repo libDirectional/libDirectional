@@ -32,7 +32,7 @@ function [x,merr,mcov,chi2,L2err,rnk,Dw]=datafit(A,y,dcov,method,cnd)
 %
 % Using Numerical Recipes Chapters 2 and 15
 % Using Aki and Richards, 1st Edition, Chapter 12.
-
+printInfo=false;
 if numel(y)==length(y)
   y=y(:);
 end
@@ -101,7 +101,7 @@ x=Gpi*y;
 % L2 Error of the fit
 err=(y-A*x);
 L2err=err(:)'*err(:);
-if nargout~=1
+if nargout~=1 && printInfo
   fprintf('DATAFIT: L2 error norm %8.3e\n',L2err)
 end
 
@@ -120,7 +120,7 @@ if numel(y)==length(y)
     chi2=err'*err/N;
   end
   merr=sqrt(diag(mcov));
-  if nargout>3
+  if nargout>3 && printInfo
     fprintf('Reduced chi-2 %8.3e\n',chi2)
     fprintf('Rank / Size %i / %i\n',rnk,length(Dw))
   end

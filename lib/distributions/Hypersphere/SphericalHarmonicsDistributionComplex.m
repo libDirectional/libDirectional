@@ -298,7 +298,6 @@ classdef SphericalHarmonicsDistributionComplex < AbstractSphericalHarmonicsDistr
             shd = SphericalHarmonicsDistributionComplex.fromFunctionViaIntegralCart(@(x)dist.pdf(x), degree, transformation);
         end
         function shd = fromDistribution(dist, degree, transformation)
-            % For compatibility with other interface
             if nargin == 2 % Default to identity
                 transformation = 'identity';
             end
@@ -392,6 +391,36 @@ classdef SphericalHarmonicsDistributionComplex < AbstractSphericalHarmonicsDistr
                 end
             end
             shd = SphericalHarmonicsDistributionComplex(coeffMat, transformation);
+        end
+        function shd = fromGrid(gridValues, grid, transformation, degree)
+            % Values are assumed to be given without any transformation.
+            % If no grid is given (i.e., only one input or an empty grid),
+            % a grid that is directly compatible with
+            % the spherical harmonics transform is assumed. For other
+            % regular grids, directly provide grid (it is treated as
+            % irregular grid then).
+            arguments
+                gridValues (:,:) double
+                grid (3,:) double = zeros(3,0)
+                transformation char = 'identity';
+                degree (1,1) double = (-6+sqrt(36-8*(4-numel(gridValues))))/4;
+            end
+            if strcmp(transformation, 'sqrt')
+                gridValues=sqrt(gridValues);
+            end
+            if nargin==1 || isempty(grid)
+                assert(size(gridValues,2)>1, 'For regular grids, provide values as a matrix.');
+                assert(nargin==3 || floor(degree)==degree, ...
+                    'Based on the number of values, this grid is definitely not directly compatible with spherical harmonics transform.');
+                shd = SphericalHarmonicsDistributionComplex.fromPlmWithDegreeAndOrder(xyz2plm(reshape(gridValues,degree+2,2*degree+2)), transformation);
+            else
+                assert(size(gridValues,1)==numel(gridValues) && size(gridValues,1)==size(grid,2));
+                [lon,lat]=cart2sph(grid(1,:),grid(2,:),grid(3,:));
+                lon=rad2deg(lon);
+                lat=rad2deg(lat);
+                shd = SphericalHarmonicsDistributionComplex.fromPlmWithDegreeAndOrder(...
+                    xyz2plm(gridValues(:),ceil(degree),'irr',lat(:),lon(:)), transformation);
+            end
         end
         function shd = fromPlmWithDegreeAndOrder(plm, transformation)
             coeffMat = NaN(plm(end, 1)+1, 2*plm(end, 1)+1, 'like', 1i);

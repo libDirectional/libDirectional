@@ -27,10 +27,5 @@ classdef (Abstract) AbstractAxialFilter < AbstractFilter
             end
         end
     end
-    
-    methods (Abstract)
-        setState(this, state)
-        est = getEstimate(this)
-    end
        
 end
