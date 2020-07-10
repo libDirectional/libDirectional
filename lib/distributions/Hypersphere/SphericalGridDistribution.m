@@ -39,7 +39,7 @@ classdef SphericalGridDistribution < AbstractHypersphericalDistribution & Hypers
                 case 'sh_grid'
                     warning('Transformation:notEq_Point_set',...
                         'Not using eq_point_set. This may lead to problems in the normalization (and filters based thereon should not be used because the transition may not be valid).');
-                    degree = (-6+sqrt(36-8*(4-noOfGridPoints)))/4; % Größeres Ergebnis der abc-Formel
+                    degree = (-6+sqrt(36-8*(4-noOfGridPoints)))/4; % Larger solution of the quadratic equation
                     assert(degree==round(degree), 'Number of coefficients not supported for this type of grid.');
                     lat = linspace(0, 2*pi, 2*degree+2);
                     lon = linspace(pi/2, -pi/2, degree+2);
