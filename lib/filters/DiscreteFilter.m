@@ -14,7 +14,7 @@ classdef DiscreteFilter < AbstractCircularFilter
     % Washington, D.C., USA, July 2015.
     
     properties
-        wd
+        wd WDDistribution
     end
     
     methods

@@ -18,7 +18,7 @@ function benchmark
     t1 = zeros(1,repeats);
     t2 = zeros(1,repeats);
     times = zeros(2, length(dims));
-    for i = dims;
+    for i = dims
         for j=1:repeats
             [t1(j), t2(j)]= bench(i, evals);
         end
@@ -35,7 +35,7 @@ function benchmarkSingle
     t1 = zeros(1,repeats);
     t2 = zeros(1,repeats);    
     times = zeros(2, length(dims));
-    for i = dims;
+    for i = dims
         for j=1:repeats
             [t1(j), t2(j)]= benchSingle(i, evals);
         end
@@ -74,10 +74,10 @@ function [t1, t2]= bench(n, evals)
     x = rand(evals,n);
 
     tic
-    mvnpdf(x, mu, C);
+    r = mvnpdf(x, mu, C); %#ok<NASGU>
     t1 = toc;
     tic
-    mvnpdffast(x, mu, C);
+    r = mvnpdffast(x, mu, C); %#ok<NASGU>
     t2 = toc;
     fprintf('%fs\n%fs\n', t1, t2);
 end
@@ -92,12 +92,12 @@ function [t1, t2]= benchSingle(n,evals)
 
     tic
     for i=1:length(x)
-        mvnpdf(x, mu, C);
+        r = mvnpdf(x, mu, C); %#ok<NASGU>
     end
     t1 = toc;
     tic
     for i=1:length(x)
-        mvnpdffast(x, mu, C);
+        r = mvnpdffast(x, mu, C); %#ok<NASGU>
     end
     t2 = toc;
     fprintf('%fs\n%fs\n', t1, t2);

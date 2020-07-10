@@ -13,7 +13,7 @@ classdef FourierFilter < AbstractCircularFilter
     % Heidelberg, Germany, July 2016.
     
     properties
-        fd
+        fd FourierDistribution
     end
     
     methods

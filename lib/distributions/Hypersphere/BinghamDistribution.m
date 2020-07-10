@@ -6,16 +6,16 @@
 %   Currently, there is no support for uniform Bingham distributions.
 %
 % see
-% C. Bingham, "An antipodally symmetric distribution on the sphere", 
+% C. Bingham, "An antipodally symmetric distribution on the sphere",
 % The Annals of Statistics, vol. 2, no. 6, pp. 1201-1225, Nov. 1974.
 
 classdef BinghamDistribution < AbstractHypersphericalDistribution
     
     properties
-        Z       % Concentrations as a vector
-        M       % Rotation matrix
-        F       % Normalization constant
-        dF      % Partial derivates of F
+        Z (:,1) double {mustBeNonpositive}       % Concentrations as a vector
+        M (:,:) double  % Rotation matrix
+        F (1,1) double     % Normalization constant
+        dF (1,:) double     % Partial derivates of F
     end
     
     properties (Constant)
@@ -34,7 +34,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   B (BinghamDistribution)
             %       an object representing the constructed distribution
-        
+            
             B.dim = size(M_,1);
             
             % Check Dimensions
@@ -50,11 +50,11 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             
             %enforce that M is orthogonal
             epsilon = 0.001;
-            assert (max(max(M_*M_' - eye(B.dim,B.dim))) < epsilon, 'M is not orthogonal');  
+            assert (max(max(M_*M_' - eye(B.dim,B.dim))) < epsilon, 'M is not orthogonal');
             
-            B.Z = Z_; 
+            B.Z = Z_;
             B.M = M_;
-            B.F = BinghamDistribution.computeF(B.Z); 
+            B.F = BinghamDistribution.computeF(B.Z);
             B.dF = BinghamDistribution.computeDF(B.Z);
         end
         
@@ -68,11 +68,15 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   p (1 x n row vector)
             %       values of the pdf at each column of xa
             assert(size(xa,1) == this.dim);
-        
+            
             C = this.M * diag(this.Z) * this.M';
             p = 1/this.F * exp(sum(xa.*(C*xa)));
-        end    
-
+        end
+        
+        function meanDirection(~)
+            error('Due to their symmetry, the mean direction is undefined for Bingham distributions.');
+        end
+        
         function B = multiply(this, B2)
             % Computes the product of two Bingham pdfs
             % This method makes use of the fact that the Bingham distribution
@@ -99,7 +103,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 Z_ = D;
                 Z_ = Z_-Z_(end); % last entry should be zero
                 M_ = V;
-                B = BinghamDistribution(Z_,M_); 
+                B = BinghamDistribution(Z_,M_);
             else
                 error('dimensions do not match');
             end
@@ -108,10 +112,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
         function B = compose(this, B2)
             % Compose two Bingham distributions
             % Using Moment Matching based approximation, we compose two Bingham
-            % distributions. The mode of the new distribution should be the 
-            % quaternion multiplication of the original modes; the uncertainty 
+            % distributions. The mode of the new distribution should be the
+            % quaternion multiplication of the original modes; the uncertainty
             % should be larger than before
-            % 
+            %
             % Parameters:
             %   B2 (BinghamDistribution)
             %       second Bingham Distribution
@@ -142,8 +146,8 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 B = BinghamDistribution.fitToMoment(S);
             elseif this.dim==4 && B2.dim==4
                 % adapted from Glover's C code in libBingham, see also
-                % Glover, J. & Kaelbling, L. P. 
-                % Tracking 3-D Rotations with the Quaternion Bingham Filter 
+                % Glover, J. & Kaelbling, L. P.
+                % Tracking 3-D Rotations with the Quaternion Bingham Filter
                 % MIT, 2013
                 
                 a11 = B1S(1,1);
@@ -156,7 +160,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 a33 = B1S(3,3);
                 a34 = B1S(3,4);
                 a44 = B1S(4,4);
-
+                
                 b11 = B2S(1,1);
                 b12 = B2S(1,2);
                 b13 = B2S(1,3);
@@ -167,7 +171,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 b33 = B2S(3,3);
                 b34 = B2S(3,4);
                 b44 = B2S(4,4);
-
+                
                 %can be derived from quaternion multiplication
                 S(1,1) = a11*b11 - 2*a12*b12 - 2*a13*b13 - 2*a14*b14 + a22*b22 + 2*a23*b23 + 2*a24*b24 + a33*b33 + 2*a34*b34 + a44*b44;
                 S(1,2) = a11*b12 + a12*b11 + a13*b14 - a14*b13 - a12*b22 - a22*b12 - a13*b23 - a23*b13 - a14*b24 - a24*b14 - a23*b24 + a24*b23 - a33*b34 + a34*b33 - a34*b44 + a44*b34;
@@ -185,7 +189,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 S(3,4) = a13*b14 + a14*b13 - a13*b23 + a23*b13 + a14*b24 - a24*b14 + a11*b34 + a12*b33 - a33*b12 + a34*b11 + a23*b24 + a24*b23 - a12*b44 - a22*b34 - a34*b22 + a44*b12;
                 S(4,3) = S(3,4);
                 S(4,4) = 2*a14*b14 - 2*a13*b24 + 2*a24*b13 + 2*a12*b34 - 2*a23*b23 - 2*a34*b12 + a11*b44 + a22*b33 + a33*b22 + a44*b11;
-
+                
                 B = BinghamDistribution.fitToMoment(S);
             else
                 error('unsupported dimension');
@@ -201,20 +205,20 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %       number of samples
             % Returns:
             %   s (dim x n)
-            %       one sample per column            
+            %       one sample per column
             s = sampleKent(this, n);
-        end        
+        end
         
         function s = sampleKent(this, n)
             % Generate samples from Bingham distribution using rejection
             % sampling based on a angular central Gaussian
             %
-            % Kent, J. T.; Ganeiber, A. M. & Mardia, K. V. 
-            % A New Method to Simulate the Bingham and Related Distributions in Directional Data Analysis with Applications 
+            % Kent, J. T.; Ganeiber, A. M. & Mardia, K. V.
+            % A New Method to Simulate the Bingham and Related Distributions in Directional Data Analysis with Applications
             % arXiv preprint arXiv:1310.8110, 2013
             
             assert(isscalar(n));
-            assert(n>0);            
+            assert(n>0);
             
             s = zeros(this.dim, n);
             i = 1;
@@ -234,11 +238,11 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             while(i<=n)
                 % draw x from angular central Gaussian
                 y = mvnrnd(zeros(this.dim,1), inv(Omega))';
-                x = y/norm(y);                
+                x = y/norm(y);
                 % check rejection
                 W = rand(1);
                 if W < fbingstar(x) /(Mbstar * facgstar(x))
-                    s(:,i) = x; 
+                    s(:,i) = x;
                     i = i + 1;
                 else
                     nReject = nReject + 1;
@@ -246,7 +250,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             end
             %nReject
         end
-                
+        
         function X = sampleGlover(this, n)
             % Generate samples from Bingham distribution
             % based on Glover's implementation in libBingham
@@ -264,23 +268,23 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %       generated samples (one sample per column)
             
             assert(isscalar(n));
-            assert(n>0);            
+            assert(n>0);
             
             burnin = 5;
-            samplerate = 10; 
-
+            samplerate = 10;
+            
             x = this.mode();
             z = sqrt(-1./(this.Z - 1));
-
+            
             target = this.pdf(x);  % target
             proposal = acgpdf_pcs(x', z, this.M);  % proposal
-
+            
             X2 = (randn(n*samplerate+burnin,this.dim).*repmat(z',[n*samplerate+burnin,1]))*this.M'; % sample Gaussian
             X2 = X2 ./ repmat(sqrt(sum(X2.^2,2)), [1 this.dim]); % normalize
             
             Target2 = this.pdf(X2');
             Proposal2 = acgpdf_pcs(X2, z, this.M);
-
+            
             nAccepts = 0;
             X = zeros(size(X2));
             for i=1:n*samplerate+burnin
@@ -293,9 +297,9 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 end
                 X(i,:) = x;
             end
-
+            
             %accept_rate = num_accepts / (n*sample_rate + burn_in)
-
+            
             X = X(burnin+1:samplerate:end,:)';
         end
         
@@ -312,12 +316,13 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   S (d x d matrix)
             %     scatter/covariance matrix in R^d
-             D = diag(this.dF/this.F);
-             % the diagonal of D is always 1, however this may not be the
-             % case because dF and F are calculated using approximations
-             D = D / sum(diag(D)); 
-             S = this.M * D *  this.M';
-             S = (S+S')/2; % enforce symmetry
+            D = diag(this.dF/this.F);
+            % the sum of the diagonal of D is always 1, however this may
+            % not be the case because dF and F are calculated using
+            % approximations
+            D = D / sum(diag(D));
+            S = this.M * D * this.M';
+            S = (S+S')/2; % enforce symmetry
         end
         
         function [samples, weights] = sampleDeterministic(this, lambda)
@@ -348,7 +353,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   weights (1 x ... vector)
             %     weight > 0 for each sample (weights sum to one)
             if nargin < 2 % default value for lambda
-                if this.dim == 2 
+                if this.dim == 2
                     lambda = 'uniform';
                 else
                     lambda = 0.5;
@@ -367,7 +372,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             else
                 assert (lambda>=0 && lambda <=1);
                 B = BinghamDistribution(this.Z, eye(this.dim,this.dim));
-                S = B.moment(); 
+                S = B.moment();
                 samples = zeros(2*this.dim-1,this.dim);
                 weights = zeros(1, 2*this.dim-1);
                 p = zeros(1, this.dim-1);
@@ -386,7 +391,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 weights(1) = 1-sum(weights(2:end)); % = lambda*S(4,4)
                 samples = this.M*samples';
             end
-        end       
+        end
         
         function [samples, weights] = sampleOptimalQuantization(this, N)
             % Computes optimal quantization of the
@@ -404,22 +409,22 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Igor Gilitschenski, Gerhard Kurz, Uwe D. Hanebeck, Roland Siegwart,
             % Optimal Quantization of Circular Distributions
             % Proceedings of the 19th International Conference on Information Fusion (Fusion 2016), Heidelberg, Germany, July 2016.
-
+            
             assert(this.dim == 2, 'sampleOptimalQuantization only implemented for 2d Bingham');
-
+            
             mu = atan2(this.M(2,2), this.M(1,2));
             kappa = (this.Z(2)-this.Z(1))/2;
-
+            
             [samples, weights] = VMDistribution(0, kappa).sampleOptimalQuantization(N);
             samples = [samples/2 (samples/2+pi)];
             samples = mod(samples+mu,2*pi);
-
+            
             weights = [weights weights]/2;
         end
         
         function [s,w] = sampleWeighted(this, n)
             % Weighted sample generator.
-            % Generates uniform (w.r.t. the Haar Measure) random samples on 
+            % Generates uniform (w.r.t. the Haar Measure) random samples on
             % the unit sphere and assigns each sample a weight based on the
             % pdf.
             %
@@ -430,7 +435,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   samples (d x n  matrix)
             %     generated samples (one sample per column)
-            %   weights (1 x n vector)            
+            %   weights (1 x n vector)
             s = mvnrnd(zeros(1,this.dim), eye(this.dim), n)';
             s = s./repmat(sqrt(sum(s.^2,1)),this.dim, 1);
             
@@ -470,7 +475,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   P (1 x 1 matrix for d=2, if angle = true (angle represenation)
             %      d x d matrix for d>=2, if angle = false (vector
             %      representation)
-            if nargin<2 
+            if nargin<2
                 angle = false;
             end
             if angle
@@ -517,29 +522,29 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
         end
     end
     
-    methods (Static)                
+    methods (Static)
         function F = computeF(Z, mode)
-        % Compute normalization constant
-        % Parameters:
-        %   Z (d x d matrix)
-        %       concentration matrix
-        %   mode (string, optional)
-        %       choses the algorithm to compute the normalization constant
-        % Returns:
-        %   F (scalar)
-        %       the calculated normalization constant
+            % Compute normalization constant
+            % Parameters:
+            %   Z (d x d matrix)
+            %       concentration matrix
+            %   mode (string, optional)
+            %       choses the algorithm to compute the normalization constant
+            % Returns:
+            %   F (scalar)
+            %       the calculated normalization constant
             assert(size(Z,2) == 1);
             dim = length(Z);
             
-            if nargin<2 
+            if nargin<2
                 mode = 'default';
             end
-
+            
             if dim == 2
                 if strcmp(mode, 'default') || strcmp(mode, 'bessel')
                     % Gerhard Kurz, Igor Gilitschenski, Simon Julier, Uwe D. Hanebeck,
                     % Recursive Bingham Filter for Directional Estimation Involving 180 Degree Symmetry
-                    % Journal of Advances in Information Fusion, 9(2):90 - 105, December 2014.            
+                    % Journal of Advances in Information Fusion, 9(2):90 - 105, December 2014.
                     F = exp(Z(2))* BinghamDistribution.S2 * besseli(0,(Z(1)-Z(2))/2) * exp((Z(1)-Z(2))/2);
                 elseif strcmp(mode, 'hypergeom')
                     % Gerhard Kurz, Igor Gilitschenski, Simon J. Julier, Uwe D. Hanebeck,
@@ -547,7 +552,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     % Proceedings of the 16th International Conference on Information Fusion (Fusion 2013), Istanbul, Turkey, July 2013.
                     F = exp(Z(2))* BinghamDistribution.S2 * double(hypergeom(0.5,1, vpa(Z(1)-Z(2))));
                 elseif strcmp(mode, 'mhg')
-                    % Koev, P. & Edelman, A. 
+                    % Koev, P. & Edelman, A.
                     % The Efficient Evaluation of the Hypergeometric Function of a Matrix Argument
                     % Mathematics of Computation., 2006, 75, 833-846
                     F = BinghamDistribution.S2 * mhg(100, 2, 0.5, dim/2, Z);
@@ -556,15 +561,15 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     % Efficient Bingham Filtering based on Saddlepoint Approximations
                     % Proceedings of the 2014 IEEE International Conference on Multisensor Fusion and Information Integration (MFI 2014), Beijing, China, September 2014.
                     F = numericalSaddlepointWithDerivatives(sort(-Z)+1)*exp(1);
-                    F = F(3);       
+                    F = F(3);
                 elseif strcmp(mode, 'glover')
                     % https://code.google.com/p/bingham/
                     % and
                     %
-                    % Glover, J. & Kaelbling, L. P. 
-                    % Tracking 3-D Rotations with the Quaternion Bingham Filter 
+                    % Glover, J. & Kaelbling, L. P.
+                    % Tracking 3-D Rotations with the Quaternion Bingham Filter
                     % MIT, 2013
-                    % http://dspace.mit.edu/handle/1721.1/78248    
+                    % http://dspace.mit.edu/handle/1721.1/78248
                     
                     F = glover(Z);
                 else
@@ -578,7 +583,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     F = numericalSaddlepointWithDerivatives(sort(-Z)+1)*exp(1);
                     F = F(3);
                 elseif strcmp(mode, 'mhg')
-                    % Koev, P. & Edelman, A. 
+                    % Koev, P. & Edelman, A.
                     % The Efficient Evaluation of the Hypergeometric Function of a Matrix Argument
                     % Mathematics of Computation., 2006, 75, 833-846
                     F = AbstractHypersphericalDistribution.computeUnitSphereSurface(dim) * mhg(100, 2, 0.5, dim/2, Z);
@@ -595,36 +600,38 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     % https://code.google.com/p/bingham/
                     % and
                     %
-                    % Glover, J. & Kaelbling, L. P. 
-                    % Tracking 3-D Rotations with the Quaternion Bingham Filter 
+                    % Glover, J. & Kaelbling, L. P.
+                    % Tracking 3-D Rotations with the Quaternion Bingham Filter
                     % MIT, 2013
                     % http://dspace.mit.edu/handle/1721.1/78248
                     
                     if any(abs(Z(1:end-1))<1e-8)
                         warning('Glover''s method currently does not work for Z with more than one zero entry.');
-                    end                    
+                    end
                     
                     F = glover(Z);
                 else
                     error('unsupported mode');
                 end
             end
-        end  
-                
+        end
+        
+        %todo: add glover?
+        
         function dF = computeDF(Z, mode)
-        % Partial derivatives of normalization constant
-        % Parameters:
-        %   Z (d x d matrix)
-        %       concentration matrix
-        % Returns:
-        %   dF (scalar)
-        %       the calculated derivative of the normalization constant     
+            % Partial derivatives of normalization constant
+            % Parameters:
+            %   Z (d x d matrix)
+            %       concentration matrix
+            % Returns:
+            %   dF (scalar)
+            %       the calculated derivative of the normalization constant
             assert(size(Z,2) == 1);
             
             dim = size(Z,1);
             dF = zeros(1,dim);
             
-            if nargin<2 
+            if nargin<2
                 mode = 'default';
             end
             
@@ -632,7 +639,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 if strcmp(mode, 'default') || strcmp(mode, 'bessel')
                     % Gerhard Kurz, Igor Gilitschenski, Simon Julier, Uwe D. Hanebeck,
                     % Recursive Bingham Filter for Directional Estimation Involving 180 Degree Symmetry
-                    % Journal of Advances in Information Fusion, 9(2):90 - 105, December 2014.            
+                    % Journal of Advances in Information Fusion, 9(2):90 - 105, December 2014.
                     b1 = besseli(1,(Z(1)-Z(2))/2);
                     b0 = besseli(0,(Z(1)-Z(2))/2);
                     dF(1) = BinghamDistribution.S2/2 * (b1 + b0)* exp((Z(1)+Z(2))/2);
@@ -643,7 +650,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     % Proceedings of the 16th International Conference on Information Fusion (Fusion 2013), Istanbul, Turkey, July 2013.
                     h = double(hypergeom(1.5,2,vpa(Z(1)-Z(2))));
                     dF(1) = BinghamDistribution.S2 * exp(Z(2)) * 0.5 * h;
-                    dF(2) = BinghamDistribution.S2 * exp(Z(2)) * (double(hypergeom(0.5,1, vpa(Z(1)-Z(2)))) - 0.5*h); 
+                    dF(2) = BinghamDistribution.S2 * exp(Z(2)) * (double(hypergeom(0.5,1, vpa(Z(1)-Z(2)))) - 0.5*h);
                 elseif strcmp(mode, 'saddlepoint')
                     % Igor Gilitschenski, Gerhard Kurz, Simon J. Julier, Uwe D. Hanebeck,
                     % Efficient Bingham Filtering based on Saddlepoint Approximations
@@ -651,7 +658,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     for i=1:dim
                         ModZ = Z([1:i i i:dim]);
                         T = numericalSaddlepointWithDerivatives(sort(-ModZ)+1)*exp(1)/(2*pi);
-                        dF(i) = T(3);                    
+                        dF(i) = T(3);
                     end
                 elseif strncmp(mode, 'finitedifferences', 17)
                     % Approximation by finite Differences
@@ -659,7 +666,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     % is a metod for calculating the normalizaton
                     % constant
                     for i=1:dim
-                        epsilon=0.001; 
+                        epsilon=0.001;
                         dZ = [zeros(i-1,1);  epsilon; zeros(dim-i,1)];
                         F1 = BinghamDistribution.computeF(Z + dZ, mode(19:end));
                         F2 = BinghamDistribution.computeF(Z - dZ, mode(19:end));
@@ -684,7 +691,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                         % use mode='finitedifferences-method', where method
                         % is a metod for calculating the normalizaton
                         % constant
-                        epsilon=0.001; 
+                        epsilon=0.001;
                         dZ = [zeros(i-1,1);  epsilon; zeros(dim-i,1)];
                         F1 = BinghamDistribution.computeF(Z + dZ, mode(19:end));
                         F2 = BinghamDistribution.computeF(Z - dZ, mode(19:end));
@@ -703,20 +710,20 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %       matrix that contains one sample per column
             %   weights (1 x n row vector)
             %       weight for each sample
-            %   mleAlgo (string)
+            %   options (struct)
             %       parameter to select the MLE algorithm
             % Returns:
             %   B (BinghamDistribution)
             %       the MLE estimate for a Bingham distribution given the
             %       samples
-            n = size(samples,2);            
-            if nargin<2    
+            n = size(samples,2);
+            if nargin<2
                 C = samples*samples'/n;
             else
                 assert(abs(sum(weights)-1) < 1E-10, 'weights must sum to 1'); %check normalization
                 assert(size(weights,1)==1, 'weights needs to be a row vector');
                 assert(size(weights,2)==n, 'number of weights and samples needs to match');
-                C = samples*diag(weights)*samples';
+                C = samples.*weights*samples';
             end
             
             C = (C+C')/2; % ensure symmetry
@@ -766,7 +773,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 M_ = M_(:,order);
                 Z_=Z_-Z_(size(Z_,1)); %subtract last entry to ensure that last entry is zero
                 B = BinghamDistribution(Z_,M_);
-            elseif strcmp(options.algorithm, 'fminunc') 
+            elseif strcmp(options.algorithm, 'fminunc')
                 [eigenvectors,omega] = eig(S);
                 [omega, order] = sort(diag(omega),'ascend');  % sort eigenvalues
                 M_ = eigenvectors(:,order); % swap columns to match the sorted eigenvalues
@@ -779,7 +786,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 [Z_, order] = sort(Z_,'ascend');  %sort eigenvalues
                 M_ = M_(:,order);
                 Z_=Z_-Z_(size(Z_,1)); %subtract last entry to ensure that last entry is zero
-                B = BinghamDistribution(Z_,M_);                
+                B = BinghamDistribution(Z_,M_);
             elseif strcmp(options.algorithm, 'gaussnewton')
                 % Igor Gilitschenski, Gerhard Kurz, Simon J. Julier, Uwe D. Hanebeck,
                 % Efficient Bingham Filtering based on Saddlepoint Approximations
@@ -801,11 +808,11 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 error('Unsupported estimation algorithm');
             end
         end
-
+        
         function Z = mleFsolve (omega, options)
             % Calculate maximum likelihood estimate of Z.
             % Considers only the first three values of omega.
-            %            
+            %
             % Parameters:
             %   omega (d x 1 column vector)
             %       eigenvalues of the scatter matrix
@@ -814,37 +821,37 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             
             if nargin < 2 || ~isfield(options, 'Fmethod')
                 options.Fmethod = 'default';
-            end            
+            end
             
             if nargin < 2 || ~isfield(options, 'dFmethod')
                 options.dFmethod = 'default';
-            end            
-                       
+            end
+            
             function r = mleGoalFun(z, rhs)
                 % objective function of MLE.
                 d = size(z,1)+1;
-
+                
                 %if d == 2
-                    a = BinghamDistribution.computeF([z;0], options.Fmethod);
-                    b = BinghamDistribution.computeDF([z;0], options.dFmethod);
+                a = BinghamDistribution.computeF([z;0], options.Fmethod);
+                b = BinghamDistribution.computeDF([z;0], options.dFmethod);
                 %else
                 %    [a,b] = numericalSaddlepointWithDerivatives([-z; 0]);
                 %    a = a(3);
                 %    b = b(3,:);
                 %end
-
+                
                 r = zeros(d-1,1);
                 for i=1:(d-1)
                     r(i) = b(i)/a - rhs(i);
                 end
             end
-
+            
             dim = size(omega,1);
             
             f = @(z) mleGoalFun(z, omega);
             Z = fsolve(f, -ones(dim-1,1), optimset('display', 'off', 'algorithm', 'levenberg-marquardt'));
             Z = [Z; 0];
-        end      
+        end
         
         function Z = mleFminunc (omega, options)
             % Calculate maximum likelihood estimate of Z.
@@ -858,39 +865,39 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             
             if nargin < 2 || ~isfield(options, 'Fmethod')
                 options.Fmethod = 'default';
-            end            
+            end
             
             if nargin < 2 || ~isfield(options, 'dFmethod')
                 options.dFmethod = 'default';
-            end            
-                       
+            end
+            
             function r = mleGoalFun(z, rhs)
                 % objective function of MLE.
                 d = size(z,1)+1;
-
+                
                 %if d == 2
-                    a = BinghamDistribution.computeF([z;0], options.Fmethod);
-                    b = BinghamDistribution.computeDF([z;0], options.dFmethod);
+                a = BinghamDistribution.computeF([z;0], options.Fmethod);
+                b = BinghamDistribution.computeDF([z;0], options.dFmethod);
                 %else
                 %    [a,b] = numericalSaddlepointWithDerivatives([-z; 0]);
                 %    a = a(3);
                 %    b = b(3,:);
                 %end
-
+                
                 r = zeros(d,1);
                 for i=1:d
                     r(i) = b(i)/a - rhs(i);
                 end
                 r=norm(r);
             end
-
+            
             dim = size(omega,1);
             
             f = @(z) mleGoalFun(z, omega);
             Z = fminunc(f, -ones(dim-1,1), optimoptions('fminunc','algorithm','quasi-newton', 'display', 'off'));
-            Z = [Z; 0];            
+            Z = [Z; 0];
         end
-    end  
+    end
 end
 
 function P = acgpdf_pcs(X,z,M) %taken from libBingham

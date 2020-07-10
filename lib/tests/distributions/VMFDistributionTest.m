@@ -20,6 +20,9 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             x = 0:6;
             vmSame = VMDistribution(phi, kappa);
             testCase.verifyEqual(vmSame.pdf(x), vmf.pdf([cos(x);sin(x)]),  'RelTol', 1E-10);
+            
+            %% test mode
+            testCase.verifyEqual(vmf.modeNumerical, vmf.mode, 'AbsTol',1E-5)
 
             %% test integral
             testCase.verifyEqual(vmf.integral(), 1, 'RelTol', 1E-5);
@@ -90,6 +93,9 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf.kappa, kappa);
             testCase.verifyEqual(vmf.dim, length(mu));
 
+            %% test mode
+            testCase.verifyEqual(vmf.modeNumerical, vmf.mode, 'AbsTol',1E-5)
+
             %% test integral
             testCase.verifyEqual(vmf.integral(), 1, 'RelTol', 1E-5);
                         
@@ -150,6 +156,9 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf.mu, mu);
             testCase.verifyEqual(vmf.kappa, kappa);
             testCase.verifyEqual(vmf.dim, length(mu));
+
+            %% test mode
+            testCase.verifyEqual(vmf.modeNumerical, vmf.mode, 'AbsTol',1E-5)
 
             %% test integral
             testCase.verifyEqual(vmf.integral(), 1, 'RelTol', 1E-5);
@@ -237,5 +246,6 @@ classdef VMFDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf1.mu, vmf2.mu, 'RelTol', 1E-10);
             testCase.verifyEqual(vmf1.kappa, vmf2.kappa, 'RelTol', 1E-10);
         end
+        
     end
 end

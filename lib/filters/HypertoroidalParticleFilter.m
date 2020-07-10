@@ -2,7 +2,7 @@ classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter
     % SIR particle filter on the hypertorus
     
     properties
-        wd
+        wd HypertoroidalWDDistribution
     end
     
     methods

@@ -1,7 +1,10 @@
 classdef SphericalHarmonicsDistributionReal < AbstractSphericalHarmonicsDistribution
     methods
         function this = SphericalHarmonicsDistributionReal(coeffMat, transformation)
-            if nargin == 1, transformation = 'identity';end
+            arguments
+                coeffMat {mustBeReal}
+                transformation char = 'identity'
+            end
             this@AbstractSphericalHarmonicsDistribution(coeffMat, transformation);
         end
         function vals = value(this, xa)

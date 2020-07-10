@@ -3,7 +3,7 @@ classdef SysModelWrapper < AdditiveNoiseSystemModel
     % system function f into an additive noise system model.    
     
     properties
-       f
+       f function_handle
     end 
     
     methods

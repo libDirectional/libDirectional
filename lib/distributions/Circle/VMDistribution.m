@@ -5,16 +5,14 @@ classdef VMDistribution < AbstractCircularDistribution
     % Statistics", 2001, Sec. 2.2.4, page 35ff.
     
     properties
-        mu
-        kappa
+        mu (1,1) double {mustBeReal,mustBeFinite,mustBeNonNan}
+        kappa (1,1) double {mustBeNonnegative}
     end
     
     methods
         function this = VMDistribution(mu_, kappa_)
             % Constructor
-            assert(isscalar(mu_));
             this.mu = mod(mu_,2*pi);
-            assert(kappa_>=0);
             this.kappa = kappa_;
         end
         

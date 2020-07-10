@@ -9,8 +9,8 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         % Saving the whole matrix may not be numerically the smartest way to
         % handle it but is really easy. Currently, the symmetric argument in
         % ifft ensures that the two parts do not diverge indefinitely
-        C
-        transformation
+        C double
+        transformation char
     end
     
     methods
@@ -137,7 +137,11 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         function f = multiply(this, f2, noOfCoefficients)
             assert(strcmp(this.transformation, f2.transformation));
             if nargin == 2
-                noOfCoefficients = size(this.C);
+                if ismatrix(this.C)&&size(this.C,2)==1 % 1-D case
+                    noOfCoefficients=numel(this.C);
+                else
+                    noOfCoefficients = size(this.C);
+                end
             elseif numel(noOfCoefficients) == 1
                 noOfCoefficients = ones(1, this.dim) * noOfCoefficients;
             end
@@ -168,7 +172,11 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         function hfd = convolve(this, f2, noOfCoefficients)
             assert(strcmp(this.transformation, f2.transformation));
             if nargin == 2
-                noOfCoefficients = size(this.C);
+                if ismatrix(this.C)&&size(this.C,2)==1 % 1-D case
+                    noOfCoefficients=numel(this.C);
+                else
+                    noOfCoefficients = size(this.C);
+                end
             elseif numel(noOfCoefficients) == 1
                 noOfCoefficients = ones(1, this.dim) * noOfCoefficients;
             end
@@ -263,7 +271,13 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             % Expects number of complex coefficients (or sum of number of real
             % coefficients)
             assert(strcmp(this.transformation, 'identity'), 'Cannot transform via FFT if already transformed')
-            if nargin == 2, noOfCoefficients = size(this.C);end
+            if nargin == 2
+                if ismatrix(this.C)&&size(this.C,2)==1 % 1-D case
+                    noOfCoefficients=numel(this.C);
+                else
+                    noOfCoefficients = size(this.C);
+                end
+            end
             fvals = ifftn(ifftshift(this.C), 'symmetric') * numel(this.C); %Calculate function values via IFFT
             ftmp = HypertoroidalFourierDistribution.fromFunctionValues(fvals, noOfCoefficients, desiredTransformation);
             hfd = this; % To allow for inheritance
@@ -487,9 +501,15 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             % Creates Fourier distribution from function values
             % Assumes fvals are not yet transformed, use custom if they already
             % are transformed
-            assert((all((noOfCoefficients > 1)) || ismatrix(fvals) && noOfCoefficients(1) > 1) ... % Allow dim 1 (in this case it's size vector has length two but second entry is 1
-                && all((mod(noOfCoefficients-1, 2) == 0)) ...
-                , 'Invalid number of coefficients, numbers for all dimensions have to be odd and greater than 1.');
+            assert(all(noOfCoefficients > 1) && all(mod(noOfCoefficients-1, 2) == 0),...
+                'Invalid number of coefficients, numbers for all dimensions have to be odd and greater than 1.');
+            % Cannot directly compare the size of fvals with noOfCoefficients because we
+            % allow truncation afterward. But we ensure there is no 1 x n
+            % matrix by accident, since it has to be n x 1.
+            assert(all(size(fvals)>1)||ismatrix(fvals)&&size(fvals,2)==1,...% Later condition ensures [n,1] matrices work
+                'Some dimension has only one entry along it. Fix this.');
+            % Ensure dimensions match
+            assert(numel(noOfCoefficients)==ndims(fvals) || numel(noOfCoefficients)==1);
             switch desiredTransformation
                 case 'sqrt'
                     fvals = sqrt(fvals);
@@ -511,6 +531,7 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             if numel(noOfCoefficients) == 1
                 noOfCoefficients = ones(1, distribution.dim) * noOfCoefficients;
             end
+            assert(all(mod(noOfCoefficients,2)==1),'noOfCoefficients must be odd');
             assert(isa(distribution, 'AbstractToroidalDistribution') && (size(noOfCoefficients, 2) == 2) || ...
                 isa(distribution, 'AbstractHypertoroidalDistribution') && (size(noOfCoefficients, 2) == distribution.dim), ...
                 'fromDistribution:invalidObject', 'First argument has to be a (hyper)toroidal distribution with appropriate dimensionality.');

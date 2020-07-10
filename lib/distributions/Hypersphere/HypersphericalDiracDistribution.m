@@ -4,7 +4,7 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
     
     properties
         d  % (dim x L)
-        w  % ( 1  x L)
+        w (1,:) double % ( 1  x L)
     end
     
     methods

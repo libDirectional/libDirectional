@@ -8,6 +8,7 @@ classdef (Abstract) AbstractDistribution
     methods (Abstract)
         % Evaluate pdf at positions stored in xa
         pdf(this, xa);
+        getManifoldSize(this);
     end
     
 end

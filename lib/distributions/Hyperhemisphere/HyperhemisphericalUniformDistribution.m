@@ -1,4 +1,4 @@
-classdef HyperhemisphericalUniformDistribution < AbstractHyperhemisphericalDistribution
+classdef HyperhemisphericalUniformDistribution < AbstractHyperhemisphericalDistribution & AbstractUniformDistribution
     methods
         function this = HyperhemisphericalUniformDistribution(dim_)
             assert(dim_>=2)

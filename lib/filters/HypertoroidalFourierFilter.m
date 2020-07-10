@@ -5,7 +5,7 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
     % Multivariate Angular Filtering Using Fourier Series
     % Journal of Advances in Information Fusion, December 2016.
     properties
-        hfd
+        hfd HypertoroidalFourierDistribution
     end
     
     methods
@@ -63,13 +63,13 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             % Parameters:
             %   dSys (HypertoroidalFourierDistribution)
             %       distribution of additive noise
+            sizeHfdC=size(this.hfd.C); % Needed for workaround for 1D case
             if ~(isa(dSys,'HypertoroidalFourierDistribution'))
                 warning('Predict:automaticConversion',...
                     'dSys is not a HypertoroidalFourierDistribution. Transforming with a number of coefficients that is equal to that of the filter. For non-varying noises, transforming once is much more efficient and should be preferred.');
-                sizeHfdC=size(this.hfd.C); % Needed for workaround for 1D case
                 dSys=HypertoroidalFourierDistribution.fromDistribution(dSys,sizeHfdC(sizeHfdC>1),this.hfd.transformation);
             end
-            this.hfd=this.hfd.convolve(dSys,size(this.hfd.C));
+            this.hfd=this.hfd.convolve(dSys,sizeHfdC(sizeHfdC>1));
         end
 
         function updateIdentity(this, dMeas, z)
@@ -114,7 +114,7 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             %       distribution of additive noise
             if nargin==3,truncateJointSqrt=true;end
             % Input checks are done in getfTrans
-            hfdTrans=this.getfTransAsHfd(a,noiseDistribution);
+            hfdTrans = this.getfTransAsHfd(a,noiseDistribution);
             
             this.predictNonlinearViaTransitionDensity(hfdTrans,truncateJointSqrt);
         end
@@ -145,7 +145,10 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
                 % transpose.
                 wsReshaped=reshape(ws,[],noiseDistribution.dim)';
                 pdfvals=noiseDistribution.pdf(wsReshaped);
-                p=reshape(pdfvals,size(varargin{1})); % Restore to input size
+                % Since this is conditional, integrating over all
+                % dimensions will yield (2*pi)^this.dim instead of 1.
+                % Also restore to input shape.
+                p=reshape(pdfvals,size(varargin{1}))/((2*pi)^this.dim);
             end
         end
         
@@ -256,7 +259,7 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             end
             
             if strcmp(fTrans.transformation,'sqrt')
-                this.hfd=this.hfd.transformViaFFT('sqrt',dimC);
+                this.hfd=this.hfd.transformViaFFT('sqrt',dimC(dimC>1)); % DimC(dimC>1) as workaround for 1-D
             end
         end
 

@@ -83,7 +83,8 @@ classdef SphericalHarmonicsDistributionComplex < AbstractSphericalHarmonicsDistr
                 coeffMat(l+1, l+1) = this.coeffMat(l+1, l+1);
                 coeffMat(l+1, l+1+(1:l)) = sqrt(2) * (-1).^(1:l) .* real(this.coeffMat(l+1, l+1+(1:l)));
             end
-            shd = SphericalHarmonicsDistributionReal(coeffMat, this.transformation);
+            assert(abs(max(imag(coeffMat(:))))<1e-10)
+            shd = SphericalHarmonicsDistributionReal(real(coeffMat), this.transformation);
         end
         function f = transformViaCoefficients(this, desiredTransformation, degree)
             if degree > size(this.coeffMat, 1) - 1

@@ -12,7 +12,7 @@ classdef ToroidalWNFilter < AbstractToroidalFilter
     % Xi'an, China, July 2017.
     
     properties
-        twn
+        twn ToroidalWNDistribution
     end
     
     methods

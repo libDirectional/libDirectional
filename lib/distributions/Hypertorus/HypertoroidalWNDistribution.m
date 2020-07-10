@@ -2,7 +2,7 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
     % Hypertoroidal generalization of the wrapped normal distribution.
     %
     properties
-        mu
+        mu (:,1) double
         C
     end
     

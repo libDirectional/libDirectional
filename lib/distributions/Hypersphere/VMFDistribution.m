@@ -8,9 +8,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
     % pp. 295-305, 1953.
     
     properties
-        kappa   % concentration (scalar)
-        mu      % mean as a unit vector
-        C       % normalization constant
+        kappa (1,1) double  % concentration (scalar)
+        mu (:,1) double      % mean as a unit vector
+        C {mustBeNonzero}    % normalization constant
     end
     
     methods
@@ -23,7 +23,6 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             %   kappa_ (scalar)
             %       concentration parameter (>=0)
             epsilon = 1E-6;
-            assert(size(mu_,2) == 1, 'mu must be a column vector');
             assert(size(mu_,1) >= 2, 'mu must be at least two-dimensinal for the circular case');
             assert(abs(norm(mu_) - 1)<epsilon, 'mu must be a normalized');
             assert(kappa_>=0, 'kappa must be postive');
