@@ -663,7 +663,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                 elseif strncmp(mode, 'finitedifferences', 17)
                     % Approximation by finite Differences
                     % use mode='finitedifferences-method', where method
-                    % is a metod for calculating the normalizaton
+                    % is a method for calculating the normalizaton
                     % constant
                     for i=1:dim
                         epsilon=0.001;
@@ -689,7 +689,7 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
                     for i=1:dim
                         % Approximation by finite differences
                         % use mode='finitedifferences-method', where method
-                        % is a metod for calculating the normalizaton
+                        % is a method for calculating the normalizaton
                         % constant
                         epsilon=0.001;
                         dZ = [zeros(i-1,1);  epsilon; zeros(dim-i,1)];
