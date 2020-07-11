@@ -17,7 +17,7 @@ classdef WNFilter < AbstractCircularFilter
     % arXiv preprint: Systems and Control (cs.SY), January 2015.
         
     properties
-        wn
+        wn WNDistribution
     end
     
     methods

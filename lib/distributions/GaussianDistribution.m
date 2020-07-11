@@ -2,8 +2,8 @@ classdef GaussianDistribution
     % Gaussian distribution (possibly multidimensional).
     
     properties
-        mu  % mean
-        C   % covariance, C=sigma^2 in 1D
+        mu (:,1) double % mean
+        C double % covariance, C=sigma^2 in 1D
     end
     
     methods

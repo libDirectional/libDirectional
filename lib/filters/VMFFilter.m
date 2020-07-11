@@ -6,7 +6,7 @@ classdef VMFFilter < AbstractHypersphericalFilter
     % IEEE Signal Processing Letters, 2016.    
     
     properties
-        state
+        state VMFDistribution
     end
         
     methods 

@@ -5,6 +5,7 @@ output
 *.mexw32
 *.mexa64
 *.mexmaci64
+*.bak
 
 .DS_Store
 

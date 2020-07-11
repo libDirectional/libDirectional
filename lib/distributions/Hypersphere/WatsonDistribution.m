@@ -6,9 +6,9 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
     % Biometrika, 1965, 52, 193-201
     
     properties
-        kappa   % concentration (scalar)
-        mu      % mean as vector
-        C       % normalization constant
+        kappa (1,1) double  % concentration (scalar)
+        mu (:,1) double      % mean as a unit vector
+        C {mustBeNonzero}    % normalization constant
     end
     
     methods
@@ -22,7 +22,7 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             %       concentration parameter (>=0)
             epsilon = 1E-6;
             assert(size(mu_,2) == 1, 'mu must be a row vector');
-            assert(abs(norm(mu_) - 1)<epsilon, 'mu must be a normalized');
+            assert(abs(norm(mu_) - 1)<epsilon, 'mu must be normalized');
             assert(isscalar(kappa_));
             
             W.mu = mu_;
@@ -128,7 +128,7 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             if this.kappa>=0
                 m = this.mu; %todo: this is only correct for kappa>=0
             else
-                error ('mode for kappa<0 is not implemented yet');
+                m = this.modeNumerical(); % fallback to numerical
             end
         end
     end

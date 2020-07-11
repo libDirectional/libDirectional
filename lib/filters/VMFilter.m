@@ -16,7 +16,7 @@ classdef VMFilter < AbstractCircularFilter
     % Washington D. C., USA, July 2015.
     
     properties
-        vm
+        vm VMDistribution
     end
     
     methods

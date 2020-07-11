@@ -1,22 +1,8 @@
-classdef HypersphericalUniformDistribution < AbstractHypersphericalDistribution
+classdef HypersphericalUniformDistribution < AbstractHypersphericalDistribution & AbstractUniformDistribution
     methods
         function this = HypersphericalUniformDistribution(dim_)
             assert(dim_>=2)
             this.dim = dim_;
-        end
-        
-        function vals = pdf(this, xa)
-            % Evaluates pdf at each column of xa
-            % Parameters:
-            %   xa (d x n matrix)
-            %       each column represents one of the n points in R^d that the
-            %       pdf is evaluated at; can be just a (d x 1) vector as well
-            % Returns:
-            %   p (1 x n row vector)
-            %       values of the pdf at each column of xa
-            
-            % pdf is always 1 divided by surface area (integrates to 1).
-            vals = (1/AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim))*ones(1,size(xa,2));
         end
         
         function s = sample(this, n)

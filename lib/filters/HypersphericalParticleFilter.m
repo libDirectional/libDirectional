@@ -2,11 +2,15 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
     % SIR particle filter on the hypersphere
     
     properties
-        wd
+        wd HypersphericalDiracDistribution
     end
     
     methods
         function this = HypersphericalParticleFilter(nParticles,dim)
+            arguments
+                nParticles (1,1) {mustBeInteger,mustBePositive}
+                dim (1,1) {mustBeInteger,mustBePositive}
+            end
             % Constructor
             %
             % Parameters:
@@ -51,44 +55,60 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter
             %
             % Parameters:
             %   f (function handle)
-            %       system function
+            %       system function. The function may include the adding of
+            %       noise, in which case noiseDistribution should be set to
+            %       'none'
             %   noiseDistribution (VMFDistribution)
             %       distribution of additive noise
-            
-            assert (isa (noiseDistribution, 'VMFDistribution'),'Currently, only VMF distributed noise terms are allowed.');
-            if ~isequal(noiseDistribution.mu,[0;0;1])
-                warning('mu of noiseDistribution is being ignored...');
+            assert(ischar(noiseDistribution) || this.dim==noiseDistribution.dim);
+            assert (isa (noiseDistribution, 'VMFDistribution')||...
+                ischar(noiseDistribution)&&strcmp(noiseDistribution,'none'),...
+                'Currently, only VMF-distributed noise terms or are allowed.');
+            if isa(noiseDistribution, 'VMFDistribution') && ~isequal(noiseDistribution.mu,[zeros(noiseDistribution.dim-1,1);1])
+                warning('mu of noiseDistribution is ignored...');
             end
             assert(isa(f,'function_handle'));
             %apply f
             wdF = this.wd.applyFunction(f);
             %calculate effect of (additive) noise
             noiseModified=noiseDistribution;
-            for i=1:length(this.wd.d)
-                noiseModified.mu=wdF.d(:,i);
-                wdF.d(:,i)=noiseModified.sample(1);
+            if ~(ischar(noiseDistribution)&&strcmp(noiseDistribution,'none'))
+                for i=1:length(this.wd.d)
+                    noiseModified.mu=wdF.d(:,i);
+                    wdF.d(:,i)=noiseModified.sample(1);
+                end
             end
             this.wd = wdF;
         end
         
-        function updateIdentity(this, noiseDistribution, z)
+        function predictCustom(this, genNewSamples)
+            % Takes custom function that generates new samples out of the old
+            % ones. If there is system noise, respecting it is part of the
+            % responsibility of genNewSamples.
+            this.wd.d = genNewSamples(this.wd.d);
+        end
+        
+        function updateIdentity(this, measNoise, z)
             % Updates assuming identity system model. Currently only 
-            % supports VMFDistributions. i.e.,
+            % supports VMF and WatsonDistribution and will be evaluated
+            % according to
             % f(z_k|x_k) = VMF(x_k, kappa),
-            % where kappa is the concentration of the VMF distribution.
+            % where kappa is the concentration of the VMF/Watson distribution.
             %
             % Parameters:
             %   noiseDistribution (AbstractHypersphericalDistribution)
             %       distribution of additive noise
             %   z (column vector)
             %       measurement
-            assert (isa (noiseDistribution, 'VMFDistribution'),'Currently, only VMF distributed noise terms are supported.');
+            assert(isprop(measNoise,'mu'), 'Currently, only VMF- and Watson-distributed noise terms are supported.');
             
             if nargin==3
-                noiseDistribution.mu=z;
-                warning('updateIdentity:muReplaced','mu of noiseDistribution is replaced by measurement...');
+                if norm(measNoise.mu-[zeros(this.dim-1,1); 1]) > 1E-6
+                    error('UpdateIdentity:UnexpectedMeas', 'z needs to be [0;...; 0; 1] to use updateIdentity.');
+                end
+                measNoise.mu=z;
             end
-            wdtmp=this.wd.reweigh(@(x)noiseDistribution.pdf(x));
+            wdtmp=this.wd.reweigh(@(x)measNoise.pdf(x));
             
             this.wd.d = wdtmp.sample(length(this.wd.d));
             this.wd.w = 1/size(this.wd.d,2)*ones(1,size(this.wd.d,2));

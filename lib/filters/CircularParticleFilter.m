@@ -5,9 +5,6 @@ classdef CircularParticleFilter < AbstractCircularFilter & HypertoroidalParticle
     % Gerhard Kurz, Igor Gilitschenski, Uwe D. Hanebeck,
     % Recursive Bayesian Filtering in Circular State Spaces
     % arXiv preprint: Systems and Control (cs.SY), January 2015.
-        
-    properties
-    end
     
     methods
         function this = CircularParticleFilter(nParticles)

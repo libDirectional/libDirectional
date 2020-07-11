@@ -3,7 +3,7 @@ classdef MeasModelWrapper < AdditiveNoiseMeasurementModel
     % measurement function f into an additive noise measurement model.
     
     properties
-        f
+        f function_handle
     end
     
     methods

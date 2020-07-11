@@ -1,7 +1,9 @@
 classdef (Abstract) AbstractDummyFilter < AbstractFilter
     methods
-        function this = HypersphericalDummyFilter(dim)
-            assert(dim>=2,'Dim must be the dimension of the Euclidean space that the densities are embedded in. Use at least 2.');
+        function this = AbstractDummyFilter(dim)
+            arguments
+                dim (1,1) double {mustBeGreaterThanOrEqual(dim,1)}
+            end
             this.dim=dim;
             % Do nothing
         end

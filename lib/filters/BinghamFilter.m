@@ -13,7 +13,7 @@ classdef BinghamFilter < AbstractAxialFilter
     % IEEE Transactions on Automatic Control, January 2016.
     
     properties
-        B % state as Bingham distribution
+        B BinghamDistribution % state as Bingham distribution
     end
     
     methods

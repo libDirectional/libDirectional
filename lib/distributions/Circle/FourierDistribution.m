@@ -14,9 +14,9 @@ classdef FourierDistribution < AbstractCircularDistribution
     % Heidelberg, Germany, July 2016.
     
     properties
-        a
-        b
-        transformation
+        a {mustBeReal}
+        b {mustBeReal}
+        transformation char = 'sqrt';
     end
     
     methods

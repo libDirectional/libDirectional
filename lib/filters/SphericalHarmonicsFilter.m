@@ -7,12 +7,15 @@ classdef SphericalHarmonicsFilter < AbstractHypersphericalFilter
     % on Multisensor Fusion and Integration for Intelligent Systems (MFI 2017),
     % Daegu, Korea, November 2017.
     properties
-        state
+        state SphericalHarmonicsDistributionComplex
     end
     
     methods
         function this = SphericalHarmonicsFilter(degree, transformation)
-            if nargin == 1, transformation = 'identity'; end
+            arguments
+                degree (1,1) double
+                transformation char = 'identity'
+            end
             coeffMat = zeros(degree+1, 2*degree+1);
             switch transformation
                 case 'identity'
