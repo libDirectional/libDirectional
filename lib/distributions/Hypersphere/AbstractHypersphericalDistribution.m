@@ -56,7 +56,7 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
                         hold off
                     end
                 otherwise
-                    error('cannot plot hyperspherical distribution with this number of dimensions');
+                    error('Cannot plot hyperspherical distribution with this number of dimensions');
             end
         end
         

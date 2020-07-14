@@ -5,8 +5,8 @@
 % based on inverting the cumulative distribution function.
 
 function stochasticSampling
-    dist = WNDistribution(3, 1.5);
-    %dist = VMDistribution(3, 1.5);
+    %dist = WNDistribution(3, 1.5);
+    dist = VMDistribution(3, 1.5);
     %dist = WCDistribution(3, 1.5);
     
     nSamples = 1000;

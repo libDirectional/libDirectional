@@ -51,11 +51,18 @@ classdef SE2BinghamDistribution
                 this.C1 = C;
                 this.C2 = C2;
                 this.C3 = C3;
-                this.NC = this.computeNC();
             end
+            
+            this.NC = this.computeNC();
             
             assert(all(eig(this.C3)<=0), ...
                 'Parameter matrix for unrestricted part must be negative definite.');
+        end
+        
+        function p = pdf(this, xa)
+            assert(size(xa,1) == 4);
+            
+            p = 1/this.NC * exp(sum(xa.*(this.C*xa)));
         end
         
         function C = computeCovarianceMCMC(this, n)

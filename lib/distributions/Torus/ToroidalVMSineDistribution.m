@@ -4,7 +4,7 @@ classdef ToroidalVMSineDistribution < AbstractToroidalDistribution
     % see http://en.wikipedia.org/wiki/Bivariate_von_Mises_distribution
     % and Singh H, Hnizdo V, Demchuk E (2002) 
     % Probabilistic model for two dependent circular variables
-    % Biometrika 89: 719–723
+    % Biometrika 89: 719â€“723
     
     properties
         mu      % 2 x 1 location parameter 
