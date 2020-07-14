@@ -192,20 +192,20 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             %   info (struct)
             %       more details: generated reference samples, optimization output 
             %
-            % https://www.overleaf.com/read/bjchtykkytdf
+            % https://isas.iar.kit.edu/pdf/IFAC20_Frisch.pdf
             % Daniel Frisch, Kailai Li, and Uwe D. Hanebeck 
-            % Optimal Reduction of Dirac Mixture Densities on the 2-sphere 
-            % IFAC 2020, Berlin 
-            
-            validateattributes(n, {'double'}, {'scalar','nonnegative','real','finite','integer'})
+            % Optimal Reduction of Dirac Mixture Densities on the 2-Sphere 
+            % Proceedings of the 1st Virtual IFAC World Congress (IFAC-V 2020), July, 2020.  
+            arguments
+                this (1,1) HypersphericalDiracDistribution
+                n    (1,1) double {mustBeNonnegative, mustBeReal, mustBeInteger}
+            end
             assert(this.dim==3, 'Spherical LCD Distance is currently not supported in this dimension.') 
             
             % Cartesian to spherical coordinates, (3 x n) [x;y;z] --> (2 x n) [theta;phi]
             c2s = @(c) [atan2(vecnorm(c(1:2,:),2,1),c(3,:)); atan2(c(2,:),c(1,:))];
             % spherical to Cartesian coordinates, (2 x n) [theta;phi] --> (3 x n) [x;y;z]
             s2c = @(s) [sin(s(1,:)).*cos(s(2,:)); sin(s(1,:)).*sin(s(2,:)); cos(s(1,:))];
-            % dot product in spherical coordinates, ((2 x nx), (2 x ny)) [theta;phi] --> (nx x ny)
-            %sdot = @(sx,sy) sin(sx(1,:)') .* sin(sy(1,:)) .* cos(sx(2,:)'-sy(2,:)) + cos(sx(1,:)').*cos(sy(1,:));
             % geodesic distance from spherical coordinates, ((2 x nx), (2 x ny)) [theta;phi] --> (nx x ny), more precise than acos(sdot(sx,xy))
             sgeo = @(sx,sy) 2 * asin(sqrt( sin((sx(1,:)'-sy(1,:))/2).^2 + sin(sx(1,:)').*sin(sy(1,:)).*sin((sx(2,:)'-sy(2,:))/2).^2 ));
             % Ei function (without the imaginary part that cancels out anyway)
@@ -220,14 +220,16 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             wRef = this.w;      % (1 x nRef)
             w0   = ones(1,n)/n; % (1 x n)
             
-%             % gradient check; display iterations
-%             options = optimoptions('fminunc', 'Display','iter', 'SpecifyObjectiveGradient',true, 'CheckGradients',true, 'FiniteDifferenceType','central', 'FiniteDifferenceStepSize',1e-4);
-            
-            % % high precision
-            % options = optimoptions('fminunc', 'Display','notify-detailed', 'SpecifyObjectiveGradient',true, 'OptimalityTolerance',1e-12, 'MaxIterations',2000, 'StepTolerance',1e-12 ); 
-
-            % normal precision
-            options = optimoptions('fminunc', 'Display','notify-detailed', 'SpecifyObjectiveGradient',true ); 
+            switch('Normal') % Normal, HighPrecision, GradientCheck 
+                case 'Normal'
+                    options = optimoptions('fminunc', 'Display','notify-detailed', 'SpecifyObjectiveGradient',true );
+                case 'HighPrecision'
+                    options = optimoptions('fminunc', 'Display','notify-detailed', 'SpecifyObjectiveGradient',true, 'OptimalityTolerance',1e-12, 'MaxIterations',2000, 'StepTolerance',1e-12 );
+                case 'GradientCheck'
+                    options = optimoptions('fminunc', 'Display','iter', 'SpecifyObjectiveGradient',true, 'CheckGradients',true, 'FiniteDifferenceType','central', 'FiniteDifferenceStepSize',1e-4);
+                otherwise
+                    error('Wrong switch')
+            end
 
             % optimization
             [sOpt_Spher,fval,exitflag,output] = fminunc(@fmindist, s0_Spher, options);
@@ -286,8 +288,7 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
                 % calculate geodesic distance d
                 geodist = sgeo(X,Y); % (nX x nY) 
                 % calculate unweighted distance measure function Ds() from d
-                %[Ds_XY,DiffXYMat] = Ds_Mises(geodist); % (nX x nY), (nX x nY) 
-                [Ds_XY,DiffXYMat] = Ds_Mises_Approx(geodist); % (nX x nY), (nX x nY) 
+                [Ds_XY,DiffXYMat] = Ds_Mises(geodist); % (nX x nY), (nX x nY) 
                 % Apply sample weights
                 DXY = wx' .* wy .* Ds_XY; % (nX x nY)
                 % Sum them up to total distance value
@@ -383,35 +384,6 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
                     Diff(ind) = 0;
                 end
             end
-            
-            function [D,Diff] = Ds_Mises_Approx(d)
-                % Ds(d) function for Von-Mises Fisher Kernel
-                % Calculates Distance between two samples of geodesic distance d 
-                % Uses approximation when first integrating w.r.t. to b
-                % and using simplification for Ei(x), x->0+. 
-                % TODO doesn't work! 
-                %
-                % Parameters:
-                %   d      : (n1 x n2) 
-                % Returns: 
-                %   D      : (n1 x n2) D 
-                %   Diff   : (n1 x n2) ∂D/∂d
-                
-                b = 0.001;
-                
-%                 c = cos(d/2);
-%                 D = log(1+c) + ( (-1+c).*log(1-c)+log(1+c) )./c;
-%                 Diff = -(c - atanh(c)) ./ c.^2 .* sin(d/2);
-                
-                D = -2 + log(-2*b.^2.*(-1 + cos(d))) + 2*log(cot(d/4)).*sec(d/2); 
-                Diff = (-1 + log(cot(d/4)) .* sec(d/2)) .* tan(d/2);
-                
-                D(isnan(D)) = 0;
-                Diff(isnan(Diff)) = 0;
-                
-                D = -D; Diff = -Diff;
-            end
-            
         end
     end
 end

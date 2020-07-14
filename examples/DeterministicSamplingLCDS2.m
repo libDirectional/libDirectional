@@ -3,10 +3,10 @@
 % Neat examples for on-sphere (S2) LCD sampling vor various spherical distributions. 
 % Created by Daniel Frisch at ISAS for libDirectional, Nov. 2019 
 
-% https://www.overleaf.com/read/bjchtykkytdf
+% https://isas.iar.kit.edu/pdf/IFAC20_Frisch.pdf
 % Daniel Frisch, Kailai Li, and Uwe D. Hanebeck
-% Optimal Reduction of Dirac Mixture Densities on the 2-sphere
-% IFAC 2020, Berlin
+% Optimal Reduction of Dirac Mixture Densities on the 2-Sphere
+% Proceedings of the 1st Virtual IFAC World Congress (IFAC-V 2020), July, 2020. 
 
 
 %% Dependencies
@@ -16,9 +16,6 @@
 %  - Deep Learning Toolbox
 %  - Symbolic Math Toolbox
 %  - Statistics and Machine Learning Toolbox
-
-addpath(genpath('../lib/'))
-% addpath('../../export_fig')
 
 
 %% Definition & Sample Calculation
@@ -55,7 +52,6 @@ switch type
         theta = @(c) atan2(vecnorm(c(1:2,:),2,1),c(3,:)); 
         phi   = @(c) atan2(c(2,:),c(1,:));
         % custom function
-        fun = @(c) exp( -((phi(c)-theta(c))/.2).^2 );        
         fun = @(c) exp( -((mod(phi(c),2*pi)-mod(4*theta(c),2*pi))/1).^2 );        
         distr = CustomHypersphericalDistribution(fun, 3);
         % normalize
@@ -183,16 +179,6 @@ set(PT, 'EdgeAlpha',.6, 'LineWidth',.6)
 cameratoolbar(fig, 'Show');
 cameratoolbar(fig, 'SetMode','orbit');
 cameratoolbar(fig, 'SetCoordSys','none')
-
-
-return
-%% Save Figure
-% addpath('../../export_fig')
-
-export_fig(fig, sprintf('figures/%s_transp.png',fname), '-m4', '-a3', '-transparent')
-export_fig(fig, sprintf('figures/%s_white.png',fname), '-m4', '-a3')
-
-
 
 
 

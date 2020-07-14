@@ -475,7 +475,10 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
             % Daniel Frisch, Kailai Li, and Uwe D. Hanebeck 
             % Optimal Reduction of Dirac Mixture Densities on the 2-sphere 
             % IFAC 2020, Berlin 
-            validateattributes(n, {'double'}, {'scalar','nonnegative','real','finite','integer'})
+            arguments
+                this (1,1) AbstractHypersphericalDistribution
+                n    (1,1) double {mustBeNonnegative, mustBeReal, mustBeInteger}
+            end
             assert(this.dim==3, 'Spherical LCD Distance is currently not supported in this dimension.') 
             % obtain stochastic reference samples
             nRef = n*100; 
@@ -485,6 +488,7 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
             % get LCD sample reduction
             [s,info] = DMD.sampleDeterministicLCD(n);
         end
+        
         function s = getManifoldSize(this)
             s = AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
         end
