@@ -67,6 +67,23 @@ classdef AbstractHypersphericalDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(sum(s2.^2,1), ones(1,n), 'RelTol', 1E-10);
         end
         
+        function testSampleDeterministic(testCase)
+            % define VMFDistribution
+            mu = rand(3,1);
+            mu = mu / vecnorm(mu);
+            kappa = 3*randn(1)^2 + 1;        
+            distr = VMFDistribution(mu, kappa);
+            % obtain deterministic samples
+            n = randi(100);
+            s = distr.sampleDeterministicLCD(n);
+            % check size & norm of vectors
+            testCase.verifySize(s, [3, n]);
+            testCase.verifyEqual(vecnorm(s,2,1), ones(1,n), 'RelTol',1E-10)
+            % check mean
+            dd = HypersphericalDiracDistribution(s);
+            testCase.verifyEqual(dd.meanDirection(), mu, 'AbsTol', 1E-1)
+        end
+        
         function testMeanDirectionNumerical(testCase)
             mu = 1/sqrt(2)*[1;1;0];
             vmf = VMFDistribution(mu,1);
