@@ -466,7 +466,7 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         
         function p = plot(this, varargin)
             if this.dim ~= 2 % For other dimensions, just fall back to regular plotting
-                plot@AbstractHypertoroidalDistribution(this, varargin{:});
+                p = plot@AbstractHypertoroidalDistribution(this, varargin{:});
                 return
             end
             noPoints = 102;

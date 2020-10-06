@@ -44,6 +44,18 @@ classdef DiscreteFilter < AbstractCircularFilter
             end
         end
         
+        function predictIdentity(this, noiseDistribution)
+            % Predicts assuming identity system model, i.e.,
+            % x(k+1) = x(k) + w(k)    mod 2pi,
+            % where w(k) is additive noise given by noiseDistribution.
+            %
+            % Parameters:
+            %   noiseDistribution (AbstractCircularDistribution)
+            %       distribution of additive noise
+            assert (isa (noiseDistribution, 'AbstractCircularDistribution'));
+            this.predictNonlinear(@(x) x, noiseDistribution);
+        end
+        
         function predictNonlinear(this, f, noiseDistribution, useProportional)
             % Predicts assuming a nonlinear system model, i.e.,
             % x(k+1) = f(x(k)) + w(k)    mod 2pi,
@@ -149,6 +161,21 @@ classdef DiscreteFilter < AbstractCircularFilter
                     this.wd.w(id2) = this.wd.w(id2) + distance1 / (distance1+distance2) * oldWeights(i)*noiseWeights(j) ;
                 end
             end            
+        end
+        
+        function updateIdentity(this, noiseDistribution, z)
+            % Updates assuming identity measurement model, i.e.,
+            % z(k) = x(k) + v(k)    mod 2pi,
+            % where v(k) is additive noise given by noiseDistribution.
+            %
+            % Parameters:
+            %   noiseDistribution (AbstractCircularDistribution)
+            %       distribution of additive noise
+            %   z (scalar)
+            %       measurement in [0, 2pi)
+            assert(isa(noiseDistribution, 'AbstractCircularDistribution'));
+            assert(isscalar(z));
+            this.updateNonlinear(LikelihoodFactory.additiveNoiseLikelihood(@(x) x, noiseDistribution), z);
         end
         
         function updateNonlinear(this, likelihood, z) 
