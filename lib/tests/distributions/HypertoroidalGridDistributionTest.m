@@ -51,7 +51,7 @@ classdef HypertoroidalGridDistributionTest < matlab.unittest.TestCase
         end
 
         function testFromDistribution2D(testCase)
-            % Test that from Distribution and fromFunction result in equal
+            % Test that fromDistribution and fromFunction result in equal
             % approximations
             kappa1 = 0.3;
             kappa2 = 1.5;
