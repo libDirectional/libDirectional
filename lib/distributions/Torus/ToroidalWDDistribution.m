@@ -15,9 +15,9 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             %       Dirac locations in [0,2pi)^2
             %   w_ (1 x L)
             %       weights for each Dirac  
-            assert(size(d_,1)==2, 'Size of d incorrect');
-            if nargin==1
-                w_= ones(1,size(d_,2))/size(d_,2);
+            arguments
+                d_ (2,:) double
+                w_ (1,:) double = ones(1,size(d_,2))/size(d_,2);
             end
             this@HypertoroidalWDDistribution(d_, w_);
         end
@@ -107,7 +107,13 @@ classdef ToroidalWDDistribution < AbstractToroidalDistribution & HypertoroidalWD
             X = (a+(b+this.w*scale).*cos(this.d(1,:))).*cos(this.d(2,:));
             Y = (a+(b+this.w*scale).*cos(this.d(1,:))).*sin(this.d(2,:));
             Z = (b+this.w*scale).*sin(this.d(1,:));
-            p = scatter3(X,Y,Z, varargin{:});
+            p = scatter3(X,Y,Z,this.w*10000, varargin{:});
+            holdStatus = ishold;
+            hold on
+            this.plotTorusContours;
+            if ~holdStatus
+                hold off
+            end
         end
         
         function p = plotTorusStemlike(this, varargin)

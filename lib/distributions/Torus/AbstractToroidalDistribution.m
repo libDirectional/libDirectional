@@ -232,4 +232,24 @@ classdef (Abstract) AbstractToroidalDistribution < AbstractHypertoroidalDistribu
         end
     end
     
+    methods (Static)
+        function h = plotTorusContours(varargin)
+            step = 2*pi/30;
+            [alpha,beta] = meshgrid(0:step:2*pi,0:step:2*pi+step);
+
+            a = 2; %larger radius
+            b = 0.5; %smaller radius
+            X = (a+(b).*cos(alpha)).*cos(beta);
+            Y = (a+(b).*cos(alpha)).*sin(beta);
+            Z = (b).*sin(alpha);
+            p = mesh(X,Y,Z,ones(size(X)), varargin{:});
+
+            xdata=get(p,'xdata'); % Get lines from smooth sphere
+            ydata=get(p,'ydata');
+            zdata=get(p,'zdata');
+            delete(p);
+            h = [line(xdata',ydata',zdata','color',0.8*[1 1 1]);...
+                line(xdata,ydata,zdata,'color',0.8*[1 1 1])];
+        end
+    end
 end

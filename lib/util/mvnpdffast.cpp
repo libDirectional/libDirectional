@@ -27,7 +27,7 @@ using namespace Mex;
  *  C (d x d matrix)
  *      covariance matrix, must be symmetric positive definite
  *
- * This function can server as a drop-in replacement for MATLAB's mvnpdf, if the parameters are given as above. 
+ * This function can serve as a drop-in replacement for MATLAB's mvnpdf, if the parameters are given as above. 
  * It does not support all allowed parameter combinations found in MATLAB's mvnpdf. 
  * For efficiency reasons, we do not verify that C is really s.p.d. and the results will be incorrect in case it is not.
  *
