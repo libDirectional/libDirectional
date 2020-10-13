@@ -1,5 +1,10 @@
 classdef SdHalfCondSdHalfGridDistribution < AbstractGridDistribution
-    
+    % In this class, a conditional distribution on the hyperhemisphere is
+    % described by grid values. For the conditional distribution f(a|b), we
+    % allow both a and by to vary. Thus, it is a function of the Cartesian
+    % product of two hyperhemispheres. It obviously should only integrate to 1 for a
+    % fixed b. To provide a grid for the Cartesian product of two hyperhemispheres, we
+    % generate the Cartesian product of the grids of the individual hyperhemispheres.
     properties
         grid double {mustBeLessThanOrEqual(grid,1),mustBeGreaterThanOrEqual(grid,-1)}
     end
