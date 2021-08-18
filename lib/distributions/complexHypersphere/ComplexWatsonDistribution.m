@@ -31,9 +31,9 @@ classdef ComplexWatsonDistribution < AbstractComplexHypersphericalDistribution
             W.mu = mu_;
             W.kappa = kappa_;
             
-            W.d = size(mu_,1);
+            W.dim = size(mu_,1);
             
-            W.logC = ComplexWatsonDistribution.logNorm(W.d, W.kappa);
+            W.logC = ComplexWatsonDistribution.logNorm(W.dim, W.kappa);
             W.C = exp(W.logC);
         end
         

@@ -25,7 +25,8 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             fixture.teardown;
 
             % Verify warnings
-            sgdState.grid(:,end)=[];
+            fullGrid = sgdState.getGrid();
+            sgdState.grid=fullGrid(:,end);
             sgdState.gridValues(end)=[];
             testCase.verifyClass(sgf.gd,'HypersphericalGridDistribution')
             sgfTmp = sgf.copy;
@@ -53,7 +54,8 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyGreaterThan(sum(abs(diff(sgf.getEstimate.gridValues'))),5);
 
             % Verify warnings
-            sgdState.grid(:,end)=[];
+            fullGrid = sgdState.getGrid();
+            sgdState.grid=fullGrid(:,end);
             sgdState.gridValues(end)=[];
             testCase.verifyClass(sgf.gd,'HypersphericalGridDistribution')
             sgfTmp = sgf.copy;
@@ -80,7 +82,7 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             trans = @(xkk,xk)cell2mat(arrayfun(@(i)VMFDistribution(xk(:,i),1).pdf(xkk),1:size(xk,2),'UniformOutput',false));
             sdsd = SdCondSdGridDistribution.fromFunction(trans,noGridPoints,true,'eq_point_set',6);
             for i=1:10
-                valuesAlternativeFormula = (4*pi/size(sgf.getEstimate.grid,2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
+                valuesAlternativeFormula = (4*pi/size(sgf.getEstimate.getGrid(),2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
                 sgf.predictNonlinearViaTransitionDensity(sdsd);
                 testCase.verifyEqual(sgf.getEstimate.gridValues,valuesAlternativeFormula,'AbsTol',1E-12);
             end
@@ -106,31 +108,15 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             sdsd = SdCondSdGridDistribution.fromFunction(trans,noGridPoints,true,'eq_point_set',8);
             manifoldSize = AbstractHypersphericalDistribution.computeUnitSphereSurface(4);
             for i=1:10
-                valuesAlternativeFormula = (manifoldSize/size(sgf.getEstimate.grid,2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
+                valuesAlternativeFormula = (manifoldSize/size(sgf.getEstimate.getGrid(),2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
                 sgf.predictNonlinearViaTransitionDensity(sdsd);
                 testCase.verifyEqual(sgf.getEstimate.gridValues,valuesAlternativeFormula,'AbsTol',1E-12);
             end
             % Verify that is it approximately uniform now
             testCase.verifyEqual(sum(abs(diff(sgf.getEstimate.gridValues'))),0,'AbsTol',1E-3);
         end
-        function testUpdateWithVMFS2(testCase)
-            import matlab.unittest.fixtures.SuppressedWarningsFixture
-            noGridPoints = 101;
-            sgf = HypersphericalGridFilter(noGridPoints, 3);
-            
-            vmf = VMFDistribution(1/sqrt(2)*[1;-1;0],0.1);
-            sgf.updateNonlinear(@(z,x)vmf.pdf(x),NaN(3,1));
-            fixture=testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
-            testCase.verifyEqual(sgf.getEstimate.totalVariationDistanceNumerical(vmf),0,'AbsTol',5e-06);
-            fixture.teardown;
-            
-            vmfPosterior = vmf.multiply(vmf);
-            sgf.updateNonlinear(@(z,x)vmf.pdf(x),NaN(3,1));
-            
-            testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
-            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
-            testCase.verifyEqual(sgf.getEstimate.totalVariationDistanceNumerical(vmfPosterior),0,'AbsTol',1e-12);
-        end
+        % No test for S2! Use spherical grid filter instead for better
+        % results!
         function testUpdateWithVMFS3(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             noGridPoints = 1001;
@@ -139,7 +125,7 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             vmf = VMFDistribution(1/sqrt(3)*[1;-1;0;1],0.1);
             sgf.updateNonlinear(@(z,x)vmf.pdf(x),NaN(4,1));
             fixture=testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
-            testCase.verifyEqual(sgf.gd.gridValues,vmf.pdf(sgf.gd.grid)','AbsTol',1e-05);
+            testCase.verifyEqual(sgf.gd.gridValues,vmf.pdf(sgf.gd.getGrid())','AbsTol',1e-05);
             fixture.teardown;
             
             vmfPosterior = vmf.multiply(vmf);
@@ -147,7 +133,7 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             
             testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
             testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
-            testCase.verifyEqual(sgf.gd.gridValues,vmfPosterior.pdf(sgf.gd.grid)','AbsTol',5e-6);
+            testCase.verifyEqual(sgf.gd.gridValues,vmfPosterior.pdf(sgf.gd.getGrid())','AbsTol',5e-6);
         end
         function testUpdateIdentityS2(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
@@ -186,7 +172,7 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
 
             testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
             testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
-            testCase.verifyEqual(sgf.gd.gridValues',vmff.getEstimate.pdf(sgf.gd.grid),'AbsTol',1e-4);
+            testCase.verifyEqual(sgf.gd.gridValues',vmff.getEstimate.pdf(sgf.gd.getGrid()),'AbsTol',1e-4);
         end
         % Compare prediction with SphericalHarmonicsFilter
         function testPredictNonlinearForPseudoadditiveS2(testCase)
@@ -267,45 +253,6 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual(sgfNonlinear.gd.gridValues, sgfIdentity.gd.gridValues);
             testCase.verifyEqual(sgfIdentity.getEstimateMean, spf.getEstimateMean, 'AbsTol', 4e-2);
         end
-        function testPredictNonlinearViaTransitionDensityNextStateIndependentS2(testCase)
-            import matlab.unittest.fixtures.SuppressedWarningsFixture
-            % Result of prediction is independent of the initial density
-            % because the transition density is independent of the state
-            % xk!
-            noGridpoints = 5001;
-            vmfInit = VMFDistribution([0;0;1], 1);
-            sgf = HypersphericalGridFilter(noGridpoints, 3);
-            sgf.setState(HypersphericalGridDistribution.fromDistribution(vmfInit, noGridpoints));
-            
-            % First prediction with Bingham
-            Z = [-7.44;-2.84;0];
-            M = [-0.18 -0.172 -0.969;-0.738 -0.627 0.248;-0.65 0.76 -0.0141];
-            distPredictionResult = BinghamDistribution(Z,M);
-            distPredictionResult.F = distPredictionResult.F*distPredictionResult.integralNumerical;
-            
-            fTrans = @(xkk,xk)repmat(distPredictionResult.pdf(xkk)',[1,size(xk,2)]);
-            sdsd_fTrans = SdCondSdGridDistribution.fromFunction(fTrans, noGridpoints, true, 'eq_point_set', 6);
-            sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans);
-                        
-            fixture1 = testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
-            fixture2 = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
-            testCase.verifyEqual(sgf.getEstimate.totalVariationDistanceNumerical(distPredictionResult),0,'AbsTol',5e-6);
-            fixture1.teardown;
-            fixture2.teardown;
-            
-            % Then prediction with a transition density that is independent
-            % of the current estimate
-            distPredictionResult = VMFDistribution([0;-1;0], 100);
-            fTrans = @(xkk,xk)repmat(distPredictionResult.pdf(xkk)',[1,size(xk,2)]);
-            sdsd_fTrans = SdCondSdGridDistribution.fromFunction(fTrans, noGridpoints, true, 'eq_point_set', 6);
-            % Since sdsd is normalized, should be normalized as well.
-            testCase.verifyWarningFree(@()...
-                sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans));
-            
-            testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
-            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
-            testCase.verifyEqual(sgf.getEstimate.totalVariationDistanceNumerical(distPredictionResult),0,'AbsTol',1e-11);
-        end
         function testPredictNonlinearViaTransitionDensityNextStateIndependentS3(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Result of prediction is independent of the initial density
@@ -331,7 +278,7 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             sdsd_fTrans = SdCondSdGridDistribution.fromFunction(fTrans, noGridpoints, true, 'eq_point_set', 8);
             sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans);
                         
-            testCase.verifyEqual(sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.grid), 'AbsTol', 1e-12);
+            testCase.verifyEqual(sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.getGrid()), 'AbsTol', 1e-12);
 
             % Next transition density also does not depend on current
             % state.
@@ -342,7 +289,7 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             sdsd_fTrans = SdCondSdGridDistribution.fromFunction(fTrans, noGridpoints, true, 'eq_point_set', 8);
             % Since sdsd is normalized, should be normalized as well.
             sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans)
-            testCase.verifyEqual(sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.grid), 'AbsTol', 5e-13);
+            testCase.verifyEqual(sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.getGrid()), 'AbsTol', 5e-13);
             
         end
     end

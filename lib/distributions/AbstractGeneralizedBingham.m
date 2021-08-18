@@ -1,21 +1,11 @@
-classdef (Abstract) AbstractGeneralizedBingham
+classdef (Abstract) AbstractGeneralizedBingham < AbstractLinBoundedDistribution
     % Distribution on S^(d-1) x R^n.
     %  
     
-    properties
-        n % number of linear dimensions
-        d % numer of spherical dimensions        
-    end
-    
-    methods (Abstract)
-        % Evaluate pdf at positions stored in xa
-        pdf(this, xa);
-    end     
-    
     methods
         function h = plot(this)
-            assert(this.n == 1);
-            assert(this.d == 2);
+            assert(this.linD == 1);
+            assert(this.boundD == 2);
             
             phi = linspace(0,2*pi,100);
             l = linspace(-5,5, 100);
@@ -26,8 +16,8 @@ classdef (Abstract) AbstractGeneralizedBingham
         end
         
         function result = integralNumerical(this)
-            assert(this.n == 1);
-            assert(this.d == 2);
+            assert(this.linD == 1);
+            assert(this.boundD == 2);
             
             f = @(x,y) reshape(this.pdf([cos(x(:)');sin(x(:)');y(:)']), size(x));
             result = integral2(f, 0, 2*pi, -10, 10);            
@@ -44,7 +34,7 @@ classdef (Abstract) AbstractGeneralizedBingham
             % Returns:
             %   l (scalar)
             %       log-likelihood of obtaining the given samples
-            assert(size(samples,1)==this.d + this.n);
+            assert(size(samples,1)==this.boundD + this.linD);
             assert(size(samples,2)>=1);
             
             if nargin>2

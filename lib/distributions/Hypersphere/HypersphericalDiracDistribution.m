@@ -1,11 +1,6 @@
-classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
+classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution & AbstractDiracDistribution
     % Dirac distribution on the hypersphere with dirac positions d and
     % weights w.
-    
-    properties
-        d  % (dim x L)
-        w (1,:) double % ( 1  x L)
-    end
     
     methods
         function this = HypersphericalDiracDistribution(d_, w_)
@@ -15,21 +10,14 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             %   d_ (dim x L)
             %       Dirac locations on the unit hypersphere
             %   w_ (1 x L)
-            %       weights for each Dirac            
-            this.dim = size(d_,1);
-            
-            % check normalization
-            assert ( max(abs(sum(d_.^2)) - ones(1, size(d_,2))) < 1E-5);
-            this.d = d_;
-            
-            if (nargin<2)
-                %all diracs have equal weights
-                this.w = ones(1,size(this.d,2))/size(this.d,2);
-            else
-                assert(size(w_,1) == 1 );
-                assert(size(d_,2) == size(w_,2));
-                this.w = w_/sum(w_);
+            %       weights for each Dirac
+            arguments
+                d_ (:,:) double {mustBeNonempty}
+                w_ (1,:) double = ones(1,size(d_,2))/size(d_,2);
             end
+            % Check normalization
+            assert ( max(abs(sum(d_.^2)) - ones(1, size(d_,2))) < 1E-5);
+            this@AbstractDiracDistribution(d_, w_);
         end      
         
         function p = plot(this, varargin)
@@ -63,71 +51,6 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             result = sum(this.w);
         end
         
-        function integralNumerical(~, ~)
-            error('PDF:UNDEFINED', 'not supported');
-        end
-                
-        function hdd = applyFunction(this,f)
-            % Apply a function f(x) to each Dirac component and obtain its new position
-            %
-            % Parameters:
-            %   f (function handle)
-            %       function from S^dim to S^dim
-            % Returns:
-            %   hdd (HypersphericalDiracDistribution)
-            %       distribution with new Dirac locations (and same
-            %       weights as before)
-            assert(isa(f,'function_handle'));
-            
-            d_ = zeros(size(this.d));
-            for i=1:size(this.d,2)
-                d_(:,i) = f(this.d(:,i));
-            end
-            % check normalization
-            assert(max(abs(sum(d_.^2)) - ones(1, size(d_,2))) < 1E-5);
-            
-            hdd = this;
-            hdd.d = d_;
-        end
-        
-        function hdd = reweigh(this, f)
-            % Uses a function f(x) to calculate the weight of each Dirac
-            % component. The new weight is given by the product of the old 
-            % weight and the weight obtained with f. Restores normalization
-            % afterwards.
-            %
-            % Parameters:
-            %   f (function handle)
-            %       function from S^dim to [0, infinity)
-            %       (needs to support vectorized inputs, i.e., dim x n matrices)
-            % Returns:
-            %   hdd (HypersphericalDiracDistribution)
-            %       distribution with new weights and same Dirac locations
-            assert(isa(f,'function_handle'));
-            
-            wNew = f(this.d);
-            assert(all(wNew >= 0));
-            assert(sum(wNew) > 0);
-            
-            hdd = this;
-            hdd.w = wNew.*this.w;
-            hdd.w = hdd.w/sum(hdd.w);
-        end
-
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (dim x n)
-            %       one sample per column
-            assert(isscalar(n));
-            ids = discretesample(this.w,n);
-            s = this.d(:,ids);
-        end
-        
         function result = entropy(this)
             % Calculates the entropy analytically 
             %
@@ -139,6 +62,22 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             % The entropy only depends on the weights!
             result = -sum(this.w.*log(this.w));
         end       
+        
+        function s = sample(this, n)
+            % Obtain n samples from the distribution
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of samples
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column
+            arguments
+                this (1,1) HypersphericalDiracDistribution
+                n (1,1) double {mustBeInteger,mustBePositive}
+            end
+            s = sample@AbstractDiracDistribution(this, n);
+        end
         
         function entropyNumerical(~)
             error('PDF:UNDEFINED', 'not supported');
@@ -153,16 +92,6 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             assert(this.dim == 2);
             wd = WDDistribution(atan2(this.d(2,:), this.d(1,:)), this.w);
         end   
-        
-        function sampleMetropolisHastings(~, ~)
-            % Disable sampling algorithm relying on pdf
-            error('PDF:UNDEFINED', 'not supported');
-        end            
-
-        function pdf(~, ~)
-            % Placeholder, pdf does not exist for Dirac distributions
-            error('PDF:UNDEFINED', 'pdf is not defined')
-        end     
         
         function mu = meanDirection(this)
             vecSum = sum(this.d.*this.w, 2);
@@ -194,7 +123,7 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
             %
             % https://isas.iar.kit.edu/pdf/IFAC20_Frisch.pdf
             % Daniel Frisch, Kailai Li, and Uwe D. Hanebeck 
-            % Optimal Reduction of Dirac Mixture Densities on the 2-Sphere 
+            % Optimal Reduction of Dirac Mixture Densities on the 2-sphere 
             % Proceedings of the 1st Virtual IFAC World Congress (IFAC-V 2020), July, 2020.  
             arguments
                 this (1,1) HypersphericalDiracDistribution
@@ -384,6 +313,16 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution
                     Diff(ind) = 0;
                 end
             end
+        end
+    end
+    methods (Static)
+        function f = fromDistribution(distribution, noOfSamples)
+            arguments
+                distribution (1,1) AbstractHypersphericalDistribution
+                noOfSamples (1,1) {mustBePositive, mustBeInteger}
+            end
+            f = HypersphericalDiracDistribution(...
+                distribution.sample(noOfSamples),ones(1,noOfSamples)/noOfSamples);
         end
     end
 end

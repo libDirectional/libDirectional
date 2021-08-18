@@ -15,7 +15,7 @@ classdef HyperhemisphericalGridDistributionTest < matlab.unittest.TestCase
                 {VMFDistribution(1/sqrt(2)*[-1;0;1],2),VMFDistribution(1/sqrt(2)*[1;0;-1],2)},[0.5,0.5]);
             
             hhgd = HyperhemisphericalGridDistribution.fromDistribution(dist, 1012);
-            testCase.verifyEqual(hhgd.gridValues', 2*dist.pdf(hhgd.grid));
+            testCase.verifyEqual(hhgd.gridValues', 2*dist.pdf(hhgd.getGrid()));
         end
         
         function testApproxBinghamS2(testCase)
@@ -26,7 +26,7 @@ classdef HyperhemisphericalGridDistributionTest < matlab.unittest.TestCase
             dist.F = dist.F*dist.integralNumerical;
             
             hhgd = HyperhemisphericalGridDistribution.fromDistribution(dist, 1012);
-            testCase.verifyEqual(hhgd.gridValues', 2*dist.pdf(hhgd.grid));
+            testCase.verifyEqual(hhgd.gridValues', 2*dist.pdf(hhgd.getGrid()));
         end
         
         function testApproxBinghamS3(testCase)
@@ -37,7 +37,7 @@ classdef HyperhemisphericalGridDistributionTest < matlab.unittest.TestCase
             dist.F = dist.F*dist.integralNumerical;
             
             hhgd = HyperhemisphericalGridDistribution.fromDistribution(dist, 1012);
-            testCase.verifyEqual(hhgd.gridValues', 2*dist.pdf(hhgd.grid));
+            testCase.verifyEqual(hhgd.gridValues', 2*dist.pdf(hhgd.getGrid()));
         end
         
         % Test operations for prediction and filter steps
@@ -57,7 +57,8 @@ classdef HyperhemisphericalGridDistributionTest < matlab.unittest.TestCase
                     hgd2 = HypersphericalGridDistribution.fromDistribution(dist2, 2000, 'eq_point_set_symm');
                     hgdFiltered = hgd1.multiply(hgd2);
                     
-                    testCase.verifyEqual(hhgdFiltered.grid, hgdFiltered.grid(:,1:1000));
+                    currentGrid = hgdFiltered.getGrid();
+                    testCase.verifyEqual(hhgdFiltered.getGrid(), currentGrid(:,1:1000));
                     testCase.verifyEqual(0.5*hhgdFiltered.gridValues, hgdFiltered.gridValues(1:1000), 'AbsTol', 1e-11);
                 end
             end
@@ -78,7 +79,8 @@ classdef HyperhemisphericalGridDistributionTest < matlab.unittest.TestCase
                     hgd2 = HypersphericalGridDistribution.fromDistribution(dist2, 2000, 'eq_point_set_symm');
                     hgdFiltered = hgd1.multiply(hgd2);
                     
-                    testCase.verifyEqual(hhgdFiltered.grid, hgdFiltered.grid(:,1:1000));
+                    currGrid = hgdFiltered.getGrid();
+                    testCase.verifyEqual(hhgdFiltered.getGrid(), currGrid(:,1:1000));
                     testCase.verifyEqual(0.5*hhgdFiltered.gridValues, hgdFiltered.gridValues(1:1000), 'AbsTol', 1e-4);
                 end
             end
@@ -89,7 +91,8 @@ classdef HyperhemisphericalGridDistributionTest < matlab.unittest.TestCase
             f1 = HyperhemisphericalGridDistribution.fromDistribution(dist1, 84, 'eq_point_set');
             f2 = f1;
             f2.gridValues = f2.gridValues(1:end-1);
-            f2.grid = f2.grid(:,1:end-1);
+            currGrid = f2.getGrid();
+            f2.grid = currGrid(:,1:end-1);
             testCase.verifyError(@()f1.multiply(f2),'Multiply:IncompatibleGrid');
         end
         function testToFullSphere(testCase)
@@ -99,7 +102,7 @@ classdef HyperhemisphericalGridDistributionTest < matlab.unittest.TestCase
             hhgd = HyperhemisphericalGridDistribution.fromDistribution(dist, 42, 'eq_point_set_symm');
             
             hhgd2hgd = hhgd.toFullSphere;
-            testCase.verifyEqual(hhgd2hgd.grid, hgd.grid);
+            testCase.verifyEqual(hhgd2hgd.getGrid(), hgd.getGrid());
             testCase.verifyEqual(hhgd2hgd.gridValues, hgd.gridValues);
         end
     end

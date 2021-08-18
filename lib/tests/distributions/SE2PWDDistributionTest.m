@@ -16,7 +16,7 @@ classdef SE2PWDDistributionTest< matlab.unittest.TestCase
             wd = pwd.marginalizeLinear();
             testCase.verifyEqual(mean(1), real(wd.trigonometricMoment(1)), 'RelTol', 1E-10);
             testCase.verifyEqual(mean(2), imag(wd.trigonometricMoment(1)), 'RelTol', 1E-10);
-            
+
             % test error
             testCase.verifyError(@() pwd.pdf(), 'PDF:UNDEFINED');
             
@@ -39,13 +39,13 @@ classdef SE2PWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(pwdRew.d, pwd.d);
             testCase.verifyEqual(pwdRew.w, double(f(pwd.d)));
             
-            f = @(x) 2; %does not change anything because of renormalization
+            f = @(x) 2*ones(1,size(x,2)); %does not change anything because of renormalization
             pwdRew = pwd.reweigh(f);
             testCase.verifyClass(pwdRew, 'SE2PWDDistribution');
             testCase.verifyEqual(pwdRew.d, pwd.d);
             testCase.verifyEqual(pwdRew.w, pwd.w);
             
-            f = @(x) x(1);
+            f = @(x) x(1,:);
             pwdRew = pwd.reweigh(f);
             testCase.verifyClass(pwdRew, 'SE2PWDDistribution');
             testCase.verifyEqual(pwdRew.d, pwd.d);

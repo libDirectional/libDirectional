@@ -1,4 +1,4 @@
-classdef HyperhemisphericalGridFilter < AbstractGridFilter % Could inherit from AbstractAxialFilter, but would be of no use and might be confusing.
+classdef HyperhemisphericalGridFilter < AbstractGridFilter & AbstractHyperhemisphericalFilter % Could inherit from AbstractAxialFilter, but would be of no use and might be confusing.
     
     methods
         function this = HyperhemisphericalGridFilter(noOfCoefficients, dim, gridType)
@@ -19,7 +19,6 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter % Could inherit from 
             % prediction step for the spherical harmonics-based grid.
             this.gd = HyperhemisphericalGridDistribution.fromDistribution(HyperhemisphericalUniformDistribution(dim),...
                 noOfCoefficients, gridType);
-            this.dim = dim;
         end
         
         function setState(this, gd_)
@@ -34,19 +33,19 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter % Could inherit from 
             end
             assert(this.dim==gd_.dim);
             if isa(gd_, 'HyperhemisphericalGridDistribution')
-                if ~isequal(this.gd.grid, gd_.grid)
+                if ~isequal(this.gd.getGrid(), gd_.getGrid())
                     warning('setState:gridDiffers', 'New density is defined on different grid.')
                 end
             elseif isa(gd_, 'HypersphericalGridDistribution')
                 warning('Called setState with GridDistribution on the entire hypersphere. Please ensure it is at least symmetric.')
                 HyperhemisphericalGridDistribution(this.gd.grid(1:size(this.gd.grid)/2), this.gd.gridValues(1:size(this.gd.grid)/2));
-                if ~isequal(this.gd.grid, gd_.grid)
+                if ~isequal(this.gd.getGrid(), gd_.getGrid())
                     warning('setState:gridDiffers', 'New density is defined on different grid.')
                 end
             else
                 warning('setState:nonGrid', 'sgd_ is not a HyperhemisphericalGridDistribution. Transforming with a number of coefficients that is equal to that of the filter.');
-                gd_ = HyperhemisphericalGridDistribution.fromDistribution(gd_, size(this.gd.grid,2), 'eq_point_set');
-                assert(isequal(this.gd.grid, gd_.grid));
+                gd_ = HyperhemisphericalGridDistribution.fromDistribution(gd_, size(this.gd.gridValues,1), 'eq_point_set');
+                assert(isequal(this.gd.getGrid(), gd_.getGrid()));
             end
             this.gd = gd_;
         end
@@ -62,7 +61,7 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter % Could inherit from 
             assert(dSys.dim==this.dim);
             warning('PredictIdentity:Inefficient','Using inefficient prediction. Consider precalculating the SdHalfCondSdHalfGridDistribution and using predictNonlinearViaTransitionDensity.');
             
-            sdHalfCondSdHalf = HyperhemisphericalGridFilter.sysNoiseToTransitionDensity(dSys, size(this.gd.grid,2));
+            sdHalfCondSdHalf = HyperhemisphericalGridFilter.sysNoiseToTransitionDensity(dSys, size(this.gd.gridValues,1));
             this.predictNonlinearViaTransitionDensity(sdHalfCondSdHalf);
         end
         
@@ -92,11 +91,12 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter % Could inherit from 
                     error('Unsupported distribution');
                 end
             end
-            this.gd = this.gd.multiply(HyperhemisphericalGridDistribution(this.gd.grid,2*measNoise.pdf(this.gd.grid)'));
+            currGrid = this.gd.getGrid();
+            this.gd = this.gd.multiply(HyperhemisphericalGridDistribution(currGrid,2*measNoise.pdf(currGrid)'));
         end
         
         function updateNonlinear(this, likelihood, z) %measurement z, likelihood(z,x)=P(Z|X)
-            this.gd.gridValues = this.gd.gridValues .* likelihood(z, this.gd.grid)'; % Evaluate on precisely same grid (.multiply would require GridDistribution)
+            this.gd.gridValues = this.gd.gridValues .* likelihood(z, this.gd.getGrid())'; % Evaluate on precisely same grid (.multiply would require GridDistribution)
             warnStruct = warning('off', 'Normalization:notNormalized');
             this.gd = this.gd.normalize;
             warning(warnStruct);
@@ -107,15 +107,15 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter % Could inherit from 
                 this HyperhemisphericalGridFilter
                 fTrans SdHalfCondSdHalfGridDistribution
             end
-            assert(isequal(this.gd.grid,fTrans.grid), 'predictNonlinearViaTransitionDensity:gridDiffers',...
+            assert(isequal(this.gd.getGrid(),fTrans.getGrid()), 'predictNonlinearViaTransitionDensity:gridDiffers',...
                 'fTrans is using an incompatible grid.');
             % Multiplication could be realized via this.getEstimate.gridValues'.*fTrans.gridValues
             % combined with marginalization it would be
             % (4*pi/size(this.grid,2)*sum(this.getEstimate.gridValues'.*fTrans.gridValues,2).
             % Faster with matrix multiplication
             this.gd = this.gd.normalize;
-            gridValuesnew = this.gd.getManifoldSize/size(this.gd.grid,2)*fTrans.gridValues*this.gd.gridValues;
-            this.gd = HyperhemisphericalGridDistribution(this.gd.grid,gridValuesnew); % This also enforces a normalization if it is violated
+            gridValuesnew = this.gd.getManifoldSize/size(this.gd.gridValues,1)*fTrans.gridValues*this.gd.gridValues;
+            this.gd = HyperhemisphericalGridDistribution(this.gd.getGrid(),gridValuesnew); % This also enforces a normalization if it is violated
         end
     end
     methods (Static)

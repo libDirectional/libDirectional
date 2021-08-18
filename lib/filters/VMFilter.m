@@ -210,6 +210,53 @@ classdef VMFilter < AbstractCircularFilter
             end
         end
         
+        function updateNonlinearProgressiveJannik(this, likelihood, z, tau)
+            % Updates assuming nonlinear measurement model given by a
+            % likelihood function likelihood(z,x) = f(z|x), where z is the
+            % measurement. The function can be created using the
+            % LikelihoodFactory.
+            %
+            % This method uses a deterministic progressive algorithm.
+            % 
+            % Parameters:
+            %   likelihood (function handle)
+            %       function from Z x [0,2pi) to [0, infinity), where Z is
+            %       the measurement space containing z
+            %   z (arbitrary)
+            %       measurement
+            %   tau (scalar between 0 and 1)
+            %       parameter controlling the progression step size
+            if nargin<4
+                tau = 0.02; 
+            end
+            lambda = 1;
+            steps = 0;
+            vmTemp = VMDistribution(this.vm.mu, 0);
+            while lambda> 0
+                wd = vmTemp.toDirac3();
+                l = (arrayfun(@(x) likelihood(z,x).*this.vm.pdf(x), wd.d));
+                lmin = min(l);
+                lmax = max(l);
+                if lmax == 0
+                    warning('progressive update failed because likelihood is 0 everwhere')
+                    return
+                end
+                wmin = min(wd.w);
+                assert(wmin>0);
+                wmax = max(wd.w);
+                currentLambda = min(log(tau*wmax/wmin)/log(lmin/lmax), lambda);
+                if currentLambda <= 0
+                    warning('progressive update with given threshold impossible')
+                    currentLambda = 0.001;
+                end
+                wdNew = wd.reweigh(@(x) likelihood(z,x).^currentLambda.*this.vm.pdf(x).^currentLambda);
+                vmTemp = wdNew.toVM();
+                lambda = lambda - currentLambda;
+                steps = steps + 1;
+            end
+            this.vm = vmTemp;
+        end
+        
         function updateNonlinearShift(this, z, h, vmMeas)
             % Update step approximating h(x) by a shift.
             %

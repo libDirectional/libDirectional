@@ -1,9 +1,5 @@
-classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter
+classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter & AbstractParticleFilter
     % SIR particle filter on the hypertorus
-    
-    properties
-        wd HypertoroidalWDDistribution
-    end
     
     methods
         function this = HypertoroidalParticleFilter(nParticles, dim)
@@ -14,34 +10,27 @@ classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter
             %       number of particles to use 
             %   dim (integer >0)
             %       dimension
-            this.wd = HypertoroidalWDDistribution(repmat((0:nParticles-1)/nParticles*2*pi,[dim,1]));
+            arguments
+                nParticles (1,1) double {mustBeInteger,mustBePositive}
+                dim (1,1) double {mustBeInteger,mustBePositive}
+            end
+            this.dist = HypertoroidalWDDistribution(repmat((0:nParticles-1)/nParticles*2*pi,[dim,1]));
         end
         
-        function setState(this, wd_)
+        function setState(this, dist_)
             % Sets the current system state
             %
             % Parameters:
             %   distribution (AbstractHypertoroidalDistribution)
             %       new state            
-            assert (isa (wd_, 'AbstractHypertoroidalDistribution'));
-            if ~isa(wd_, 'HypertoroidalWDDistribution')
-                wd_ = HypertoroidalWDDistribution(wd_.sample(length(this.wd.d)));
+            assert (isa (dist_, 'AbstractHypertoroidalDistribution'));
+            if ~isa(dist_, 'HypertoroidalWDDistribution')
+                dist_ = HypertoroidalWDDistribution(dist_.sample(length(this.dist.d)));
             end
-            this.wd = wd_;
+            this.dist = dist_;
         end
         
-        function predictIdentity(this, noiseDistribution)
-            % Predicts assuming identity system model, i.e.,
-            % x(k+1) = x(k) + w(k)    mod 2pi,
-            % where w(k) is additive noise given by noiseDistribution.
-            %
-            % Parameters:
-            %   noiseDistribution (AbstractHypertoroidalDistribution)
-            %       distribution of additive noise
-            this.predictNonlinear(@(x) x, noiseDistribution);
-        end
-        
-        function predictNonlinear(this, f, noiseDistribution)
+        function predictNonlinear(this, f, noiseDistribution, functionIsVectorized)
             % Predicts assuming a nonlinear system model, i.e.,
             % x(k+1) = f(x(k)) + w(k)    mod 2pi,
             % where w(k) is additive noise given by noiseDistribution.
@@ -51,18 +40,26 @@ classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter
             %       system function
             %   noiseDistribution (AbstractHypertoroidalDistribution)
             %       distribution of additive noise
-            
-            assert (isa (noiseDistribution, 'AbstractHypertoroidalDistribution'));
-            assert(isa(f,'function_handle'));
-            %apply f
-            wdF = this.wd.applyFunction(f);           
-            %calculate effect of (additive) noise 
-            n = length(this.wd.d);
-            noise = noiseDistribution.sample(n);
-            for i=1:n
-                wdF.d(:,i) = mod(wdF.d(:,i) + noise(:,i),2*pi);
+            arguments
+                this (1,1) HypertoroidalParticleFilter
+                f (1,1) function_handle
+                % Can be empty for no noise, therefore do not enforce (1,1)
+                noiseDistribution AbstractHypertoroidalDistribution = HypercylindricalDiracDistribution.empty
+                functionIsVectorized (1,1) logical = true
             end
-            this.wd = wdF;
+            % Apply f
+            if functionIsVectorized
+                distF = this.dist;
+                distF.d = f(this.dist.d);
+            else
+                distF = this.dist.applyFunction(f);           
+            end  
+            % Calculate effect of (additive) noise 
+            if ~isempty(noiseDistribution)
+                noise = noiseDistribution.sample(numel(this.dist.w));
+                distF.d = mod(distF.d + noise, 2*pi);
+            end
+            this.dist = distF;
         end
         
         function predictNonlinearNonAdditive(this, f, samples, weights)
@@ -85,52 +82,14 @@ classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter
             assert(isa(f,'function_handle'));
             
             weights = weights/sum(weights); %ensure normalization
-            n = length(this.wd.d);
+            n = length(this.dist.d);
             noiseIds = discretesample(weights, n);
-            d = zeros(this.wd.dim, n);
-            
+            d = zeros(this.dist.dim, n);
             for i=1:n
-                d(:,i) = f(this.wd.d(:,i),samples(noiseIds(i)));
+                % This loop is necessary for non-additve noise
+                d(:,i) = f(this.dist.d(:,i),samples(noiseIds(i)));
             end
-            this.wd.d=d;
-        end
-        
-        function updateIdentity(this, noiseDistribution, z)
-            this.updateNonlinear(LikelihoodFactory.additiveNoiseLikelihood(@(x) x, noiseDistribution), z);
-        end
-        
-        function updateNonlinear(this, likelihood, z)
-            % Updates assuming nonlinear measurement model given by a
-            % likelihood function likelihood(z,x) = f(z|x), where z is the
-            % measurement. The function can be created using the
-            % LikelihoodFactory.
-            % 
-            % Parameters:
-            %   likelihood (function handle)
-            %       function from Z x [0,2pi)^dim to [0, infinity), where Z is
-            %       the measurement space containing z
-            %   z (arbitrary)
-            %       measurement
-            
-            % You can either use a likelihood depending on z and x
-            % and specify the measurement as z or use a likelihood that
-            % depends only on x and omit z.
-            if nargin==2
-                this.wd = this.wd.reweigh(likelihood);
-            else
-                this.wd = this.wd.reweigh(@(x) likelihood(z,x));
-            end
-            this.wd.d = this.wd.sample(length(this.wd.d));
-            this.wd.w = 1/size(this.wd.d,2)*ones(1,size(this.wd.d,2));
-        end
-        
-        function wd = getEstimate(this)
-            % Return current estimate 
-            %
-            % Returns:
-            %   wd (HypertoroidalWDDistribution)
-            %       current estimate            
-            wd = this.wd;
+            this.dist.d=d;
         end
     end
     

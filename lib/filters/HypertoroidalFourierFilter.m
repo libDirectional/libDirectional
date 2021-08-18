@@ -16,7 +16,6 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             if nargin==1,transformation='sqrt';end
             this.hfd=HypertoroidalFourierDistribution.fromDistribution(...
                 HypertoroidalUniformDistribution(numel(noOfCoefficients)),noOfCoefficients,transformation);
-            this.dim = this.hfd.dim;
         end
         
         function setState(this, hfd_)
@@ -65,7 +64,7 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             %       distribution of additive noise
             sizeHfdC=size(this.hfd.C); % Needed for workaround for 1D case
             if ~(isa(dSys,'HypertoroidalFourierDistribution'))
-                warning('Predict:automaticConversion',...
+                warning('PredictIdentity:automaticConversion',...
                     'dSys is not a HypertoroidalFourierDistribution. Transforming with a number of coefficients that is equal to that of the filter. For non-varying noises, transforming once is much more efficient and should be preferred.');
                 dSys=HypertoroidalFourierDistribution.fromDistribution(dSys,sizeHfdC(sizeHfdC>1),this.hfd.transformation);
             end
@@ -110,7 +109,7 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             %       arguments. Must support arbitrary dimensional tensors
             %       as input arguments (for vectorized evaluation that is
             %       later used for the transition density fTrans that is build based on f)
-            %   noiseDistribution (AbstractCircularDistribution)
+            %   noiseDistribution (AbstractHypertoroidalDistribution)
             %       distribution of additive noise
             if nargin==3,truncateJointSqrt=true;end
             % Input checks are done in getfTrans

@@ -13,7 +13,7 @@ classdef ComplexAngularCentralGaussian < AbstractComplexHypersphericalDistributi
             assert(all(all(C_ == C_')), 'C must be hermitian');
             
             cAG.C = C_;
-            cAG.d = size(C_, 1);
+            cAG.dim = size(C_, 1);
         end
         
         function p = pdf(this, za)
@@ -26,7 +26,7 @@ classdef ComplexAngularCentralGaussian < AbstractComplexHypersphericalDistributi
             %   p (1 x n row vector)
             %       values of the pdf at each column of za
             
-            p = gamma(this.d)/(2*pi^this.d) * abs(dot(za, this.C \ za)).^(-this.d)./det(this.C);
+            p = gamma(this.dim)/(2*pi^this.dim) * abs(dot(za, this.C \ za)).^(-this.dim)./det(this.C);
         end
         
         function Z = sample(this, N)
@@ -42,8 +42,8 @@ classdef ComplexAngularCentralGaussian < AbstractComplexHypersphericalDistributi
             %   complex matrix with size #dimensions times #samples.
             
             R = chol(this.C)';
-            a = randn(this.d, N);
-            b = randn(this.d, N);
+            a = randn(this.dim, N);
+            b = randn(this.dim, N);
             Z = R*complex(a, b);
             
             Z = bsxfun(@rdivide, Z, sqrt(sum(Z .* conj(Z), 1)));

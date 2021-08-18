@@ -108,13 +108,21 @@ classdef FourierFilter < AbstractCircularFilter
             %       distribution of additive noise
             %   z (scalar)
             %       measurement in [0, 2pi)
-            assert(isa(dMeas, 'AbstractCircularDistribution'));
+            arguments
+                this (1,1) FourierFilter
+                dMeas (1,1) AbstractCircularDistribution
+                z (1,1) double = 0
+            end
             if ~isa(dMeas, 'FourierDistribution')
                 warning('Update:automaticConversion', ...
                     'dMeas is not a FourierDistribution. Transforming with a number of coefficients that is equal to that of the filter. For non-varying noises, transforming once is much more efficient and should be preferred.');
                 dMeas = FourierDistribution.fromDistribution(dMeas, 2*length(this.fd.a)-1, this.fd.transformation);
             end
-            dMeasShifted = dMeas.shift(z);
+            if z~=0
+                dMeasShifted = dMeas.shift(z);
+            else
+                dMeasShifted = dMeas;
+            end
             this.fd = this.fd.multiply(dMeasShifted, 2*length(this.fd.a)-1);
         end
         

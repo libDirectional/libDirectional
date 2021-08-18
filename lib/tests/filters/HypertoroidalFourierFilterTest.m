@@ -31,7 +31,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             testCase.verifyEqual(filter.hfd, HypertoroidalFourierDistribution.fromDistribution(ToroidalVMSineDistribution([1; 2], [0.3; 0.5], 0.5), [23, 25]));
         end
         
-        function testPrediction(testCase)
+        function testPredictIdentity(testCase)
             % Only test filter interface, validity of operation is tested
             % in HypertoroidalFourierDistribution
             for transformation = {'identity', 'sqrt'}
@@ -45,7 +45,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
                 testCase.verifySize(filter.hfd.C, [23, 25]);
                 testCase.verifyEqual(filter.hfd.C, hfdRes.C, 'Rel', 1E-5);
             end
-            testCase.verifyWarning(@()filter.predictIdentity(HypertoroidalWNDistribution([1; 1], eye(2))), 'Predict:automaticConversion');
+            testCase.verifyWarning(@()filter.predictIdentity(HypertoroidalWNDistribution([1; 1], eye(2))), 'PredictIdentity:automaticConversion');
         end
         
         function testUpdateIdentity(testCase)
@@ -93,7 +93,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
                 fourierFilterNl = HypertoroidalFourierFilter(noCoeffs, [transformation{:}]);
                 fourierFilterNl.setState(HypertoroidalFourierDistribution.fromDistribution(densityInit, noCoeffs, [transformation{:}]));
                 
-                testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
+                testCase.applyFixture(SuppressedWarningsFixture('PredictIdentity:automaticConversion'));
                 fourierFilterLin.predictIdentity(fNoiseDist)
                 fourierFilterNl.predictNonlinear(@(x)x, fNoiseDist, true)
                 testCase.verifyEqual(fourierFilterLin.getEstimate.kldNumerical(fourierFilterNl.getEstimate), 0, 'AbsTol', 1E-8);
@@ -121,7 +121,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
                 fourierFilterNl = HypertoroidalFourierFilter(noCoeffs, [transformation{:}]);
                 fourierFilterNl.setState(HypertoroidalFourierDistribution.fromDistribution(densityInit, noCoeffs, [transformation{:}]));
                 
-                testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
+                testCase.applyFixture(SuppressedWarningsFixture('PredictIdentity:automaticConversion'));
                 fourierFilterLin.predictIdentity(fNoiseDist);
                 fourierFilterNl.predictNonlinear(@(varargin)varargin{:}, fNoiseDist);
                 testCase.verifyEqual(fourierFilterNl.hfd.transformation, [transformation{:}]);
@@ -159,7 +159,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             fourierFilterNl = HypertoroidalFourierFilter([11, 11]);
             testCase.verifyError(@()fourierFilterNl.predictNonlinearViaTransitionDensity(HypertoroidalWNDistribution([1; 1; 1], eye(3))), 'predictNonlinear:fTransInvalid');
             testCase.verifyWarningFree(@()fourierFilterNl.predictNonlinearViaTransitionDensity(HypertoroidalFourierDistribution.fromDistribution( ...
-                HypertoroidalWNDistribution([1; 1; 1; 1], eye(4)), [11, 11, 11, 11])), 'predictNonlinear:fTransInvalid');
+                HypertoroidalWNDistribution([1; 1; 1; 1], eye(4)), [11, 11, 11, 11])));
         end
         
         function testTransitionDensity2D(testCase)
@@ -167,12 +167,12 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             global enableExpensive
-            if ~islogical(enableExpensive) || ~enableExpensive, return; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             noiseDistribution = ToroidalWNDistribution([1; 2], [1, -0.3; -0.3, 4]);
             coeffsPerDim = 71;
             f = @a2D;
-            % Initialize variable this to make sure that fTrans can be
-            % used as inHypertoroidalFourierFilter
+            % Initialize variable like this to make sure that fTrans can be
+            % used as in HypertoroidalFourierFilter
             this = struct('hfd', []);
             this.hfd = HypertoroidalFourierDistribution(diag([zeros(1, 50), 1 / (2 * pi)^2, zeros(1, 50)]), 'identity');
             
@@ -238,13 +238,13 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             global enableExpensive
-            if ~islogical(enableExpensive) || ~enableExpensive, return; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             noiseDistribution = ToroidalWNDistribution([1; 2], [1, -0.3; -0.3, 4]);
             coeffsPerDim = 81;
             coeffVector = coeffsPerDim * ones(1, noiseDistribution.dim);
             f = @a2D;
             % Initialize variable this to make sure that fTrans can be
-            % used as inHypertoroidalFourierFilter
+            % used as in HypertoroidalFourierFilter
             this = struct('hfd', []);
             this.hfd = HypertoroidalFourierDistribution(diag([zeros(1, 50), 1 / (2 * pi)^2, zeros(1, 50)]), 'identity');
             
@@ -329,7 +329,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             coeffVector = coeffsPerDim * ones(1, noiseDistribution.dim);
             f = @a2D;
             % Initialize variable this to make sure that fTrans can be
-            % used as inHypertoroidalFourierFilter
+            % used as in HypertoroidalFourierFilter
             this = struct('hfd', []);
             this.hfd = HypertoroidalFourierDistribution(diag([zeros(1, 50), 1 / (2 * pi)^2, zeros(1, 50)]), 'identity');
             
@@ -405,7 +405,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             coeffVector = coeffsPerDim * ones(1, noiseDistribution.dim);
             f = @a2D;
             % Initialize variable this to make sure that fTrans can be
-            % used as inHypertoroidalFourierFilter
+            % used as in HypertoroidalFourierFilter
             this = struct('hfd', []);
             this.hfd = HypertoroidalFourierDistribution(diag([0, 1 / (2 * pi)^2, 0]), 'identity');
             

@@ -1,16 +1,80 @@
 classdef SphericalGridDistribution < AbstractHypersphericalDistribution & HypersphericalGridDistribution
     
     methods
-        function this = SphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_)
+        function this = SphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_, gridType)
             % Constructor
             arguments % Use to set default value
                 grid_ double {mustBeLessThanOrEqual(grid_,1),mustBeGreaterThanOrEqual(grid_,-1)}
                 gridValues_ (:,1) double {mustBeNonnegative}
                 enforcePdfNonnegative_ logical = true
+                gridType char = 'unknown'
             end
-            this = this@HypersphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_);
+            this = this@HypersphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_, gridType);
             % Validate it has the right dimension
             assert(this.dim==3);
+        end
+        
+        function f = normalize(this,opt)
+            arguments
+                this (1,1) SphericalGridDistribution
+                opt.tol (1,1) double = 1e-2
+                opt.warnUnnorm (1,1) logical = true
+            end
+            if ~strcmp(this.gridType,'sh_grid')
+                f = normalize@AbstractGridDistribution(this,tol=opt.tol,warnUnnorm=opt.warnUnnorm);
+            else
+                warning('SphericalGridDistribution:CannotNormalizeShGrid','Cannot properly normalize for sh_grid');
+                f = normalize@AbstractGridDistribution(this,tol=opt.tol,warnUnnorm=opt.warnUnnorm);
+            end
+        end
+        
+        function h = plotInterpolated(this, useHarmonics)
+            arguments
+                this HypersphericalGridDistribution
+                useHarmonics (1,1) logical = true
+            end
+            if useHarmonics
+                if this.enforcePdfNonnegative
+                    transformation = 'sqrt';
+                else
+                    transformation = 'identity';
+                end
+                shd = SphericalHarmonicsDistributionComplex.fromGrid(this.gridValues, this.grid, transformation);
+                h = shd.plot;
+            else
+                chd = CustomHypersphericalDistribution(@(x)this.pdf(x,false),3);
+                chd.plot;
+            end
+        end
+        
+        function p = pdf(this, xa, useHarmonics)
+            arguments
+                this HypersphericalGridDistribution
+                xa double
+                useHarmonics (1,1) logical = true
+            end
+            if useHarmonics
+                warning('PDF:UseInterpolated', 'pdf is not defined. Using interpolation with spherical harmonics.')
+                if this.enforcePdfNonnegative
+                    transformation = 'sqrt';
+                else
+                    transformation = 'identity';
+                end
+                if ~strcmp(this.gridType,'sh_grid')
+                    shd = SphericalHarmonicsDistributionComplex.fromGrid(this.gridValues, this.grid, transformation);
+                else
+                    warnStruct = warning('off','Normalization:notNormalized');
+                    warning('PDF:NeedNormalizationShGrid','Need to normalize for pdf because it is unnormalized since sh_grid is used.');
+                    shd = SphericalHarmonicsDistributionComplex.fromGrid(this.gridValues, this.grid, transformation);
+                    warning(warnStruct);
+                end
+                
+                p = shd.pdf(xa);
+            else
+                warning('PDF:UseInterpolated','Interpolating the pdf with constant values in each region is not very efficient, but it is good enough for visualization purposes.');
+                [~,maxIndex]=max(this.grid'*xa);
+                p = this.gridValues(maxIndex)';
+            end
         end
     end
     
@@ -50,7 +114,7 @@ classdef SphericalGridDistribution < AbstractHypersphericalDistribution & Hypers
                     error('Grid scheme not recognized');
             end
             gridValues = fun(grid)';
-            sgd = SphericalGridDistribution(grid, gridValues, enforcePdfNonnegative);
+            sgd = SphericalGridDistribution(grid, gridValues, enforcePdfNonnegative, gridType);
         end
     end
 end

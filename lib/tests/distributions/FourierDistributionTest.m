@@ -105,6 +105,66 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             end
             warning(warningSettings);
         end
+        function testWDToFourierMoments(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            wd = WDDistribution([1,2,3],[1,1,1]/3);
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:WDMatching'));
+            fdId = FourierDistribution.fromDistribution(wd,19,'identity');
+            fdSqrt = FourierDistribution.fromDistribution(wd,50001,'sqrt');
+            
+            highestMoment = 9;
+            momentsWd = arrayfun(@(i)wd.trigonometricMoment(i), -highestMoment:highestMoment);
+            momentsFdId = arrayfun(@(i)fdId.trigonometricMoment(i), -highestMoment:highestMoment);
+            momentsFdSqrt = arrayfun(@(i)fdSqrt.trigonometricMoment(i), -highestMoment:highestMoment);
+            
+            testCase.verifyEqual(momentsFdId,momentsWd,'AbsTol',1e-15);
+            % It is much harder for sqrt since it does not merely save them
+            % but has to approximate them by convoling the coefficient
+            % vector with itself
+            testCase.verifyEqual(momentsFdSqrt,momentsWd,'AbsTol',2e-4);
+        end
+        function testWDToFourierMomentsNonequalWeights(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            wd = WDDistribution([1,2,3],[1,2,2]/5);
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:WDMatching'));
+            fdId = FourierDistribution.fromDistribution(wd,19,'identity');
+            fdSqrt = FourierDistribution.fromDistribution(wd,50001,'sqrt');
+            
+            highestMomentToCompare = 9;
+            momentsWd = arrayfun(@(i)wd.trigonometricMoment(i), -highestMomentToCompare:highestMomentToCompare);
+            momentsFdId = arrayfun(@(i)fdId.trigonometricMoment(i), -highestMomentToCompare:highestMomentToCompare);
+            momentsFdSqrt = arrayfun(@(i)fdSqrt.trigonometricMoment(i), -highestMomentToCompare:highestMomentToCompare);
+            
+            testCase.verifyEqual(momentsFdId,momentsWd,'AbsTol',1e-15)
+            % It is much harder for sqrt since it does not merely save them
+            % but has to approximate them by convoling the coefficient
+            % vector with itself
+            testCase.verifyEqual(momentsFdSqrt,momentsWd,'AbsTol',2e-4)
+        end
+        function testWDToFourierCdf(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            wd = WDDistribution([1,2,3],[1,1,1]/3);
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:WDMatching'));
+            fdId = FourierDistribution.fromDistribution(wd,10001,'identity');
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            fdSqrt = FourierDistribution.fromDistribution(wd,10001,'sqrt');
+            
+            evalAt = linspace(0,2*pi-0.01,50);
+            testCase.verifyEqual(fdId.cdf(evalAt),wd.cdf(evalAt),'AbsTol',1e-3)
+            testCase.verifyEqual(fdSqrt.cdf(evalAt),wd.cdf(evalAt),'AbsTol',1e-3)
+        end
+        function testWDToFourierCdfNonequalWeights(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            wd = WDDistribution([1,2,3],[1,2,2]/5);
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:WDMatching'));
+            fdId = FourierDistribution.fromDistribution(wd,10001,'identity');
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            fdSqrt = FourierDistribution.fromDistribution(wd,10001,'sqrt');
+            
+            evalAt = linspace(0,2*pi-0.01,50);
+            testCase.verifyEqual(fdId.cdf(evalAt),wd.cdf(evalAt),'AbsTol',1e-3)
+            testCase.verifyEqual(fdSqrt.cdf(evalAt),wd.cdf(evalAt),'AbsTol',1e-3)
+        end
         function testCircularUniformToFourierId(testCase)
             dist = CircularUniformDistribution();
             FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'identity', 1E-8);
@@ -148,6 +208,18 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             dist = CustomCircularDistribution(@(x)vm.pdf(x));
             FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-8);
             warning(warningSettings);
+        end
+        function testFIGToFourier(testCase)
+            vm = VMDistribution(1,2);
+            dist = FIGDistribution.fromDistribution(vm,101);
+            
+            FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'identity', 1E-15);
+            FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-15);
+            
+            dist.enforcePdfNonnegative = false;
+            FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'identity', 1E-15);
+            FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-15);
+            
         end
         % Test function evaluation
         function testValueVsIFFT(testCase)
@@ -355,6 +427,18 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(fd.cdf(xvals, startingPoint), intValsNumerically, 'AbsTol', 1E-8);
         end
         %other tests
+        function fromComplexTestId(testCase)
+            fdOrig = FourierDistribution.fromDistribution(VMDistribution(0.5,1),13,'identity');
+            fdConvertedTwice = FourierDistribution.fromComplex(fdOrig.c,'identity');
+            testCase.verifyEqual(fdConvertedTwice.a,fdOrig.a);
+            testCase.verifyEqual(fdConvertedTwice.b,fdOrig.b);
+        end
+        function fromComplexTestSqrt(testCase)
+            fdOrig = FourierDistribution.fromDistribution(VMDistribution(0.5,1),13,'sqrt');
+            fdConvertedTwice = FourierDistribution.fromComplex(fdOrig.c,'sqrt');
+            testCase.verifyEqual(fdConvertedTwice.a,fdOrig.a);
+            testCase.verifyEqual(fdConvertedTwice.b,fdOrig.b);
+        end
         function testTruncation(testCase)
             vm = VMDistribution(3, 1);
             fd1 = FourierDistribution.fromDistribution(vm, 101, 'sqrt');

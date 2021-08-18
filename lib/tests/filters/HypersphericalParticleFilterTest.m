@@ -1,7 +1,8 @@
 classdef HypersphericalParticleFilterTest< matlab.unittest.TestCase    
     methods (Test)
         function test3D(testCase)
-            nSamples=5000;
+            rng(1);
+            nSamples=20000;
             vmfInit=VMFDistribution([1;0;0],10);
             vmfSys=VMFDistribution([0;0;1],10);
             vmfMeas=VMFDistribution([0;0;1],3);
@@ -29,7 +30,7 @@ classdef HypersphericalParticleFilterTest< matlab.unittest.TestCase
             testCase.verifyEqual(norm(hpf.getEstimateMean-vmfFilter.getEstimateMean),0,'AbsTol',0.05);
             
             hpf.setState(vmfInit);
-            f = @(z,x) 1;
+            f = @(z,x) ones(1,size(x,2));
             z = 3;
             est = hpf.getEstimateMean();
             testCase.verifyEqual(norm(est), 1, 'RelTol', 1E-10);

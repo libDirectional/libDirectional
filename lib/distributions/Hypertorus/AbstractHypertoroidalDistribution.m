@@ -1,4 +1,4 @@
-classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
+classdef (Abstract) AbstractHypertoroidalDistribution < AbstractPeriodicDistribution
     % Base class for distributions on the hypertorus [0,2pi)^dim (Cartesian
     % product of dim circles)
     % Convention for Dimension: dim=1 is a circle, dim=2 a torus.
@@ -13,13 +13,20 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
+            resolutionIndex = find(cellfun(@(c)isequal(c,'resolution'),varargin));
+            if ~isempty(resolutionIndex)
+                resolution = varargin{resolutionIndex+1};
+                varargin([resolutionIndex,resolutionIndex+1]) = [];
+            else
+                resolution = 128;
+            end
             switch this.dim
                 case 1
-                    theta = linspace(0,2*pi,128);
+                    theta = linspace(0,2*pi,resolution);
                     ftheta = this.pdf(theta);
                     p = plot(theta, ftheta,varargin{:});
                 case 2
-                    step = 2*pi/100;
+                    step = 2*pi/resolution;
                     [alpha,beta] = meshgrid(0:step:2*pi,0:step:2*pi);
                     f = this.pdf([alpha(:)'; beta(:)']);
                     f = reshape(f,size(alpha,1), size(alpha,2));
@@ -65,6 +72,14 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
             m = circularMean(this);
         end
         
+        function m = mode(this)
+            m = modeNumerical(this);
+        end
+        
+        function m = modeNumerical(this)
+            m = fminunc(@(x)-this.pdf(x),zeros(this.dim,1));
+        end
+        
         function m = trigonometricMoment(this, n)
             % Calculate n-th trigonometric moment, i.e., 
             % E([e^(inx_1); e^(inx_2);...^e(inx_d)])
@@ -85,11 +100,14 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
             %   l (dim x 1 column vector)
             %       left bound of integral in each dimension, default 0
             %   r (dim x 1 column vector)
-            %       right bound of integral in each dimension, default 2*pi 
-            if nargin < 2;  l = zeros(this.dim,1); end
-            if nargin < 3;  r = 2*pi*ones(this.dim,1); end
-            assert(all(size(l) == [this.dim, 1]));
-            assert(all(size(r) == [this.dim, 1]));                
+            %       right bound of integral in each dimension, default 2*pi
+            arguments
+                this (1,1) AbstractHypertoroidalDistribution
+                l (:,1) double = zeros(this.dim,1);
+                r (:,1) double = 2*pi*ones(this.dim,1);
+            end
+            assert(size(l,1)==this.dim);
+            assert(size(r,1)==this.dim);
             
             result = this.integralNumerical(l, r);
         end
@@ -102,10 +120,13 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
             %       left bound of integral in each dimension, default 0
             %   r (dim x 1 column vector)
             %       right bound of integral in each dimension, default 2*pi 
-            if nargin < 2;  l = zeros(this.dim,1); end
-            if nargin < 3;  r = 2*pi*ones(this.dim,1); end
-            assert(all(size(l) == [this.dim, 1]));
-            assert(all(size(r) == [this.dim, 1]));       
+            arguments
+                this (1,1) AbstractHypertoroidalDistribution
+                l (:,1) double = zeros(this.dim,1);
+                r (:,1) double = 2*pi*ones(this.dim,1);
+            end
+            assert(size(l,1)==this.dim);
+            assert(size(r,1)==this.dim);     
             
             switch this.dim
                 case 1
@@ -149,6 +170,16 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
                 otherwise
                     error('Numerical moment calculation for this dimension is currently not supported');
             end
+        end
+        
+        function dist = toCircular(this)
+            % Converts to circular distribution. Can be improved by
+            % overwriting it.
+            arguments
+                this AbstractHypertoroidalDistribution
+            end
+            assert(this.dim==1, 'Can only convert distributions of dimension 1.')
+            dist = CustomCircularDistribution(@(x)this.pdf(x));
         end
         
         function e = entropy(this)
@@ -211,74 +242,21 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
             else
                 l = sum(log(this.pdf(samples)));
             end
-        end  
-        
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            % use metropolics hastings by default
-            % individual distributions can override this with more
-            % sophisticated solutions
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (dim x n)
-            %       one sample per column
-            assert(isscalar(n));
-            
-            s = sampleMetropolisHastings(this, n);
         end
         
-        function s = sampleMetropolisHastings(this, n)
-            % Metropolis Hastings sampling algorithm
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (dim x n)
-            %       one sample per column
-            %
-            % Hastings, W. K. 
-            % Monte Carlo Sampling Methods Using Markov Chains and Their Applications 
-            % Biometrika, 1970, 57, 97-109
-            
-            burnin = 10;
-            skipping = 5;
-            
-            totalSamples = burnin+n*skipping;
-            s = zeros(this.dim,totalSamples);
-            x = this.circularMean; % start with mean
-            % A better proposal distribution could be obtained by roughly estimating
-            % the uncertainty of the true distribution.
-            proposal = @(x) mod(x + mvnrnd(zeros(this.dim,1),eye(this.dim))', 2*pi); 
-            i=1;
-            pdfx = this.pdf(x);
-            while i<=totalSamples
-                xNew = proposal(x); %generate new sample
-                pdfxNew = this.pdf(xNew);
-                a = pdfxNew/pdfx;
-                if a>1
-                    %keep sample
-                    s(:,i)=xNew;
-                    x = xNew;
-                    pdfx = pdfxNew;
-                    i=i+1;
-                else
-                    r = rand(1);
-                    if a > r
-                        %keep sample
-                        s(:,i)=xNew;
-                        x = xNew;
-                        pdfx = pdfxNew;
-                        i=i+1;
-                    else
-                        %reject sample
-                    end
-                end
+        function s = sampleMetropolisHastings(this, n, proposal, startPoint, burnIn, skipping)
+            arguments
+                this (1,1) AbstractDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+                % Proposal is HypercylindricalWN with zero mean and
+                % identity matrix. Because there is no correlation, using randn
+                % can be used.
+                proposal (1,1) function_handle = @(x) mod(x + randn(this.dim,1),2*pi)
+                startPoint = this.meanDirection()
+                burnIn (1,1) double = 10
+                skipping (1,1) double = 5
             end
-            s = s(:,burnin+1:skipping:end);
+            s = sampleMetropolisHastings@AbstractDistribution(this, n, proposal, startPoint, burnIn, skipping);
         end
         
         function hd = shift(this, shiftAngles)
@@ -291,8 +269,13 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractDistribution
             % Return:
             %   hd (CustomHypertoroidalDistribution)
             %       shifted distribution
-            assert(isequal(size(shiftAngles),[this.dim,1]));
-            hd = CustomHypertoroidalDistribution(@(xa) this.pdf(xa-repmat(shiftAngles,[1,size(xa,2)])), this.dim);
+            arguments
+                this (1,1) AbstractHypertoroidalDistribution
+                shiftAngles (:,1) double
+            end
+            assert(size(shiftAngles,1)==this.dim);
+            hd = CustomHypertoroidalDistribution(@(xa) this.pdf(xa), this.dim);
+            hd.shiftBy = shiftAngles;
         end
         
         function d = squaredDistanceNumerical(this, other)

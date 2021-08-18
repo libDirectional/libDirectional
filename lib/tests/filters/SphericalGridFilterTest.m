@@ -23,7 +23,9 @@ classdef SphericalGridFilterTest < matlab.unittest.TestCase
             fixture.teardown;
 
             % Verify warnings
-            sgdState.grid(:,end)=[];
+            fullGrid = sgdState.getGrid();
+            fullGrid(:,end)=[];
+            sgdState.grid=fullGrid;
             sgdState.gridValues(end)=[];
             sgfTmp=sgf.copy;
             testCase.verifyWarning(@()sgfTmp.setState(sgdState),'setState:gridDiffers');
@@ -48,7 +50,7 @@ classdef SphericalGridFilterTest < matlab.unittest.TestCase
             trans = @(xkk,xk)cell2mat(arrayfun(@(i)VMFDistribution(xk(:,i),1).pdf(xkk),1:size(xk,2),'UniformOutput',false));
             s2s2 = S2CondS2GridDistribution.fromFunction(trans,noGridPoints,true);
             for i=1:10
-                valuesAlternativeFormula = (4*pi/size(sgf.getEstimate.grid,2))*sum(sgf.getEstimate.gridValues'.*s2s2.gridValues,2); % Alternative formula
+                valuesAlternativeFormula = (4*pi/size(sgf.getEstimate.getGrid(),2))*sum(sgf.getEstimate.gridValues'.*s2s2.gridValues,2); % Alternative formula
                 sgf.predictNonlinearViaTransitionDensity(s2s2);
                 testCase.verifyEqual(sgf.getEstimate.gridValues,valuesAlternativeFormula,'AbsTol',1E-12);
             end

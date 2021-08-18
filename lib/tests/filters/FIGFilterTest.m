@@ -10,7 +10,7 @@ classdef FIGFilterTest < matlab.unittest.TestCase
         
         function testSetState(testCase)
             filter = FIGFilter(101);
-            gd = FIGDistribution.fromDistribution(VMDistribution(2, 3), 101, 'identity');
+            gd = FIGDistribution.fromDistribution(VMDistribution(2, 3), 101);
             filter.setState(gd);
             testCase.verifyEqual(filter.gd, gd);
             testCase.verifyWarning(@()filter.setState(VMDistribution(2, 3)), 'setState:nonGrid');

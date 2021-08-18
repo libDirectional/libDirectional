@@ -108,7 +108,7 @@ classdef SphericalHarmonicsFilterTest < matlab.unittest.TestCase
             shFilter1.predictIdentity(shdNoiseId);
             shFilter2.predictIdentity(shdNoiseSqrt);
             
-            testCase.verifyEqual(shFilter1.state.totalVariationDistanceNumerical(shFilter2.state), 0, 'AbsTol', 1E-15);
+            testCase.verifyEqual(shFilter1.state.totalVariationDistanceNumerical(shFilter2.state), 0, 'AbsTol', 1.5E-15);
         end
     end
 end

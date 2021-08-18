@@ -1,13 +1,8 @@
 classdef (Abstract) AbstractDummyFilter < AbstractFilter
+    properties (SetAccess = protected)
+        dist 
+    end
     methods
-        function this = AbstractDummyFilter(dim)
-            arguments
-                dim (1,1) double {mustBeGreaterThanOrEqual(dim,1)}
-            end
-            this.dim=dim;
-            % Do nothing
-        end
-        
         function setState(this, dist)
             assert(dist.dim==this.dim);
             % Do nothing
@@ -34,12 +29,11 @@ classdef (Abstract) AbstractDummyFilter < AbstractFilter
         end
         
         function hfd = getEstimate(this)
-            hfd=HypersphericalUniformDistribution(this.dim);
-        end
+            hfd=this.dist;
+        end    
         
-        function mean=getEstimateMean(this)
-            mean=HypersphericalUniformDistribution(this.dim).sample(1);
-        end
-        
+        function est = getPointEstimate(this)
+            est = this.dist.sample(1);
+        end        
     end
 end

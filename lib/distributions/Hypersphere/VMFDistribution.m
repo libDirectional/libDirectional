@@ -22,10 +22,13 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             %       location parameter (unit vector)
             %   kappa_ (scalar)
             %       concentration parameter (>=0)
+            arguments
+                mu_ (:,1) double
+                kappa_ (1,1) double {mustBeNonnegative}
+            end
             epsilon = 1E-6;
             assert(size(mu_,1) >= 2, 'mu must be at least two-dimensinal for the circular case');
             assert(abs(norm(mu_) - 1)<epsilon, 'mu must be a normalized');
-            assert(kappa_>=0, 'kappa must be postive');
             
             VMF.mu = mu_;
             VMF.kappa = kappa_;
@@ -47,12 +50,19 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   p (1 x n row vector)
             %       values of the pdf at each column of xa
+            arguments
+                this (1,1) VMFDistribution
+                xa (:,:) double
+            end
             assert (size(xa,1) == size(this.mu,1));
             
             p = this.C * exp( this.kappa * this.mu' * xa);
         end
         
         function mu = meanDirection(this)
+            arguments
+                this (1,1) VMFDistribution
+            end
            mu = this.mu;
         end
         
@@ -65,7 +75,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Gerhard Kurz, Igor Gilitschenski, Uwe D. Hanebeck,
             % Unscented von Mises-Fisher Filtering
             % IEEE Signal Processing Letters, 2016.
-            
+            arguments
+                this (1,1) VMFDistribution
+            end
             % get samples for vm with mu=[1 0 ... 0] first            
             samples = zeros(this.dim, this.dim*2-1);
             samples(1,1) = 1;
@@ -93,6 +105,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Gerhard Kurz, Uwe D. Hanebeck,
             % Stochastic Sampling of the Hyperspherical von Mises-Fisher Distribution Without Rejection Methods
             % Proceedings of the IEEE ISIF Workshop on Sensor Data Fusion: Trends, Solutions, Applications (SDF 2015), Bonn, Germany, October 2015
+            arguments
+                this (1,1) VMFDistribution
+            end
             M = zeros(this.dim,this.dim);
             M(:,1) = this.mu; 
             [Q,R] = qr(M);
@@ -108,6 +123,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   m (column vector)
             %       mode of the distribution
+            arguments
+                this (1,1) VMFDistribution
+            end
             m = this.mu;
         end        
         
@@ -120,8 +138,11 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   vmf (VMFDistribution)
             %       the vmf distribution of the renormalized product.
-            assert(isa(other, 'VMFDistribution'));
-            assert(all(size(this.mu) == size(other.mu)));
+            arguments
+                this (1,1) VMFDistribution
+                other (1,1) VMFDistribution
+            end
+            assert(isequal(size(this.mu),size(other.mu)));
             
             mu_ = this.kappa*this.mu + other.kappa*other.mu;
             kappa_ = norm(mu_);
@@ -148,8 +169,11 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             %       the other VMF distribution
             % Returns:
             %   vmf (VMFDistribution)
-            %       the vmf distribution of the renormalized product.            
-            assert(isa(other, 'VMFDistribution'));
+            %       the vmf distribution of the renormalized product.     
+            arguments
+                this (1,1) VMFDistribution
+                other (1,1) VMFDistribution
+            end
             assert(other.mu(end)==1,'Other is not zonal');
             assert(all(size(this.mu) == size(other.mu)));
             d = this.dim;
@@ -167,6 +191,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   vm (VMDistribution)
             %       the corresponding VM distribution
+            arguments
+                this (1,1) VMFDistribution
+            end
             assert(this.dim==2, 'Conversion only possible in two dimensions.')
             mu_ = mod(atan2(this.mu(2), this.mu(1)),2*pi);
             vm = VMDistribution(mu_, this.kappa);
@@ -179,6 +206,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   g (GaussianDistribution)
             %       resulting Gaussian
+            arguments
+                this (1,1) VMFDistribution
+            end
             n = 10000;
             s = this.sample(n);
             %C_ = cov(s');
@@ -195,7 +225,10 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   X (d x n matrix)
             %       generated samples (one sample per column)
-            
+            arguments
+                this (1,1) VMFDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+            end
             if this.dim == 2
                 s = this.toVM().sample(n);
                 s = [cos(s);sin(s)];
@@ -226,7 +259,10 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Jung, S. 
             % Generating von Mises--Fisher Distribution on the Unit Sphere (S2) 
             % 2009
-
+            arguments
+                this (1,1) VMFDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+            end
             assert(this.dim==3, 'This method only works in three dimensions.');
             
             Q = this.getRotationMatrix();
@@ -259,7 +295,10 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Taylor & Francis, 1994, 23, 157-164
             %
             % Works for an arbitrary number of dimensions.
-
+            arguments
+                this (1,1) VMFDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+            end
             lambda = this.kappa;
             m = this.dim;
             s = zeros(m,n);
@@ -310,7 +349,10 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Gerhard Kurz, Uwe D. Hanebeck,
             % Stochastic Sampling of the Hyperspherical von Mises-Fisher Distribution Without Rejection Methods
             % Proceedings of the IEEE ISIF Workshop on Sensor Data Fusion: Trends, Solutions, Applications (SDF 2015), Bonn, Germany, October 2015
-            
+            arguments
+                this (1,1) VMFDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+            end
             s = zeros(this.dim,n);
             Q = this.getRotationMatrix();
             k = this.kappa;
@@ -381,7 +423,10 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Gerhard Kurz, Uwe D. Hanebeck,
             % Stochastic Sampling of the Hyperspherical von Mises-Fisher Distribution Without Rejection Methods
             % Proceedings of the IEEE ISIF Workshop on Sensor Data Fusion: Trends, Solutions, Applications (SDF 2015), Bonn, Germany, October 2015
-            
+            arguments
+                this (1,1) VMFDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+            end
             s = zeros(this.dim,n);
             Q = this.getRotationMatrix();
             k = this.kappa;
@@ -438,6 +483,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   e (scalar)
             %       the computed entropy
+            arguments
+                this (1,1) VMFDistribution
+            end
             p = this.dim;
             % https://www.wolframalpha.com/input/?i=diff%281%2F%28kappa%5E%28p%2F2-1%29%2F%282*pi%29%5E%28p%2F2%29%2Fbesseli%28p%2F2-1%2C+kappa%29%29%2C+kappa%29
             Cinvdiff = 2^(p/2-1) *pi^(p/2)* this.kappa^(1-p/2) * (besseli(p/2-2,this.kappa)+besseli(p/2,this.kappa))+(1-p/2)*(2*pi)^(p/2)* this.kappa^(-p/2) *besseli(p/2-1,this.kappa);
@@ -465,6 +513,9 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
         
         function r = moment(this)
             % Returns the mean resultant vector
+            arguments
+                this (1,1) VMFDistribution
+            end
             r = VMFDistribution.Ad(this.dim, this.kappa)*this.mu;
         end
     end

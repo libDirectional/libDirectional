@@ -5,7 +5,7 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
     methods (Test)
         function testSE2PWNDistribution(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end            
+            if ~islogical(enableExpensive), enableExpensive = true; end           
             mu = [2, 3, 4]';
             si1 = 0.9;
             si2 = 1.5;
@@ -74,7 +74,12 @@ classdef SE2PWNDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(size(s,2), n);
             s = s(1,:);
             testCase.verifyGreaterThanOrEqual(s,zeros(size(s)));
-            testCase.verifyLessThan(s,2*pi*ones(size(s)));                        
+            testCase.verifyLessThan(s,2*pi*ones(size(s)));
+                        
+            %todo proper test
+            pwd = pwn.toSE2PWD();
+            pwn2 = SE2PWNDistribution.fromSamples(pwd.d); %todo do not ignore weights
+            testCase.verifyClass(pwn2, 'SE2PWNDistribution');
         end
     end
 end

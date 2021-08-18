@@ -1,14 +1,12 @@
 classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & AbstractGridDistribution
-	properties
-        grid double {mustBeLessThanOrEqual(grid,1),mustBeGreaterThanOrEqual(grid,-1)}
-	end
-    methods
-        function this = HypersphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_)
+	methods
+        function this = HypersphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_, gridType)
             % Constructor
             arguments % Use to set default value
                 grid_ double {mustBeLessThanOrEqual(grid_,1),mustBeGreaterThanOrEqual(grid_,-1)}
                 gridValues_ (:,1) double {mustBeNonnegative}
                 enforcePdfNonnegative_ logical = true
+                gridType char = 'unknown'
             end
             assert(size(grid_,2)==size(gridValues_,1));
             if size(grid_,1)>size(grid_,2)
@@ -18,6 +16,7 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
             this.grid = grid_;
             this.gridValues = gridValues_;
             this.enforcePdfNonnegative = enforcePdfNonnegative_;
+            this.gridType= gridType;
             % Check if normalized. If not: Normalize!
             this = this.normalize;
         end      
@@ -25,14 +24,18 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
         function mu = meanDirection(this)
             mu = sum(this.grid.*this.gridValues',2);
             if norm(mu)<1e-8
-                warning('Density may not have actually have a mean direction because formula yields a point very close to the origin.')
+                warning('Density may not actually have a mean direction because formula yields a point very close to the origin.')
             end
             mu = mu/norm(mu);
         end
         
-        function f = normalize(this)
-            tol = 1e-2;
-            f = normalize@AbstractGridDistribution(this,tol);
+        function f = normalize(this, opt)
+            arguments
+                this (1,1) HypersphericalGridDistribution
+                opt.tol (1,1) double = 1e-2
+                opt.warnUnnorm (1,1) logical = true
+            end
+            f = normalize@AbstractGridDistribution(this,tol=opt.tol,warnUnnorm=opt.warnUnnorm);
         end
                 
         function hgd = multiply(this, other)
@@ -44,26 +47,14 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
             hgd = multiply@AbstractGridDistribution(this, other);
         end   
         
-        function p = pdf(this, xa, useHarmonics)
+        function p = pdf(this, xa)
             arguments
                 this HypersphericalGridDistribution
                 xa double
-                useHarmonics (1,1) logical = true
             end
-            warning('PDF:UseInterpolated', 'pdf is not defined. Using interpolation with spherical harmonics.')
-            if useHarmonics
-                if this.enforcePdfNonnegative
-                    transformation = 'sqrt';
-                else
-                    transformation = 'identity';
-                end
-                shd = SphericalHarmonicsDistributionComplex.fromGrid(this.gridValues, this.grid, transformation);
-                p = shd.pdf(xa);
-            else
-                warning('Interpolating the pdf is not very efficient, but it is good enough for visualization purposes.');
-                [~,maxIndex]=max(this.grid'*xa);
-                p = this.gridValues(maxIndex)';
-            end
+            warning('PDF:UseInterpolated','Interpolating the pdf with constant values in each region is not very efficient, but it is good enough for visualization purposes.');
+            [~,maxIndex]=max(this.grid'*xa);
+            p = this.gridValues(maxIndex)';
         end
         
         function h = plot(this)
@@ -71,31 +62,24 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
                 AbstractHypersphericalDistribution.plotSphere;
             end
             hold on
-            hdd = HypersphericalDiracDistribution(this.grid, this.gridValues');
+            hdd = HypersphericalDiracDistribution(this.grid, this.gridValues'/sum(this.gridValues));
             h = hdd.plot;
             hold off
         end
         
-        function h = plotInterpolated(this, useHarmonics)
+        function int = integral(this)
+            arguments
+                this (1,1) HypersphericalGridDistribution
+            end
+            int = integral@AbstractGridDistribution(this);
+        end
+        
+        function h = plotInterpolated(this)
             arguments
                 this HypersphericalGridDistribution
-                useHarmonics (1,1) logical = true
             end
-            if this.dim~=3
-                error('Can currently only plot for S2 sphere.')
-            end
-            if useHarmonics
-                if this.enforcePdfNonnegative
-                    transformation = 'sqrt';
-                else
-                    transformation = 'identity';
-                end
-                shd = SphericalHarmonicsDistributionComplex.fromGrid(this.gridValues, this.grid, transformation);
-                h = shd.plot;
-            else
-                chd = CustomHypersphericalDistribution(@(x)this.pdf(x,false),3);
-                chd.plot;
-            end
+            chd = CustomHypersphericalDistribution(@(x)this.pdf(x,false),this.dim);
+            h = chd.plot;
         end
         
         function hhgd = symmetrize(this)
@@ -132,12 +116,13 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
             end
             sgd = HypersphericalGridDistribution.fromFunction(@(x)dist.pdf(x), noOfGridPoints, dist.dim, gridType);
         end
-        function sgd = fromFunction(fun, noOfGridPoints, dim, gridType)
+        function sgd = fromFunction(fun, noOfGridPoints, dim, gridType, enforcePdfNonnegative)
             arguments
                 fun function_handle
                 noOfGridPoints {mustBeInteger,mustBePositive}
                 dim {mustBeInteger,mustBeGreaterThanOrEqual(dim,2)}
                 gridType char = 'eq_point_set'
+                enforcePdfNonnegative logical = true
             end
             switch gridType
                 case 'eq_point_set'
@@ -150,7 +135,7 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
                     error('Grid scheme not recognized');
             end
             gridValues = fun(grid)';
-            sgd = HypersphericalGridDistribution(grid, gridValues);
+            sgd = HypersphericalGridDistribution(grid, gridValues, enforcePdfNonnegative, gridType);
         end
     end
 end

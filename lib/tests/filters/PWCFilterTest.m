@@ -6,7 +6,7 @@ classdef PWCFilterTest < matlab.unittest.TestCase
     methods (Test)
         function testPWCFilter(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end            
+            if ~islogical(enableExpensive), enableExpensive = true; end          
             L = 2;
             filter = PWCFilter(L);
             wn = WNDistribution(1.3, 0.8);
@@ -122,7 +122,7 @@ classdef PWCFilterTest < matlab.unittest.TestCase
         
         function testCalculateSystemMatrixNumerically(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end    
+            if ~islogical(enableExpensive), enableExpensive = true; end   
             
             if enableExpensive
                 L = 2;
@@ -136,7 +136,7 @@ classdef PWCFilterTest < matlab.unittest.TestCase
         
         function testCalculateMeasurementMatrixNumerically(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end    
+            if ~islogical(enableExpensive), enableExpensive = true; end   
             
             if enableExpensive
                 L = 2;

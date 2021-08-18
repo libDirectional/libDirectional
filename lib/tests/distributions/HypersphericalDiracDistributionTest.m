@@ -38,7 +38,7 @@ classdef HypersphericalDiracDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(mirrored.w, hdd.w, 'RelTol', 1E-10);
             
             % test reweigh            
-            f = @(x) 2; %does not change anything because of renormalization
+            f = @(x) 2*ones(1,size(x,2)); %does not change anything because of renormalization
             twdRew = hdd.reweigh(f);
             testCase.verifyClass(twdRew, 'HypersphericalDiracDistribution');
             testCase.verifyEqual(twdRew.d, hdd.d);
@@ -62,12 +62,19 @@ classdef HypersphericalDiracDistributionTest < matlab.unittest.TestCase
             d = 2*pi*rand(2,n);
             d = d./repmat(sqrt(sum(d.^2)), 2, 1);
             w = rand(1,n);
-            hdd = HypersphericalDiracDistribution(d,w);
+            hdd = HypersphericalDiracDistribution(d,w/sum(w));
             wd = hdd.toWD();
             testCase.verifyClass(wd, 'WDDistribution');
             testCase.verifyEqual(cos(wd.d), hdd.d(1,:), 'RelTol', 1E-10);
             testCase.verifyEqual(sin(wd.d), hdd.d(2,:), 'RelTol', 1E-10);
             testCase.verifyEqual(wd.w, hdd.w, 'RelTol', 1E-10);
+        end
+        
+        function testFromDistribution(testCase)
+            rng default
+            vmf = VMFDistribution([1;1;1]/sqrt(3),1);
+            wd = HypersphericalDiracDistribution.fromDistribution(vmf,50000);
+            testCase.verifyEqual(wd.meanDirection, vmf.meanDirection, 'AbsTol',0.01);
         end
     end
 end

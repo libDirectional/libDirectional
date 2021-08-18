@@ -6,18 +6,13 @@ classdef VMFFilter < AbstractHypersphericalFilter
     % IEEE Signal Processing Letters, 2016.    
     
     properties
-        state VMFDistribution
+        state (1,1) VMFDistribution = VMFDistribution([1;0],1)
     end
         
     methods 
-        function this = VMFFilter()
-            this.setState(VMFDistribution([1;0],1));
-        end
-        
         function setState(this, state_)
             assert(isa(state_, 'VMFDistribution'));
             this.state = state_;
-            this.dim = length(this.state.mu);
         end
         
         function est = getEstimate(this)

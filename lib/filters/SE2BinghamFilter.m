@@ -1,4 +1,4 @@
-classdef SE2BinghamFilter < handle
+classdef SE2BinghamFilter < AbstractSE2Filter
     % Perfoms state estimation with a Bingham-like SE(2) distribution.
     %
     % Igor Gilitschenski, Gerhard Kurz, Simon J. Julier, Uwe D. Hanebeck,
@@ -12,11 +12,11 @@ classdef SE2BinghamFilter < handle
     % San Diego, USA, 2015 
     
     properties (Access = public)
-        curEstimate % SE2 Distribution object representing current estimate.
+        curEstimate SE2BinghamDistribution % SE2 Distribution object representing current estimate.
     end
        
     methods
-        function this = SE2BinghamFilter() 
+        function this = SE2BinghamFilter()
             % Constructs an SE2 Filter Object.
             this.curEstimate = SE2BinghamDistribution( -eye(4,4));
         end
@@ -27,7 +27,10 @@ classdef SE2BinghamFilter < handle
             % Parameters:
             %   distribution (SE2BinghamDistribution)
             %       new state
-            assert(isa(distribution, 'SE2BinghamDistribution'));
+            arguments
+                this (1,1) SE2BinghamFilter
+                distribution (1,1) SE2BinghamDistribution
+            end
             this.curEstimate = distribution;
         end
         
@@ -42,8 +45,10 @@ classdef SE2BinghamFilter < handle
             %   sysNoise (SE2BinghamDistribution)
             %       system noise v
             %
-            assert(isa(sysNoise, 'SE2BinghamDistribution'));
-            
+            arguments
+                this (1,1) SE2BinghamFilter
+                sysNoise (1,1) SE2BinghamDistribution
+            end
             [eSamples, eWeights] = this.curEstimate.sampleDeterministic();
             [nSamples, nWeights] = sysNoise.sampleDeterministic();
             
@@ -80,9 +85,11 @@ classdef SE2BinghamFilter < handle
             %    z (4 x 1 vector)
             %       Measurement given as a 4d dual quaternion restricted to
             %        SE(2)
-            assert(isa(measNoise, 'SE2BinghamDistribution'));
-            assert(size(z,1) == 4);
-            assert(size(z,2) == 1);
+            arguments
+                this (1,1) SE2BinghamFilter
+                measNoise (1,1) SE2BinghamDistribution
+                z (4,1) double
+            end
             
             % Auxiliary quantities
             D = diag([1 -1 -1 -1]);
@@ -100,12 +107,27 @@ classdef SE2BinghamFilter < handle
         end
         
         function est = getEstimate(this)
+            arguments
+                this (1,1) SE2BinghamFilter
+            end
             % Return current estimate 
             %
             % Returns:
             %   est (SE2BinghamDistribution)
             %       current estimate
             est = this.curEstimate;
+        end
+        
+        function est = getPointEstimate(this,convertToAnglePos)
+            arguments
+                this (1,1) SE2BinghamFilter
+                convertToAnglePos (1,1) logical = true
+            end
+            est = this.curEstimate.mode();
+            if convertToAnglePos
+                [est(1),est(2:3)] = AbstractSE2Distribution.dualQuaternionToAnglePos(est);
+                est(end) = [];
+            end
         end
     end
 end

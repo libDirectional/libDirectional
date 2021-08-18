@@ -24,7 +24,6 @@ classdef SphericalHarmonicsFilter < AbstractHypersphericalFilter
                     coeffMat(1, 1) = 1;
             end
             this.state = SphericalHarmonicsDistributionComplex(coeffMat, transformation);
-            this.dim = 3;
         end
         
         function setState(this, state)

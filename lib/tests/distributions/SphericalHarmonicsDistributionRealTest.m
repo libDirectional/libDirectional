@@ -30,7 +30,7 @@ classdef SphericalHarmonicsDistributionRealTest < matlab.unittest.TestCase
             rshd3 = rshd.truncate(5);
             fixture.teardown;
             testCase.verifySize(rshd3.coeffMat, [6, 11]);
-            testCase.verifyTrue(all(all(isnan(rshd3.coeffMat(5:6, :)) | rshd3.coeffMat(5:6, :) == 0)));
+            testCase.verifyTrue(all(isnan(rshd3.coeffMat(5:6, :)) | rshd3.coeffMat(5:6, :) == 0,[1,2]));
             rshd4 = rshd2.truncate(3);
             testCase.verifySize(rshd4.coeffMat, [4, 7]);
             rshd5 = rshd3.truncate(3);
@@ -233,7 +233,7 @@ classdef SphericalHarmonicsDistributionRealTest < matlab.unittest.TestCase
             % transformed points.
             rng default
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             if enableExpensive
                 gridpoints = 7;
             else

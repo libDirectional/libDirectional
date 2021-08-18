@@ -4,7 +4,7 @@ classdef (Abstract) AbstractAxialFilter < AbstractFilter
     properties
         compositionOperator % denoted by "\oplus" in our papers
         compositionOperatorDerivative
-        % dimension (dim=2 -> circle/complex numbers, dim=4 -> quaternions)
+        % Dimension (dim=2 -> circle/complex numbers, dim=4 -> quaternions)
     end
     
     methods ( Access = protected )
@@ -25,6 +25,12 @@ classdef (Abstract) AbstractAxialFilter < AbstractFilter
                 otherwise
                     error('invalid dimension');
             end
+        end
+    end
+    
+    methods
+        function est = getPointEstimate(this)
+            est = this.getEstimate().mode;
         end
     end
        

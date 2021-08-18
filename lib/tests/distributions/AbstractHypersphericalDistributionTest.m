@@ -55,7 +55,7 @@ classdef AbstractHypersphericalDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(vmf.entropyNumerical(), vmf.entropy(), 'RelTol', 1E-7);
         end
         
-        function testSampleMetropolisHastings(testCase)
+        function testSampleMetropolisHastingsBasicsOnly(testCase)
             vmf = VMFDistribution([1 0]', 2);
             n = 10;
             s = vmf.sampleMetropolisHastings(n);
