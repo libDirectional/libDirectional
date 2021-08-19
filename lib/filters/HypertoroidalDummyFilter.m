@@ -1,13 +1,15 @@
 classdef HypertoroidalDummyFilter < AbstractDummyFilter & AbstractHypertoroidalFilter
     
     methods
-        function hfd = getEstimate(this)
-            hfd=HypertoroidalUniformDistribution(this.dim);
+        function this = HypertoroidalDummyFilter(dim)
+            arguments
+                dim (1,1) double {mustBeGreaterThanOrEqual(dim,1)}
+            end
+            this.dist = HypertoroidalUniformDistribution(dim);
         end
         
-        function mean=getEstimateMean(this)
-            mean=HypertoroidalUniformDistribution(this.dim).sample(1);
-        end
-        
+        function est = getPointEstimate(this)
+            est = getPointEstimate@AbstractDummyFilter(this);
+        end   
     end
 end

@@ -16,6 +16,8 @@ classdef SphericalGridFilter < AbstractHypersphericalFilter & HypersphericalGrid
             % Only allow eq_point_set because large errors are made in the
             % prediction step for the spherical harmonics-based grid.
             this@HypersphericalGridFilter(noOfCoefficients, 3, gridType);
+            this.gd = SphericalGridDistribution.fromDistribution(HypersphericalUniformDistribution(3),...
+                noOfCoefficients, gridType);
         end
         
         function setState(this, gd_)

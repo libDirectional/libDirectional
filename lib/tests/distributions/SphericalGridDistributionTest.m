@@ -15,7 +15,7 @@ classdef SphericalGridDistributionTest < matlab.unittest.TestCase
             % For spherical harmonics grid, normalization function does not
             % properly normalize (just keeps it in the reasonable range).
             testCase.applyFixture(SuppressedWarningsFixture('Transformation:notEq_Point_set'));
-            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            testCase.applyFixture(SuppressedWarningsFixture('SphericalGridDistribution:CannotNormalizeShGrid'));
             sgd = SphericalGridDistribution.fromDistribution(dist, 1012, 'sh_grid');
             verifyPdfEqual(testCase,sgd,dist,1e-11);
             sgd = SphericalGridDistribution.fromDistribution(dist, 1012, 'sh_grid', true);
@@ -33,7 +33,12 @@ classdef SphericalGridDistributionTest < matlab.unittest.TestCase
             dist.F=dist.F*dist.integralNumerical;
             
             testCase.applyFixture(SuppressedWarningsFixture('Transformation:notEq_Point_set'));
-            for grid_pattern = {'sh_grid', 'eq_point_set'}
+            for grid_pattern = {'eq_point_set', 'sh_grid'}
+                if strcmp([grid_pattern{:}],'sh_grid')
+                    testCase.applyFixture(SuppressedWarningsFixture('Transformation:notEq_Point_set'));
+                    testCase.applyFixture(SuppressedWarningsFixture('SphericalGridDistribution:CannotNormalizeShGrid'));
+                end
+                
                 sgd = SphericalGridDistribution.fromDistribution(dist, 1012, [grid_pattern{:}]);
                 verifyPdfEqual(testCase,sgd,dist,1e-6);
 
@@ -75,6 +80,7 @@ classdef SphericalGridDistributionTest < matlab.unittest.TestCase
         end
         % Test operations for prediction and filter steps
         function testMultiplyVMF(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             for enforceNonnegative=[false,true]
                 for kappa1 = 0.1:0.3:4
                     for kappa2 = 0.1:0.3:4
@@ -84,7 +90,11 @@ classdef SphericalGridDistributionTest < matlab.unittest.TestCase
                         f2 = SphericalGridDistribution.fromDistribution(dist2, 1000, 'eq_point_set', enforceNonnegative);
                         fFiltered = f1.multiply(f2);
                         distResult = dist1.multiply(dist2);
+                        % The tolerance for the spherical harmonics may be
+                        % different here, prevent warnings
+                        fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
                         verifyPdfEqual(testCase,fFiltered,distResult,1e-5);
+                        fixture.teardown();
                     end
                 end
             end
@@ -105,8 +115,14 @@ classdef SphericalGridDistributionTest < matlab.unittest.TestCase
             [phi, theta] = meshgrid(linspace(0, 2*pi, 10), linspace(-pi/2, pi/2, 10));
             [x, y, z] = sph2cart(phi(:)', theta(:)', 1);
             fixture = testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
+            if strcmp(dist1.gridType,'sh_grid')
+                fixture(2) = testCase.applyFixture(SuppressedWarningsFixture('SphericalGridDistribution:CannotNormalizeShGrid'));
+                fixture(3) = testCase.applyFixture(SuppressedWarningsFixture('PDF:NeedNormalizationShGrid'));
+            end
             testCase.verifyEqual(dist1.pdf([x; y; z]), dist2.pdf([x; y; z]), 'AbsTol', tol);
-            fixture.teardown;
+            for f=fixture
+                f.teardown;
+            end
         end
     end
 end

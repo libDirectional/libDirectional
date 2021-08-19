@@ -1,8 +1,5 @@
 classdef SE2BinghamDistributionTest < matlab.unittest.TestCase
     
-    properties
-    end
-    
     methods (Test)
         
         function testSE2BinghamDistribution (testCase)
@@ -21,27 +18,36 @@ classdef SE2BinghamDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(seA.C2, seB.C2);
             testCase.verifyEqual(seA.C3, seB.C3);
             
-            %% computeCovarianceMCMC
+            % computeCovarianceMCMC
             rng default
             CovMatrix = seA.computeCovarianceMCMC();
             testCase.verifySize(CovMatrix, [4,4]); % size
             testCase.verifyGreaterThan(eig(CovMatrix), [0,0,0,0]'); % pos. definite
             
-            %% mode
+            % mode
             m = seA.mode();
             testCase.verifySize(m, [4,1]); % size
             
-            %% sampling
+            % sampling
             n = 100;
             s = seA.sample(n);
             testCase.verifySize(s, [4 n]); % size
             testCase.verifyEqual(s(1,:).^2+s(2,:).^2, ones(1,n), 'RelTol', 1E-10); % normalization of first two entries
+            
+            %test pdf
+            p = seA.pdf(s);
+            y = zeros(1, size(s,2));
+            for i=1:size(s,2)
+                y(i) = 1/seA.NC * exp(s(:,i)'*seA.C*s(:,i));
+            end
+            testCase.verifySize(y, [1, n]);
+            testCase.verifyEqual(p,y, 'RelTol', 1E-10);
         end
         
         function testNormalizationConstant (testCase)
             % Tests whether the pdf integrates to the normalization constant.
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end            
+            if ~islogical(enableExpensive), enableExpensive = true; end            
             
             if enableExpensive
                 C1 = -diag([2 3]);
@@ -97,7 +103,26 @@ classdef SE2BinghamDistributionTest < matlab.unittest.TestCase
             
             testCase.verifyEqual(C2,sFitted.C2, 'AbsTol',1E-10);
             testCase.verifyEqual(C3,sFitted.C3, 'AbsTol',1E-10);            
-        end        
+        end    
+        
+        function testWeightedFitting(testCase)
+            rng default
+            C1 = -diag([0 1]);
+            C2 = [0.1 0.2; 0.01 0.3];
+            C3 = -diag([1 2]);      
+            s = SE2BinghamDistribution(C1, C2, C3);
+            
+            sUniform = SE2BinghamDistribution(zeros(2,2), zeros(2,2), -0.1*eye(2,2));
+            
+            n = 70000;
+            samples = sUniform.sample(n);
+            weights = s.pdf(samples);
+            weights = weights/sum(weights);
+            
+            s2 = SE2BinghamDistribution.fit(samples, weights);
+            
+            testCase.verifyEqual(s.C, s2.C, 'AbsTol', 1E-1);
+        end
     end
 end
 

@@ -7,7 +7,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
     methods (Test)
         function testBinghamDistribution(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             for i=1:4
                 switch i
                     case 1
@@ -43,6 +43,12 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 testCase.verifyEqual(B.Z, Z);
                 testCase.verifyEqual(B.dim, length(Z));
 
+                %% test mode
+                % respect antipodal symmetry
+                modeNumerical = B.modeNumerical;
+                difference = min(abs(modeNumerical-B.mode), abs(modeNumerical+B.mode)); 
+                testCase.verifyEqual(difference, zeros(B.dim,1), 'AbsTol',1E-5)
+
                 %% test integral
                 if B.dim < 4 || enableExpensive
                     testCase.verifyEqual(B.integral(), 1, 'RelTol', 1E-1);
@@ -50,7 +56,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
 
                 %% test multiplication
                 Bmul = B.multiply(B);
-                if all(all(M*M==M))
+                if isequal(M*M,M)
                     testCase.verifyEqual(Bmul.M, B.M, 'RelTol', 1E-10); %M is the same for both
                 end
                 renormconst = Bmul.pdf(B.mode()) / B.pdf(B.mode)^2;
@@ -92,6 +98,9 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                 Bfitted = BinghamDistribution.fit(samples);
                 testCase.verifyEqual(Bfitted.Z, B.Z, 'RelTol', 0.2); % this can be quite imprecise
                 testCase.verifyEqual(abs(Bfitted.M), abs(B.M), 'AbsTol', 0.2); % this can be quite imprecise
+                % the following test fails with very low probability for
+                % Glover's sampling because rejected samples are repeated
+                testCase.verifyEqual(size(unique(samples', 'rows'),1), n); % make sure all samples are unique
                 
                 samples = B.sampleKent(n);
                 testCase.verifySize(samples, [B.dim, n]);
@@ -285,6 +294,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
                     testCase.verifyEqual(abs(B.M), abs(Bgaussnewton.M), 'RelTol', 1E-10); %too weak test, all columns should be equal up to sign
                     testCase.verifyEqual(B.Z, Bscatter.Z, 'RelTol', 2*1E-1);
                     testCase.verifyEqual(abs(B.M), abs(Bscatter.M), 'RelTol', 1E-10); %too weak test, all columns should be equal up to sign
+                    
                 end
             end
         end
@@ -380,7 +390,7 @@ classdef BinghamDistributionTest < matlab.unittest.TestCase
             sAug = [cos(s); sin(s)];
             C = sAug * diag(w) * sAug';
             testCase.verifyEqual(C, B.moment(), 'RelTol', 1E-3);
-        end  
+        end
     end
     
     methods (Static)

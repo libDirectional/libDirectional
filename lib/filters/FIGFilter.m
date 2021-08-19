@@ -11,7 +11,6 @@ classdef FIGFilter < AbstractCircularFilter & AbstractGridFilter
                 enforcePdfNonnegative logical = true
             end
             this.gd = FIGDistribution.fromDistribution(CircularUniformDistribution(), noOfCoefficients, enforcePdfNonnegative);
-            this.dim = 1;
         end
         
         function predictIdentity(this, dSys)
@@ -48,7 +47,11 @@ classdef FIGFilter < AbstractCircularFilter & AbstractGridFilter
             %       distribution of additive noise
             %   z (scalar)
             %       measurement in [0, 2pi)
-            assert(isa(dMeas, 'AbstractCircularDistribution'));
+            arguments
+                this (1,1) FIGFilter
+                dMeas (1,1) AbstractCircularDistribution
+                z (1,1) double = 0
+            end
             if ~isa(dMeas, 'FIGDistribution') % Include shift in transformation
                 dMeas = FIGDistribution.fromFunction(@(x)dMeas.pdf(x-z), numel(this.gd.gridValues), this.gd.enforcePdfNonnegative);
             elseif z > 1e-8 % .shift is rather expensive, avoid if possible

@@ -27,7 +27,6 @@ classdef AxialKalmanFilter < AbstractAxialFilter
             assert(size(g.mu,1)==2 || size(g.mu,1)==4, 'only 2d and 4d supported');
             assert(abs(norm(g.mu)-1)<1E-5, 'mean must be a unit vector');
             this.gauss = g;
-            this.dim = size(g.mu,1);
             this.setCompositionOperator();
         end
         

@@ -1,4 +1,4 @@
-classdef SE2UKF < handle
+classdef SE2UKF < AbstractSE2Filter
     % Applies UKF to dual-quaternion-based Estimation on SE(2).
     %
     % A Stochastic Filter for Planar Rigid-Body Motions,
@@ -148,6 +148,9 @@ classdef SE2UKF < handle
             est = this.gauss ;
         end
         
+        function est = getPointEstimate(~) %#ok<STOUT>
+            error('Not yet implemented.');
+        end
     end
     
 end

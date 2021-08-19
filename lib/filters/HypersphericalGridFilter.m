@@ -21,7 +21,6 @@ classdef HypersphericalGridFilter < AbstractHypersphericalFilter & AbstractGridF
             % prediction step for the spherical harmonics-based grid.
             this.gd = HypersphericalGridDistribution.fromDistribution(HypersphericalUniformDistribution(dim),...
                 noOfCoefficients, gridType);
-            this.dim = dim;
         end
         
         function setState(this, gd_)
@@ -37,10 +36,10 @@ classdef HypersphericalGridFilter < AbstractHypersphericalFilter & AbstractGridF
             assert(this.dim==gd_.dim);
             if ~(isa(gd_, 'HypersphericalGridDistribution'))
                 warning('setState:nonGrid', 'sgd_ is not a GridDistribution. Transforming with a number of coefficients that is equal to that of the filter.');
-                gd_ = this.gd.fromDistribution(gd_, size(this.gd.grid,2), 'eq_point_set'); % Use this to preserve the class (e.g., SphericalGridFilter)
-                assert(isequal(this.gd.grid, gd_.grid));
+                gd_ = this.gd.fromDistribution(gd_, size(this.gd.gridValues,1), 'eq_point_set'); % Use this to preserve the class (e.g., SphericalGridFilter)
+                assert(isequal(this.gd.getGrid(), gd_.getGrid()));
             else
-                if ~isequal(this.gd.grid, gd_.grid)
+                if ~isequal(this.gd.getGrid(), gd_.getGrid())
                     warning('setState:gridDiffers', 'New density is defined on different grid.')
                 end
             end
@@ -57,7 +56,7 @@ classdef HypersphericalGridFilter < AbstractHypersphericalFilter & AbstractGridF
             warning('PredictIdentity:Inefficient','Using inefficient prediction. Consider precalculating the SdCondSdGridDistribution and using predictNonlinearViaTransitionDensity.');
             trans = @(xkk,xk)cell2mat(arrayfun(@(i)...
                 VMFDistribution(xk(:,i),dSys.kappa).pdf(xkk),1:size(xk,2),'UniformOutput', false));
-            sdsd = SdCondSdGridDistribution.fromFunction(trans, size(this.gd.grid,2), true, 'eq_point_set', 2*this.dim);
+            sdsd = SdCondSdGridDistribution.fromFunction(trans, size(this.gd.gridValues,1), true, 'eq_point_set', 2*this.dim);
             this.predictNonlinearViaTransitionDensity(sdsd);
         end
         
@@ -77,7 +76,8 @@ classdef HypersphericalGridFilter < AbstractHypersphericalFilter & AbstractGridF
                 end
                 measNoise.mu = z;
             end
-            this.gd = this.gd.multiply(HypersphericalGridDistribution(this.gd.grid,measNoise.pdf(this.gd.grid)'));
+            currGrid = this.gd.getGrid();
+            this.gd = this.gd.multiply(HypersphericalGridDistribution(currGrid,measNoise.pdf(currGrid)'));
         end
         
         function predictNonlinearViaTransitionDensity(this, fTrans)
@@ -85,13 +85,13 @@ classdef HypersphericalGridFilter < AbstractHypersphericalFilter & AbstractGridF
                 this HypersphericalGridFilter
                 fTrans SdCondSdGridDistribution
             end
-            assert(isequal(this.gd.grid,fTrans.grid), 'predictNonlinearViaTransitionDensity:gridDiffers',...
+            assert(isequal(this.gd.getGrid(),fTrans.getGrid()), 'predictNonlinearViaTransitionDensity:gridDiffers',...
                 'fTrans is using an incompatible grid.');
             % Multiplication could be realized via this.getEstimate.gridValues'.*fTrans.gridValues
             % combined with marginalization it would be
-            % (4*pi/size(this.grid,2)*sum(this.getEstimate.gridValues'.*fTrans.gridValues,2).
+            % (domainSize/size(this.grid,2))*sum(this.getEstimate.gridValues'.*fTrans.gridValues,2).
             % Faster with matrix multiplication
-            this.gd.gridValues = this.gd.getManifoldSize/size(this.gd.grid,2)*fTrans.gridValues*this.gd.gridValues;
+            this.gd.gridValues = this.gd.getManifoldSize/size(this.gd.gridValues,1)*fTrans.gridValues*this.gd.gridValues;
             this.gd = this.gd.normalize; % This also enforces a normalization if it is violated
         end
     end

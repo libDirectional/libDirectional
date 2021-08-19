@@ -23,8 +23,10 @@ classdef FourierFilter < AbstractCircularFilter
             % Parameters:
             %   noOfCoefficients (odd integer > 0)
             %       number of Fourier coefficients to use
-            if nargin == 1, transformation = 'sqrt'; end
-            assert(strcmp(transformation, 'sqrt') || strcmp(transformation, 'identity'));
+            arguments
+                noOfCoefficients (1,1) double
+                transformation char {mustBeMember(transformation,{'sqrt','identity'})} = 'sqrt'
+            end
             this.fd = FourierDistribution.fromDistribution(CircularUniformDistribution(), noOfCoefficients, transformation);
         end
         
@@ -34,7 +36,10 @@ classdef FourierFilter < AbstractCircularFilter
             % Parameters:
             %   fd_ (FourierDistribution)
             %       new state
-            assert(isa(fd_, 'AbstractCircularDistribution'));
+            arguments
+                this (1,1) FourierFilter
+                fd_ (1,1) AbstractCircularDistribution
+            end
             if ~(isa(fd_, 'FourierDistribution'))
                 warning('setState:nonFourier', 'fd_ is not a FourierDistribution. Transforming with a number of coefficients that is equal to that of the filter.');
                 fd_ = FourierDistribution.fromDistribution(fd_, 2*length(this.fd.a)-1, this.fd.transformation);
@@ -55,10 +60,16 @@ classdef FourierFilter < AbstractCircularFilter
             % Returns:
             %   fd (FourierDistribution)
             %       current estimate
+            arguments
+                this (1,1) FourierFilter
+            end
             fd = this.fd;
         end
         
         function mean = getEstimateMean(this)
+            arguments
+                this (1,1) FourierFilter
+            end
             mean = this.fd.circularMean;
         end
         
@@ -108,13 +119,21 @@ classdef FourierFilter < AbstractCircularFilter
             %       distribution of additive noise
             %   z (scalar)
             %       measurement in [0, 2pi)
-            assert(isa(dMeas, 'AbstractCircularDistribution'));
+            arguments
+                this (1,1) FourierFilter
+                dMeas (1,1) AbstractCircularDistribution
+                z (1,1) double = 0
+            end
             if ~isa(dMeas, 'FourierDistribution')
                 warning('Update:automaticConversion', ...
                     'dMeas is not a FourierDistribution. Transforming with a number of coefficients that is equal to that of the filter. For non-varying noises, transforming once is much more efficient and should be preferred.');
                 dMeas = FourierDistribution.fromDistribution(dMeas, 2*length(this.fd.a)-1, this.fd.transformation);
             end
-            dMeasShifted = dMeas.shift(z);
+            if z~=0
+                dMeasShifted = dMeas.shift(z);
+            else
+                dMeasShifted = dMeas;
+            end
             this.fd = this.fd.multiply(dMeasShifted, 2*length(this.fd.a)-1);
         end
         
@@ -133,10 +152,12 @@ classdef FourierFilter < AbstractCircularFilter
             %       and output a row vector!
             %   noiseDistribution (AbstractCircularDistribution)
             %       distribution of additive noise
-            
-            assert(isa(noiseDistribution, 'AbstractCircularDistribution'));
-            assert(isa(f, 'function_handle'));
-            if nargin == 3, truncateJointSqrt = true; end
+            arguments
+                this (1,1) FourierFilter
+                f (1,1) function_handle
+                noiseDistribution (1,1) AbstractCircularDistribution
+                truncateJointSqrt (1,1) logical = true
+            end
             fTrans = @(xkk, xk)reshape(noiseDistribution.pdf(xkk(:)'-f(xk(:)')), size(xk));
             this.predictNonlinearViaTransitionDensity(fTrans, truncateJointSqrt);
             
@@ -164,8 +185,10 @@ classdef FourierFilter < AbstractCircularFilter
             % conditional density that, when integrated over x_k+1
             % always yields 1. By also integrating over x_k, we get
             % 2*pi.
-            
-            if nargin == 2, truncateJointSqrt = true;
+            arguments
+                this (1,1) FourierFilter
+                fTrans
+                truncateJointSqrt (1,1) logical = true
             end
             
             % As explained above, fTrans acutally integrates to 2*pi.
@@ -249,6 +272,11 @@ classdef FourierFilter < AbstractCircularFilter
         end
         
         function updateNonlinear(this, likelihood, z) %measurement z, likelihood(z,x)=P(Z|X)
+            arguments
+                this (1,1) FourierFilter
+                likelihood (1,1) function_handle
+                z (:,1) double
+            end
             fdMeas = FourierDistribution.fromFunction( ...
                 ... % Assume likelihood can use implicit expansion (for scalars also possible in older Matlab versions)
                 @(x)reshape(likelihood(z, x(:)'), size(x)), ...
@@ -262,6 +290,11 @@ classdef FourierFilter < AbstractCircularFilter
             % than the other update approach if no padding is used. In
             % FourierFilterTest, we show that we can obtain the same result
             % as using the other update approach when we pad sufficiently.
+            arguments
+                this (1,1) FourierFilter
+                likelihood (1,1) function_handle
+                z (:,1) double
+            end
             cCurr = this.fd.c;
             priorVals = ifft(ifftshift(cCurr), 'symmetric') * numel(cCurr);
             xVals = linspace(0, 2*pi, numel(cCurr)+1);
@@ -285,6 +318,10 @@ classdef FourierFilter < AbstractCircularFilter
             % Proceedings of the 2019 IEEE International Conference on
             % Multisensor Fusion and Integration for Intelligent Systems (MFI 2019),
             % Taipei, Republic of China, May, 2019.
+            arguments
+                this (1,1) FourierFilter
+                likelihood (1,1) FourierDistribution
+            end
             assert(numel(this.getEstimate.a) == numel(likelihood.a));
             assert(numel(this.getEstimate.transformation) == numel(likelihood.transformation));
             

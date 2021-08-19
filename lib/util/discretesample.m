@@ -7,6 +7,10 @@ function samples = discretesample(p, n)
     %       normalized)
     %   n (integer > 0)
     %       number of samples
+    arguments
+        p double {mustBeNonnegative}
+        n (1,1) double {mustBePositive,mustBeInteger}
+    end
     p=p(:);
     assert(all(p>=0));
     assert(n>0);

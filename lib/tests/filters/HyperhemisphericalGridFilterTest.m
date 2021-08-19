@@ -20,7 +20,8 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyGreaterThan(sum(abs(sgf.getEstimate.gridValues-(1/sgf.getEstimate.getManifoldSize))),60);
 
             % Verify warnings
-            sgdState.grid(:,end)=[];
+            fullGrid = sgdState.getGrid();
+            sgdState.grid=fullGrid(:,end);
             sgdState.gridValues(end)=[];
             testCase.verifyClass(sgf.gd,'HyperhemisphericalGridDistribution')
             sgftmp = sgf.copy;
@@ -47,7 +48,8 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyGreaterThan(sum(abs(diff(sgf.getEstimate.gridValues'))),5);
 
             % Verify warnings
-            sgdState.grid(:,end)=[];
+            fullGrid = sgdState.getGrid();
+            sgdState.grid=fullGrid(:,end);
             sgdState.gridValues(end)=[];
             testCase.verifyClass(sgf.gd,'HyperhemisphericalGridDistribution')
             sgfTmp = sgf.copy;
@@ -74,7 +76,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             sdsd = SdHalfCondSdHalfGridDistribution.fromFunction(trans,noGridPoints,true,'eq_point_set_symm',6);
             manifoldSize = sgf.getEstimate.getManifoldSize;
             for i = 1:10
-                valuesAlternativeFormula = (manifoldSize/size(sgf.getEstimate.grid,2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
+                valuesAlternativeFormula = (manifoldSize/size(sgf.getEstimate.getGrid(),2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
                 sgf.predictNonlinearViaTransitionDensity(sdsd);
                 testCase.verifyEqual(sgf.getEstimate.gridValues,valuesAlternativeFormula,'AbsTol',1E-12);
             end
@@ -99,7 +101,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             sdsd = SdHalfCondSdHalfGridDistribution.fromFunction(trans,noGridPoints,true,'eq_point_set',8);
             manifoldSize = sgf.getEstimate.getManifoldSize;
             for i=1:10
-                valuesAlternativeFormula = (manifoldSize/size(sgf.getEstimate.grid,2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
+                valuesAlternativeFormula = (manifoldSize/size(sgf.getEstimate.getGrid(),2))*sum(sgf.getEstimate.gridValues'.*sdsd.gridValues,2); % Alternative formula
                 sgf.predictNonlinearViaTransitionDensity(sdsd);
                 testCase.verifyEqual(sgf.getEstimate.gridValues,valuesAlternativeFormula,'AbsTol',1E-12);
             end
@@ -118,12 +120,12 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             dist = VMFDistribution(1/sqrt(2)*[1;-1;0],0.1);
 
             sgf.updateNonlinear(@(z,x)dist.pdf(x),NaN(3,1));
-            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', dist.pdf(sgf.getEstimate.grid),'AbsTol',1e-05);
+            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', dist.pdf(sgf.getEstimate.getGrid()),'AbsTol',1e-05);
             
             vmfPosterior = dist.multiply(dist);
             sgf.updateNonlinear(@(z,x)dist.pdf(x),NaN(3,1));
             
-            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmfPosterior.pdf(sgf.getEstimate.grid),'AbsTol',1e-05);
+            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmfPosterior.pdf(sgf.getEstimate.getGrid()),'AbsTol',1e-05);
         end
         function testUpdateWithVMFS3(testCase)
             noGridPoints = 1001;
@@ -136,12 +138,12 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             dist = VMFDistribution(1/sqrt(3)*[1;-1;1;0],0.1);
 
             sgf.updateNonlinear(@(z,x)dist.pdf(x),NaN(4,1));
-            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', dist.pdf(sgf.getEstimate.grid),'AbsTol',1e-05);
+            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', dist.pdf(sgf.getEstimate.getGrid()),'AbsTol',1e-05);
             
             vmfPosterior = dist.multiply(dist);
             sgf.updateNonlinear(@(z,x)dist.pdf(x),NaN(4,1));
             
-            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmfPosterior.pdf(sgf.getEstimate.grid),'AbsTol',1e-05);
+            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmfPosterior.pdf(sgf.getEstimate.getGrid()),'AbsTol',1e-05);
         end
         function testUpdateIdentityAndNonlinearS2(testCase)
             vmff = VMFFilter;
@@ -162,7 +164,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             sgfNonlin.updateNonlinear(@(z,x)VMFDistribution(z, 2).pdf(x), z); % VMF is commutative for x and z.
             
             testCase.verifyEqual(sgfNonlin.getEstimate.gridValues, sgf.getEstimate.gridValues,'AbsTol',1e-15); % Same results for lin and nonlin
-            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmff.getEstimate.pdf(sgf.getEstimate.grid),'AbsTol',1e-5);
+            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmff.getEstimate.pdf(sgf.getEstimate.getGrid()),'AbsTol',1e-5);
         end
         function testUpdateIdentityAndNonlinearS3(testCase)
             vmff = VMFFilter;
@@ -184,7 +186,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             sgfNonlin.updateNonlinear(@(z,x)VMFDistribution(z, 2).pdf(x), z); % VMF is commutative for x and z.
             
             testCase.verifyEqual(sgfNonlin.getEstimate.gridValues, sgf.getEstimate.gridValues,'AbsTol',1e-15); % Same results for lin and nonlin
-            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmff.getEstimate.pdf(sgf.getEstimate.grid),'AbsTol',1e-5);
+            testCase.verifyEqual(0.5*sgf.getEstimate.gridValues', vmff.getEstimate.pdf(sgf.getEstimate.getGrid()),'AbsTol',1e-5);
         end
         % Compare prediction with SphericalHarmonicsFilter
         function testPredictNonlinearForPseudoadditiveS2(testCase)
@@ -219,8 +221,8 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyWarning(@()...
                 sgfIdentity.predictIdentity(sysNoise([0;0;1])),'PredictIdentity:Inefficient');
             
-            testCase.verifyEqual(0.5*sgfNonlinear.getEstimate.gridValues', shf.getEstimate.pdf(sgfNonlinear.getEstimate.grid),'AbsTol',1e-5);
-            testCase.verifyEqual(0.5*sgfIdentity.getEstimate.gridValues', shf.getEstimate.pdf(sgfIdentity.getEstimate.grid),'AbsTol',1e-5);
+            testCase.verifyEqual(0.5*sgfNonlinear.getEstimate.gridValues', shf.getEstimate.pdf(sgfNonlinear.getEstimate.getGrid()),'AbsTol',1e-5);
+            testCase.verifyEqual(0.5*sgfIdentity.getEstimate.gridValues', shf.getEstimate.pdf(sgfIdentity.getEstimate.getGrid()),'AbsTol',1e-5);
         end
         function testPredictNonlinearForPseudoadditiveS3VersusHypersphericalGF(testCase)
             noGridPoints = 101;
@@ -281,7 +283,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             sdsd_fTrans = SdHalfCondSdHalfGridDistribution.fromFunction(fTrans, noGridpoints, true, 'eq_point_set', 6);
             sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans);
                         
-            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.grid),'AbsTol',1e-5);
+            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.getGrid()),'AbsTol',1e-5);
             
             % Then prediction with a transition density that is independent
             % of the current estimate
@@ -292,7 +294,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyWarningFree(@()...
                 sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans));
             
-            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.grid),'AbsTol',1e-3);
+            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.getGrid()),'AbsTol',1e-3);
         end
         function testPredictNonlinearViaTransitionDensityNextStateIndependentS3(testCase)
             % Result of prediction is independent of the initial density
@@ -318,7 +320,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             sdsd_fTrans = SdHalfCondSdHalfGridDistribution.fromFunction(fTrans, noGridpoints, true, 'eq_point_set', 8);
             sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans);
                         
-            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.grid), 'AbsTol', 1e-12);
+            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.getGrid()), 'AbsTol', 1e-12);
 
             % Next transition density also does not depend on current
             % state.
@@ -329,7 +331,7 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             sdsd_fTrans = SdHalfCondSdHalfGridDistribution.fromFunction(fTrans, noGridpoints, true, 'eq_point_set', 8);
             % Since sdsd is normalized, should be normalized as well.
             sgf.predictNonlinearViaTransitionDensity(sdsd_fTrans)
-            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.grid), 'AbsTol', 5e-13);
+            testCase.verifyEqual(0.5*sgf.gd.gridValues', distPredictionResult.pdf(sgf.gd.getGrid()), 'AbsTol', 5e-13);
         end
     end
 end

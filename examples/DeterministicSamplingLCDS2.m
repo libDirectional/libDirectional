@@ -5,7 +5,7 @@
 
 % https://isas.iar.kit.edu/pdf/IFAC20_Frisch.pdf
 % Daniel Frisch, Kailai Li, and Uwe D. Hanebeck
-% Optimal Reduction of Dirac Mixture Densities on the 2-Sphere
+% Optimal Reduction of Dirac Mixture Densities on the 2-sphere
 % Proceedings of the 1st Virtual IFAC World Congress (IFAC-V 2020), July, 2020. 
 
 

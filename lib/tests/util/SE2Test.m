@@ -1,8 +1,5 @@
 classdef SE2Test < matlab.unittest.TestCase
    
-    properties
-    end
-    
     methods (Test)
         function testSE2(testCase)
             alpha = 0.7;
@@ -48,6 +45,13 @@ classdef SE2Test < matlab.unittest.TestCase
             h = s1.asHomogenousMatrix * s2.asHomogenousMatrix;
             sH = SE2(acos(h(1,1)), h(1:2,3));
             testCase.verifyEqual(dq, sH.asDualQuaternion(), 'RelTol', 1E-10);
-       end
+        end
+       
+        function testFromDualQuaternion(testCase)
+            se2 = SE2(1,[1;1]);
+            se2Converted = SE2.fromDualQuaternion(se2.asDualQuaternion());
+            testCase.verifyEqual(se2.alpha,se2Converted.alpha);
+            testCase.verifyEqual(se2.translation,se2Converted.translation);
+        end
     end
 end

@@ -6,7 +6,7 @@ classdef HypersphericalGridDistributionTest < matlab.unittest.TestCase
             
             hgd = HypersphericalGridDistribution.fromDistribution(dist, 1012);
             sgd = SphericalGridDistribution.fromDistribution(dist, 1012);
-            testCase.verifyEqual(hgd.grid,sgd.grid);
+            testCase.verifyEqual(hgd.getGrid(),sgd.getGrid());
             testCase.verifyEqual(hgd.gridValues,sgd.gridValues);
         end
         
@@ -39,7 +39,7 @@ classdef HypersphericalGridDistributionTest < matlab.unittest.TestCase
             % correctly, then verify HypersphericalGridDistribution has
             % equal grid and grid values
             verifyPdfEqual(testCase,sgd,dist,1e-6);
-            testCase.verifyEqual(hgd.grid,sgd.grid);
+            testCase.verifyEqual(hgd.getGrid(),sgd.getGrid());
             testCase.verifyEqual(hgd.gridValues,sgd.gridValues);
         end
         
@@ -94,19 +94,20 @@ classdef HypersphericalGridDistributionTest < matlab.unittest.TestCase
             f1 = HypersphericalGridDistribution.fromDistribution(dist1, 84, 'eq_point_set');
             f2 = f1;
             f2.gridValues = f2.gridValues(1:end-1);
-            f2.grid = f2.grid(:,1:end-1);
+            gridFull = f2.getGrid();
+            f2.grid = gridFull(:,1:end-1);
             testCase.verifyError(@()f1.multiply(f2),'Multiply:IncompatibleGrid');
         end
         function testSymmetrizeVMFMixtureS2(testCase)
             dist = HypersphericalMixture(...
                 {VMFDistribution([0;1;0],2),VMFDistribution([0;-1;0],2)},[0.5,0.5]);
             f = HypersphericalGridDistribution.fromDistribution(dist, 50, 'eq_point_set_symm');
-            testCase.verifyEqual(f.gridValues(size(f.grid,2)/2+1:end),f.gridValues(1:size(f.grid,2)/2));
+            testCase.verifyEqual(f.gridValues(size(f.getGrid(),2)/2+1:end),f.gridValues(1:size(f.getGrid(),2)/2));
             fAsymm = f;
             fAsymm.gridValues(26:27) = fAsymm.gridValues([27,26]);
-            testCase.verifyNotEqual(fAsymm.gridValues(size(fAsymm.grid,2)/2+1:end),fAsymm.gridValues(1:size(fAsymm.grid,2)/2));
+            testCase.verifyNotEqual(fAsymm.gridValues(size(fAsymm.getGrid(),2)/2+1:end),fAsymm.gridValues(1:size(fAsymm.getGrid(),2)/2));
             fSymm = fAsymm.symmetrize;
-            testCase.verifyEqual(fSymm.gridValues(size(fSymm.grid,2)/2+1:end),fSymm.gridValues(1:size(fSymm.grid,2)/2));
+            testCase.verifyEqual(fSymm.gridValues(size(fSymm.getGrid(),2)/2+1:end),fSymm.gridValues(1:size(fSymm.getGrid(),2)/2));
             testCase.verifyNotEqual(fSymm.gridValues,fAsymm.gridValues);
             % Because the average is and distributed to both points, the new
             % density is not equal to original one.
@@ -115,12 +116,12 @@ classdef HypersphericalGridDistributionTest < matlab.unittest.TestCase
         function testSymmetrizeWatsonS3(testCase)
             dist = WatsonDistribution(1/sqrt(2)*[1;1;0],1);
             f = HypersphericalGridDistribution.fromDistribution(dist, 50, 'eq_point_set_symm');
-            testCase.verifyEqual(f.gridValues(size(f.grid,2)/2+1:end),f.gridValues(1:size(f.grid,2)/2));
+            testCase.verifyEqual(f.gridValues(size(f.getGrid(),2)/2+1:end),f.gridValues(1:size(f.getGrid(),2)/2));
             fAsymm = f;
             fAsymm.gridValues([26,46]) = fAsymm.gridValues([46,26]);
-            testCase.verifyNotEqual(fAsymm.gridValues(size(fAsymm.grid,2)/2+1:end),fAsymm.gridValues(1:size(fAsymm.grid,2)/2));
+            testCase.verifyNotEqual(fAsymm.gridValues(size(fAsymm.getGrid(),2)/2+1:end),fAsymm.gridValues(1:size(fAsymm.getGrid(),2)/2));
             fSymm = fAsymm.symmetrize;
-            testCase.verifyEqual(fSymm.gridValues(size(fSymm.grid,2)/2+1:end),fSymm.gridValues(1:size(fSymm.grid,2)/2));
+            testCase.verifyEqual(fSymm.gridValues(size(fSymm.getGrid(),2)/2+1:end),fSymm.gridValues(1:size(fSymm.getGrid(),2)/2));
             testCase.verifyNotEqual(fSymm.gridValues,fAsymm.gridValues);
             % Because the average is and distributed to both points, the new
             % density is not equal to original one.

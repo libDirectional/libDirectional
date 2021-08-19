@@ -1,14 +1,5 @@
-classdef (Abstract) AbstractComplexHypersphericalDistribution
+classdef (Abstract) AbstractComplexHypersphericalDistribution < AbstractDistribution
     % Abstract base class for distributions on the hypershere (Sd)
-    
-    properties
-        d
-    end
-    
-    methods (Abstract)
-        % Evaluate pdf at positions stored in xa
-        pdf(this, za);
-    end
     
     methods
         function i = integral(this, n)
@@ -23,10 +14,10 @@ classdef (Abstract) AbstractComplexHypersphericalDistribution
                 %use monte carlo integration
                 n = 100000; %number of samples for integration
             end
-            Z = complex(randn(this.d, n), randn(this.d, n));
+            Z = complex(randn(this.dim, n), randn(this.dim, n));
             Z = bsxfun(@rdivide, Z, sqrt(sum(Z .* conj(Z), 1)));
             p = this.pdf(Z);
-            Sd = AbstractComplexHypersphericalDistribution.computeUnitSphereSurface(this.d);
+            Sd = AbstractComplexHypersphericalDistribution.computeUnitSphereSurface(this.dim);
             i = sum(p)/n * Sd; %average value of pdf times surface area of unit sphere
         end
         

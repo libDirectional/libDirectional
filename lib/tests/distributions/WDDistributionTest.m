@@ -93,13 +93,13 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(wdRew.d, wd.d);
             testCase.verifyEqual(wdRew.w, double(f(wd.d)));
             
-            f = @(x) 2; %does not change anything because of renormalization
+            f = @(x) 2*ones(1,size(x,2)); %does not change anything because of renormalization
             wdRew = wd.reweigh(f);
             testCase.verifyClass(wdRew, 'WDDistribution');
             testCase.verifyEqual(wdRew.d, wd.d);
             testCase.verifyEqual(wdRew.w, wd.w);
             
-            f = @(x) x;
+            f = @(x) x(1,:);
             wdRew = wd.reweigh(f);
             testCase.verifyClass(wdRew, 'WDDistribution');
             testCase.verifyEqual(wdRew.d, wd.d);
@@ -188,6 +188,12 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             % AbsTol of 1E-4 is not that good, maybe a more thorough
             % comparison is necessary.
             testCase.verifyEqual(wd.l2distanceCdfNumerical(wd2,startingPoint),cvm,'AbsTol',1E-4);
+        end
+        function testFromDistribution(testCase)
+            rng default
+            wn = WNDistribution(1,1);
+            wd = WDDistribution.fromDistribution(wn,100000);
+            testCase.verifyEqual(wd.meanDirection, wn.meanDirection, 'AbsTol',0.001);
         end
     end
 end

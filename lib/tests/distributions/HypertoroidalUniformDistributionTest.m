@@ -5,7 +5,7 @@ classdef HypertoroidalUniformDistributionTest< matlab.unittest.TestCase
     methods (Test)
         function testHypertoroidalUniformDistribution(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             if enableExpensive        
                 dims = 1:3;
             else

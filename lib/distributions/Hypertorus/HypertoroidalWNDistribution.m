@@ -3,11 +3,11 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
     %
     properties
         mu (:,1) double
-        C
+        C (:,:) double % Cannot enforce nonempty because we do not want to define a default value
     end
     
     methods
-        function this = HypertoroidalWNDistribution (mu_, C_)
+        function this = HypertoroidalWNDistribution(mu_, C_)
             % Constructor
             %
             % Parameters:
@@ -15,12 +15,16 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             %       mean vector of Gauss before wrapping
             %   C_ (dim x dim)
             %       covariance matrix of Gauss before wrapping
+            arguments
+                mu_ (:,1) double
+                C_ (:,:) double {mustBeNonempty}
+            end
             
             % Check parameters
             assert(size(C_,1)==size(C_,2), 'C must be dim x dim');
             assert(issymmetric(C_), 'C must be symmetric');
             assert(all(eig(C_)>0), 'C must be positive definite');
-            assert(isequal(size(mu_),[size(C_,2),1]), 'mu must be dim x 1'); 
+            assert(size(mu_,1)==size(C_,2), 'mu must be dim x 1'); 
             
             % Assign parameters
             this.mu=mod(mu_,2*pi);
@@ -28,7 +32,7 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             this.dim=size(mu_,1);
         end
         
-        function p = pdf(this,xa,m)
+        function p = pdf(this, xa, m)
             % Evaluate pdf at each column of xa.
             %
             % Parameters:
@@ -39,8 +43,12 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   p (1 x n)
             %       value of the pdf at each location
+            arguments
+                this (1,1) HypertoroidalWNDistribution
+                xa double
+                m (1,1) {mustBeInteger,mustBePositive} = 3
+            end
             assert(size(xa,1)==this.dim);
-            if nargin==2,m=3;end
             
             % Do at most 1000 at once to prevent out of memory
             if size(xa,2)>1000
@@ -68,6 +76,10 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   s (dim x n)
             %       n samples on the torus
+            arguments
+                this (1,1) HypertoroidalWNDistribution
+                n (1,1) double {mustBeInteger,mustBePositive}
+            end
             s = mod(mvnrnd(this.mu, this.C, n),2*pi)'; % sample multivariate normal distribution, then wrap
         end
         
@@ -81,6 +93,10 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   m (dim x 1)
             %       n-th trigonometric moment (complex vector)
+            arguments
+                this (1,1) HypertoroidalWNDistribution
+                n (1,1) double {mustBeInteger}
+            end
             m = exp(arrayfun(@(i)1i*n*this.mu(i)-n^2*this.C(i,i)/2,1:this.dim).');
         end
         
@@ -93,6 +109,9 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             %
             % This is a simple conversion that just keeps the parameters.
             % For large uncertanties, better conversions are possible.
+            arguments
+                this (1,1) HypertoroidalWNDistribution
+            end
             gauss = GaussianDistribution(this.mu, this.C);
         end
         
@@ -102,8 +121,18 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   wn (WNDistribution)
             %       WNDistribution with same parameters
+            arguments
+                this (1,1) HypertoroidalWNDistribution
+            end
             assert(this.dim == 1);
             wn = WNDistribution(this.mu, sqrt(this.C));
+        end
+        
+        function wn = toCircular(this)
+            arguments
+                this HypertoroidalWNDistribution
+            end
+            wn = WNDistribution(this.mu, this.C);
         end
         
         function twn = toToroidalWN(this)
@@ -112,8 +141,24 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   twn (ToroidalWNDistribution)
             %       ToroidalWNDistribution with same parameters
+            arguments
+                this (1,1) HypertoroidalWNDistribution
+            end
             assert(this.dim == 2);
             twn = ToroidalWNDistribution(this.mu, this.C);
+        end
+        
+        function m = mode(this)
+            % Determines the mode of the distribution, i.e., the point
+            % where the pdf is largest.
+            %
+            % Returns:
+            %   m (vector)
+            %       the mode
+            arguments
+                this (1,1) HypertoroidalWNDistribution
+            end
+            m = this.mu;
         end
         
         function hd = shift(this, shiftAngles)
@@ -129,6 +174,78 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             
             hd = this;
             hd.mu = mod(this.mu+shiftAngles,2*pi);
+        end
+        
+        function htvm = toHypertoroidalVM(this)
+            % unpublished method
+            
+            % d is structured as 
+            %    P
+            %    Q
+            %
+            % W is structured as
+            %    P P'    P Q'
+            %    Q P'    Q Q'
+            
+            % preparation
+            c = zeros(this.dim,1);
+            for i=1:this.dim
+                c(i) = exp(-1/2 * this.C(i,i)); % E(cos(theta_i))
+            end
+            
+            % compute d
+            d = zeros(this.dim*(this.dim+1)/2,1);
+            % kappa part (P)
+            for i=1:this.dim
+                d(i) = c(i);
+            end
+            % Lambda part (Q)
+            ind = this.dim+1;
+            for i=1:this.dim
+                for j=i+1:this.dim
+                    d(ind) = c(i)*c(j) * sinh(this.C(i,j)); %E(sin(theta_i) sin(theta_j))
+                    %why is there a 2 in eq. (2.1)?
+                    ind = ind+1;
+                end
+            end
+            
+            % compute W
+            W =  zeros(this.dim*(this.dim+1)/2);
+            % kappa part (P*P')
+            for i=1:this.dim
+                W(i,i) = (1-c(i)^4)/2; % E(sin(theta_i)^2)
+            end
+            % Lambda part
+            %todo P*Q'
+            for l=1:this.dim
+                ind = this.dim+1;
+                for i=1:this.dim
+                    for j=i+1:this.dim
+                        W(l, ind) = 0; % E(- sin(theta(l) * something ) 
+                    end
+                end
+            end
+            
+            %todo mirror
+            
+            %Q*Q'
+            %diagonal entries
+            ind = this.dim+1;
+            for i=1:this.dim
+                for j=i+1:this.dim
+                    W(ind, ind) = (1-c(i)^4*c(j)^4 * cosh(4 * this.C(i,j)))/2; %E(cos^2(theta_i) sin^2(theta_j) + sin^2(theta_i) cos^2(theta_j))
+                    ind = ind+1;
+                end
+            end
+            %todo off diagonal parts
+            
+            
+            param = W \ d;
+            
+            % construct htvm
+            kappa = param(1:this.dim);
+            Lambda = zeros(this.dim, this.dim); %todo fill into Lambda matrix
+            htvm = HypertoroidalVMSineDistribution(this.mu, kappa, Lambda);
         end
     end
     

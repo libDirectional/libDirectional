@@ -30,9 +30,8 @@ classdef BinghamFilter < AbstractAxialFilter
             %   B_ (BinghamDistribution)
             %       new state
             assert(isa(B_, 'BinghamDistribution'));
+            assert (B_.dim==2 || B_.dim==4, 'Only 2D and 4D distributions are supported.')
             this.B = B_;
-            this.dim = B_.dim;
-            assert (this.dim==2 || this.dim==4, 'Only 2D and 4D distributions are supported)')
             this.setCompositionOperator();
         end
         

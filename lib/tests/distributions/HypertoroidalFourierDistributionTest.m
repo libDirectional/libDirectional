@@ -26,7 +26,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         function testNormalization3D(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 unnormalizedCoeffs3D = fftshift(fftn(rand(3, 11, 7)+0.5));
                 unnormalizedCoeffs3D(2, 6, 4) = 1;
@@ -40,6 +40,8 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         end
         
         function testTruncation1D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'));
             hfd1 = HypertoroidalFourierDistribution.fromDistribution(WNDistribution(1, 1), 101);
             hfd2 = hfd1.truncate(51);
             testCase.verifySize(hfd2.C, [51, 1]);
@@ -49,7 +51,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         
         function testTruncation3D(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             
             coeffs = [15, 15, 15];
             mu = [0; 0; 0];
@@ -80,7 +82,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         function testFromFunction2D(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 [xTest, yTest] = meshgrid(-pi:0.1:3*pi);
             else
@@ -121,7 +123,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         function testFromFunction3D(testCase)
             rng default
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 testPoints = rand(3, 1000);
             else
@@ -143,7 +145,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         
         function testFromFunction4D(testCase)
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 C = [0.7, 0.4, 0.2, -0.5; 0.4, 0.6, 0.1, 0; 0.2, 0.1, 1, -0.3; -0.5, 0, -0.3, 0.9] * 2;
                 mu = 2 * pi * rand(4, 1);
@@ -227,7 +229,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
         function testMultiply2DWithoutTruncation(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 [xTest, yTest] = meshgrid(-pi:0.1:3*pi);
             else
@@ -298,7 +300,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(approxNormFactorId*(hfd1id.pdf(testPoints) .* hfd2id.pdf(testPoints)), hfdResultId.pdf(testPoints), 'AbsTol', 1E-10);
             
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 hfd1sqrt = HypertoroidalFourierDistribution.fromFunction( ...
                     @(x, y, z)reshape(hwnd1.pdf([x(:)'; y(:)'; z(:)']), size(x)), coeffs, 'sqrt');
@@ -351,8 +353,8 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             tvm2valspadded = padarray(reshape(tvm2.pdf([xTest(:)'; yTest(:)']), size(xTest)), size(tvm1vals), 'circular');
             convolutionTmp = conv2(tvm1vals, tvm2valspadded);
             valConvUnnorm = convolutionTmp(size(tvm1vals, 1)+1:2*size(tvm1vals, 1), size(tvm1vals, 2)+1:2*size(tvm1vals, 2));
-            testCase.verifyEqual(valConvUnnorm/sum(sum(valConvUnnorm))*sum(sum(valFourierId)), valFourierId, 'AbsTol', 1E-6);
-            testCase.verifyEqual(valConvUnnorm/sum(sum(valConvUnnorm))*sum(sum(valFourierSqrt)), valFourierSqrt, 'AbsTol', 1E-6);
+            testCase.verifyEqual(valConvUnnorm/sum(valConvUnnorm,[1,2])*sum(valFourierId,[1,2]), valFourierId, 'AbsTol', 1E-6);
+            testCase.verifyEqual(valConvUnnorm/sum(valConvUnnorm,[1,2])*sum(valFourierSqrt,[1,2]), valFourierSqrt, 'AbsTol', 1E-6);
         end
         function testShift(testCase)
             Ccell = {2 * [1, 0.5; 0.5, 1], [0.7, 0.4, 0.2; 0.4, 0.6, 0.1; 0.2, 0.1, 1], ...
@@ -360,7 +362,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             offsets = {4 * pi * rand(2, 1) - pi, 4 * pi * rand(3, 1) - pi, 4 * pi * rand(4, 1) - pi};
             coeffsPerDim = 13;
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 maxDim = 4;
             else
@@ -397,6 +399,27 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(hfdId.integral([0; -1], [3 * pi; 5 * pi]), tfdId.integral([0; -1], [3 * pi; 5 * pi]), 'AbsTol', 1E-4);
             testCase.verifyEqual(hfdSqrt.integral([0; -1], [3 * pi; 5 * pi]), tfdSqrt.integral([0; -1], [3 * pi; 5 * pi]), 'AbsTol', 1E-4);
         end
+        function testIntegral2DUnnorm(testCase)
+            % Test against implementation in toroidal (test case that this
+            % works correctly exists in ToroidalFourierDistributionTest)
+            kappa1 = 0.3;
+            kappa2 = 1.5;
+            lambda = 0.5;
+            coeffs = [5, 7];
+            tvm = ToroidalVMSineDistribution([1; 2], [kappa1; kappa2], lambda);
+            hfdId = HypertoroidalFourierDistribution.fromFunction(@(x, y)reshape(tvm.pdf([x(:)'; y(:)']), size(x)), coeffs, 'identity');
+            hfdSqrt = HypertoroidalFourierDistribution.fromFunction(@(x, y)reshape(tvm.pdf([x(:)'; y(:)']), size(x)), coeffs, 'sqrt');
+            
+            
+            tfdId = ToroidalFourierDistribution(hfdId.C, hfdId.transformation);
+            tfdSqrt = ToroidalFourierDistribution(hfdSqrt.C, hfdSqrt.transformation);
+            testCase.verifyEqual(hfdId.integral([0; 0], [pi; pi]), tfdId.integral([0; 0], [pi; pi]), 'AbsTol', 1E-4);
+            testCase.verifyEqual(hfdSqrt.integral([0; 0], [pi; pi]), tfdSqrt.integral([0; 0], [pi; pi]), 'AbsTol', 1E-4);
+            testCase.verifyEqual(hfdId.integral([0; 0], [pi; 2 * pi]), tfdId.integral([0; 0], [pi; 2 * pi]), 'AbsTol', 1E-4);
+            testCase.verifyEqual(hfdSqrt.integral([0; 0], [pi; 2 * pi]), tfdSqrt.integral([0; 0], [pi; 2 * pi]), 'AbsTol', 1E-4);
+            testCase.verifyEqual(hfdId.integral([0; -1], [3 * pi; 5 * pi]), tfdId.integral([0; -1], [3 * pi; 5 * pi]), 'AbsTol', 1E-4);
+            testCase.verifyEqual(hfdSqrt.integral([0; -1], [3 * pi; 5 * pi]), tfdSqrt.integral([0; -1], [3 * pi; 5 * pi]), 'AbsTol', 1E-4);
+        end
         function testIntegral3D(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             % Test against integral
@@ -409,7 +432,7 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             fixture.teardown;
             
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false;end
+            if ~islogical(enableExpensive), enableExpensive = true;end
             if enableExpensive
                 testCase.verifyEqual(hfdId.integral([0; 0; 0], [pi; pi; pi]), integral3(@(x, y, z)reshape(hfdId.pdf([x(:)'; y(:)'; z(:)']), size(x)), 0, pi, 0, pi, 0, pi), 'AbsTol', 1E-4);
                 testCase.verifyEqual(hfdSqrt.integral([0; 0; 0], [pi; pi; pi]), integral3(@(x, y, z)reshape(hfdSqrt.pdf([x(:)'; y(:)'; z(:)']), size(x)), 0, pi, 0, pi, 0, pi), 'AbsTol', 1E-4);
@@ -448,15 +471,76 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(Cov6DId(3:6, 3:6), twn.covariance4D, 'AbsTol', 1E-4);
             testCase.verifyEqual(Cov6DSqrt(3:6, 3:6), twn.covariance4D, 'AbsTol', 1E-4);
         end
-        function testMarginals2D(testCase)
+        function testMarginalize2Dto1Dtvm(testCase)
             tvm = ToroidalVMSineDistribution([1; 2], [2; 3], 3);
-            hfd = HypertoroidalFourierDistribution.fromDistribution(tvm, [53, 53], 'identity');
-            for d = 1:2
-                vm = tvm.marginalizeTo1D(d);
-                fd1 = hfd.marginalizeTo1D(d);
-                fd2 = hfd.marginalizeOut(1+(d == 1));
-                testCase.verifyEqual(vm.hellingerDistanceNumerical(fd1), 0, 'AbsTol', 1E-3);
-                testCase.verifyEqual(vm.hellingerDistanceNumerical(fd2), 0, 'AbsTol', 1E-3);
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(tvm, [53, 53], [transformation{:}]);
+                for d = 1:2
+                    vm = tvm.marginalizeTo1D(d);
+                    fd1 = hfd.marginalizeTo1D(d);
+                    fd2 = hfd.marginalizeOut(1+(d == 1));
+                    testCase.verifyEqual(vm.hellingerDistanceNumerical(fd1), 0, 'AbsTol', 1E-3);
+                    testCase.verifyEqual(vm.hellingerDistanceNumerical(fd2), 0, 'AbsTol', 1E-3);
+                end
+            end
+        end
+        function testMarginalize2Dto1Dtwn(testCase)
+            twn = ToroidalWNDistribution([3;4],2*[1,0.8;0.8,1]);
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(twn, [71, 53], [transformation{:}]);
+                grid = linspace(-pi,3*pi,300);
+
+                hfdMarginalized = hfd.marginalizeOut(2);
+                marginlized1DViaIntegral=@(x)arrayfun(@(xCurr)integral(@(y)reshape(twn.pdf([xCurr*ones(1,size(y,2));y(:)']),size(y)),0,2*pi),x);
+                testCase.verifyEqual(hfdMarginalized.pdf(grid), marginlized1DViaIntegral(grid), 'AbsTol', 1E-13);
+
+                hfdMarginalized = hfd.marginalizeOut(1);
+                marginlized1DViaIntegral=@(y)arrayfun(@(yCurr)integral(@(x)reshape(twn.pdf([x(:)';yCurr*ones(1,size(x,2))]),size(x)),0,2*pi),y);
+                testCase.verifyEqual(hfdMarginalized.pdf(grid), marginlized1DViaIntegral(grid), 'AbsTol', 1E-13);
+            end
+        end
+        function testMarginalize3Dto2D(testCase)
+            twn = HypertoroidalWNDistribution([3;4;6],2*[1,0.8,0.3;0.8,1,0.5;0.3,0.5,2]);
+            for transformation = {'identity', 'sqrt'}
+                if strcmp([transformation{:}],'identity')
+                    tol = 1e-15;
+                else
+                    tol = 1e-5;
+                end
+
+                hfd = HypertoroidalFourierDistribution.fromDistribution(twn, [41, 53, 53], [transformation{:}]);
+                [mesh1,mesh2] = meshgrid(linspace(-pi,3*pi,25));
+
+                hfdMarginalized = hfd.marginalizeOut(3);            
+                marginlized1DViaIntegral=@(x,y)arrayfun(@(xCurr,yCurr)integral(@(z)reshape(twn.pdf([xCurr*ones(1,size(z,2));yCurr*ones(1,size(z,2));z(:)']),size(z)),0,2*pi),x,y);
+                testCase.verifyEqual(hfdMarginalized.pdf([mesh1(:)';mesh2(:)']), marginlized1DViaIntegral(mesh1(:)',mesh2(:)'), 'AbsTol', tol);
+
+                hfdMarginalized = hfd.marginalizeOut(2);
+                marginlized1DViaIntegral=@(x,z)arrayfun(@(xCurr,zCurr)integral(@(y)reshape(twn.pdf([xCurr*ones(1,size(y,2));y(:)';zCurr*ones(1,size(y,2))]),size(y)),0,2*pi),x,z);
+                testCase.verifyEqual(hfdMarginalized.pdf([mesh1(:)';mesh2(:)']), marginlized1DViaIntegral(mesh1(:)',mesh2(:)'), 'AbsTol', tol);
+
+                hfdMarginalized = hfd.marginalizeOut(1);
+                marginlized1DViaIntegral=@(y,z)arrayfun(@(yCurr,zCurr)integral(@(x)reshape(twn.pdf([x(:)';yCurr*ones(1,size(x,2));zCurr*ones(1,size(x,2))]),size(x)),0,2*pi),y,z);
+                testCase.verifyEqual(hfdMarginalized.pdf([mesh1(:)';mesh2(:)']), marginlized1DViaIntegral(mesh1(:)',mesh2(:)'), 'AbsTol', tol);
+            end
+        end
+        function testMarginalize3Dto1D(testCase)
+            twn = HypertoroidalWNDistribution([3;4;6],2*[1,0.8,0.3;0.8,1,0.5;0.3,0.5,2]);
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(twn, [41, 53, 53], [transformation{:}]);
+                grid = linspace(-pi,3*pi,100);
+
+                hfdMarginalized = hfd.marginalizeOut([2,3]); 
+                marginlized1DViaIntegral=@(x)arrayfun(@(xCurr)integral2(@(y,z)reshape(twn.pdf([xCurr*ones(1,numel(y));y(:)';z(:)']),size(y)),0,2*pi,0,2*pi),x);
+                testCase.verifyEqual(hfdMarginalized.pdf(grid), marginlized1DViaIntegral(grid), 'RelTol', 5E-7);
+
+                hfdMarginalized = hfd.marginalizeOut([1,3]);
+                marginlized1DViaIntegral=@(y)arrayfun(@(yCurr)integral2(@(x,z)reshape(twn.pdf([x(:)';yCurr*ones(1,numel(x));z(:)']),size(x)),0,2*pi,0,2*pi),y);
+                testCase.verifyEqual(hfdMarginalized.pdf(grid), marginlized1DViaIntegral(grid), 'RelTol', 5E-7);
+
+                hfdMarginalized = hfd.marginalizeOut([1,2]);
+                marginlized1DViaIntegral=@(z)arrayfun(@(zCurr)integral2(@(x,y)reshape(twn.pdf([x(:)';y(:)';zCurr*ones(1,numel(x))]),size(x)),0,2*pi,0,2*pi),z);
+                testCase.verifyEqual(hfdMarginalized.pdf(grid), marginlized1DViaIntegral(grid), 'RelTol', 5E-7);
             end
         end
         function testPlotting(testCase)
@@ -490,6 +574,349 @@ classdef HypertoroidalFourierDistributionTest < matlab.unittest.TestCase
                 fdMult = fd1.multiply(fd2, 2*(numel(fd1.a) + numel(fd1.b))-1);
                 hfdMult = hfd1.multiply(hfd2, 2*size(hfd1.C, 1)-1);
                 testCase.verifyEqual(hfdMult.C, fdMult.c', 'AbsTol', 1E-10);
+            end
+        end
+        
+        function testApproxFromEvenGrid1D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            hwn = WNDistribution(1,0.5);
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized')); % Very few coefficients, expect unnormalized
+            hgd = HypertoroidalGridDistribution.fromDistribution(hwn,4);
+            %% Without square root, we get the same values agian. The reason is that the Fourier series goes through these points and appending it more coefficients will not change it
+            hfdId = HypertoroidalFourierDistribution.fromFunctionValues(reshape(hgd.gridValues,[hgd.noOfGridPoints,1]),5,'identity');
+            testCase.verifyEqual(hfdId.pdf(hgd.getGrid())',hgd.gridValues,'AbsTol',1E-15);
+            %% Values are not precisely matched!
+            % The reason is that while the non-padded Fourier series would
+            % have gone through these points, the padded one is changed
+            % because the normalization.
+            hfdSqrt = HypertoroidalFourierDistribution.fromFunctionValues(reshape(hgd.gridValues,[hgd.noOfGridPoints,1]),5,'sqrt');
+            testCase.verifyEqual(hfdSqrt.pdf(hgd.getGrid())',hgd.gridValues,'AbsTol',0.05);
+            
+        end
+        
+        function testApproxFromEvenGrid2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            hwn = HypertoroidalWNDistribution([1;1],0.1*eye(2));
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized')); % Very few coefficients, expect unnormalized
+            hgd = HypertoroidalGridDistribution.fromDistribution(hwn,[4,4]);
+            %% Without square root, we get the same values agian. See above.
+            hfdId = HypertoroidalFourierDistribution.fromFunctionValues(reshape(hgd.gridValues,hgd.noOfGridPoints),[5,5],'identity');
+            testCase.verifyEqual(hfdId.pdf(hgd.getGrid())',hgd.gridValues,'AbsTol',1E-16);
+            %% Values are not precisely matched! See above.
+            hfdSqrt = HypertoroidalFourierDistribution.fromFunctionValues(reshape(hgd.gridValues,hgd.noOfGridPoints),[5,5],'sqrt');
+            testCase.verifyEqual(hfdSqrt.pdf(hgd.getGrid())',hgd.gridValues,'AbsTol',0.1);
+        end
+        
+        function testMatchFunctionOdd1D(testCase)
+            fNeeds6 = @(x)1/(2*pi)+0.05*cos(x)+0.05*cos(2*x)+0.05*cos(3*x)+0.05*sin(x)-0.05*sin(2*x);
+            fNeeds7 = @(x)1/(2*pi)+0.05*cos(x)+0.05*cos(2*x)+0.05*cos(3*x)+0.05*sin(x)-0.05*sin(2*x)+0.05*sin(3*x);
+            cdNeeds6 = CustomCircularDistribution(fNeeds6);
+            cdNeeds7 = CustomCircularDistribution(fNeeds7);
+
+            hgdNeeds6Has6 = HypertoroidalGridDistribution.fromDistribution(cdNeeds6,6);
+            hgdNeeds6Has7 = HypertoroidalGridDistribution.fromDistribution(cdNeeds6,7);
+            hgdNeeds7Has6 = HypertoroidalGridDistribution.fromDistribution(cdNeeds7,6);
+            hgdNeeds7Has7 = HypertoroidalGridDistribution.fromDistribution(cdNeeds7,7);
+
+            hfdNeeds6BasedOn6 = HypertoroidalFourierDistribution.fromDistribution(hgdNeeds6Has6,7,'identity');
+            hfdNeeds6BasedOn7 = HypertoroidalFourierDistribution.fromDistribution(hgdNeeds6Has7,7,'identity');
+            hfdNeeds7BasedOn6 = HypertoroidalFourierDistribution.fromDistribution(hgdNeeds7Has6,7,'identity');
+            hfdNeeds7BasedOn7 = HypertoroidalFourierDistribution.fromDistribution(hgdNeeds7Has7,7,'identity');
+            
+            % If only 6 coefficients are required and we convert a
+            % GridDistribution with 6, it should be perfect
+            testCase.verifyEqual(cdNeeds6.l2distanceCdfNumerical(hfdNeeds6BasedOn6),0,'AbsTol',1E-30);
+            % Same for 7
+            testCase.verifyEqual(cdNeeds7.l2distanceCdfNumerical(hfdNeeds7BasedOn7),0,'AbsTol',1E-30);
+            
+            % If we only need 6, then it must not matter if we use 6 or 7
+            % grid points
+            testCase.verifyEqual(hfdNeeds6BasedOn6.C,hfdNeeds6BasedOn7.C,'AbsTol',1E-16);
+            
+            % If we need 7 and only use 6, then the last coefficient only
+            % influences the complex part and all real parts should be fine
+            testCase.verifyEqual(real(hfdNeeds7BasedOn6.C),real(hfdNeeds7BasedOn7.C),'AbsTol',1E-16);
+            % Further, the middle ones should be perfect also in the
+            % complex part
+            testCase.verifyEqual(hfdNeeds7BasedOn6.C(2:end-1),hfdNeeds7BasedOn7.C(2:end-1),'AbsTol',1E-16);
+            % There should be no imaginary part in the outermost
+            % coefficients if only 6 grid points were used
+            testCase.verifyEqual(imag(hfdNeeds7BasedOn6.C([1,end])),[0;0],'AbsTol',1E-30);
+        end
+        
+        function testConditioning2D(testCase)
+            twn = ToroidalWNDistribution([3;4],[1,0.8;0.8,1]);
+            chd = CustomHypertoroidalDistribution.fromDistribution(twn);
+            grid = linspace(0,2*pi,100);
+            z1 = 6;
+            z2 = 5;
+            cdNormDim1 = chd.conditionOn(1,z1);
+            cdNormDim2 = chd.conditionOn(2,z2);
+            
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(twn,[301,301],[transformation{:}]);
+                % Use IFFT
+                ffdNormDim1 = hfd.conditionOn(1,z1,false);
+                ffdNormDim2 = hfd.conditionOn(2,z2,false);
+                testCase.verifyEqual(ffdNormDim1.integral(),1);
+                testCase.verifyEqual(ffdNormDim2.integral(),1);
+                testCase.verifyEqual(ffdNormDim1.pdf(grid),cdNormDim1.pdf(grid),'RelTol',8e-11);
+                testCase.verifyEqual(ffdNormDim2.pdf(grid),cdNormDim2.pdf(grid),'RelTol',8e-11);
+                % Use FFTN
+                ffdNormDim1 = hfd.conditionOn(1,z1,true);
+                ffdNormDim2 = hfd.conditionOn(2,z2,true);
+                testCase.verifyEqual(ffdNormDim1.integral(),1);
+                testCase.verifyEqual(ffdNormDim2.integral(),1);
+                testCase.verifyEqual(ffdNormDim1.pdf(grid),cdNormDim1.pdf(grid),'RelTol',8e-11);
+                testCase.verifyEqual(ffdNormDim2.pdf(grid),cdNormDim2.pdf(grid),'RelTol',8e-11);
+            end
+        end
+        
+        function testSliceAt2D(testCase)
+            twn = ToroidalWNDistribution([3;4],[1,0.8;0.8,1]);
+            chd = CustomHypertoroidalDistribution.fromDistribution(twn);
+            grid = linspace(0,2*pi,100);
+            z1 = 6;
+            z2 = 5;
+            cdSliceDim1 = chd.sliceAt(1,z1);
+            cdSliceDim2 = chd.sliceAt(2,z2);
+            
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(twn,[301,301],[transformation{:}]);
+                ffdSliceDim1IFFT = hfd.sliceAt(1,z1,false);
+                ffdSliceDim2IFTT = hfd.sliceAt(2,z2,false);
+                ffdSliceDim1FFTN = hfd.sliceAt(1,z1,true);
+                ffdSliceDim2FFTN = hfd.sliceAt(2,z2,true);
+                
+                testCase.verifyEqual(ffdSliceDim1IFFT.pdf(grid),cdSliceDim1.pdf(grid),'RelTol',8e-11);
+                testCase.verifyEqual(ffdSliceDim2IFTT.pdf(grid),cdSliceDim2.pdf(grid),'RelTol',8e-11);
+                testCase.verifyEqual(ffdSliceDim1FFTN.pdf(grid),cdSliceDim1.pdf(grid),'RelTol',8e-11);
+                testCase.verifyEqual(ffdSliceDim2FFTN.pdf(grid),cdSliceDim2.pdf(grid),'RelTol',8e-11);
+            end
+        end
+        
+        function testConditioning3DTo2D(testCase)
+            C = [0.7,0.4,0.2;0.4,0.6,0.1;0.2,0.1,1];
+            hwn = HypertoroidalWNDistribution([2;4;6],C);
+            chd = CustomHypertoroidalDistribution(@(xs)hwn.pdf(xs),hwn.dim);
+            
+            z1 = 1;
+            z2 = 3;
+            z3 = 4;
+            cdNormDim1 = chd.conditionOn(1,z1);
+            cdNormDim2 = chd.conditionOn(2,z2);
+            cdNormDim3 = chd.conditionOn(3,z3);
+            
+            [mesh1,mesh2] = meshgrid(linspace(0,2*pi,20));
+            
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(hwn,[101,101,101],[transformation{:}]);
+                % Use IFFT
+                ffdNormDim1 = hfd.conditionOn(1,z1,false);
+                ffdNormDim2 = hfd.conditionOn(2,z2,false);
+                ffdNormDim3 = hfd.conditionOn(3,z3,false);
+                testCase.verifyEqual(ffdNormDim1.integral(),1);
+                testCase.verifyEqual(ffdNormDim2.integral(),1);
+                testCase.verifyEqual(ffdNormDim3.integral(),1);
+                testCase.verifyEqual(ffdNormDim1.pdf([mesh1(:)';mesh2(:)']),cdNormDim1.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdNormDim2.pdf([mesh1(:)';mesh2(:)']),cdNormDim2.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdNormDim3.pdf([mesh1(:)';mesh2(:)']),cdNormDim3.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                % Use FFTN
+                ffdNormDim1 = hfd.conditionOn(1,z1,true);
+                ffdNormDim2 = hfd.conditionOn(2,z2,true);
+                ffdNormDim3 = hfd.conditionOn(3,z3,true);
+                testCase.verifyEqual(ffdNormDim1.integral(),1);
+                testCase.verifyEqual(ffdNormDim2.integral(),1);
+                testCase.verifyEqual(ffdNormDim3.integral(),1);
+                testCase.verifyEqual(ffdNormDim1.pdf([mesh1(:)';mesh2(:)']),cdNormDim1.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdNormDim2.pdf([mesh1(:)';mesh2(:)']),cdNormDim2.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdNormDim3.pdf([mesh1(:)';mesh2(:)']),cdNormDim3.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+            end
+        end
+        
+        function testSliceAt3DTo2D(testCase)
+            C = [0.7,0.4,0.2;0.4,0.6,0.1;0.2,0.1,1];
+            hwn = HypertoroidalWNDistribution([2;4;6],C);
+            chd = CustomHypertoroidalDistribution(@(xs)hwn.pdf(xs),hwn.dim);
+            
+            z1 = 1;
+            z2 = 3;
+            z3 = 4;
+            cdNormDim1 = chd.sliceAt(1,z1);
+            cdNormDim2 = chd.sliceAt(2,z2);
+            cdNormDim3 = chd.sliceAt(3,z3);
+            
+            [mesh1,mesh2] = meshgrid(linspace(0,2*pi,20));
+            
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(hwn,[101,101,101],[transformation{:}]);
+                % Use IFFT
+                ffdSliceDim1 = hfd.sliceAt(1,z1,false);
+                ffdSliceDim2 = hfd.sliceAt(2,z2,false);
+                ffdSliceDim3 = hfd.sliceAt(3,z3,false);
+                testCase.verifyEqual(ffdSliceDim1.pdf([mesh1(:)';mesh2(:)']),cdNormDim1.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdSliceDim2.pdf([mesh1(:)';mesh2(:)']),cdNormDim2.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdSliceDim3.pdf([mesh1(:)';mesh2(:)']),cdNormDim3.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                % Use FFTN
+                ffdSliceDim1 = hfd.sliceAt(1,z1,true);
+                ffdSliceDim2 = hfd.sliceAt(2,z2,true);
+                ffdSliceDim3 = hfd.sliceAt(3,z3,true);
+                testCase.verifyEqual(ffdSliceDim1.pdf([mesh1(:)';mesh2(:)']),cdNormDim1.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdSliceDim2.pdf([mesh1(:)';mesh2(:)']),cdNormDim2.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+                testCase.verifyEqual(ffdSliceDim3.pdf([mesh1(:)';mesh2(:)']),cdNormDim3.pdf([mesh1(:)';mesh2(:)']),'AbsTol',1e-9);
+            end
+        end
+        
+        function testConditioning3DTo1D(testCase)
+            C = [0.7,0.4,0.2;0.4,0.6,0.1;0.2,0.1,1];
+            hwn = HypertoroidalWNDistribution([2;4;6],C);
+            chd = CustomHypertoroidalDistribution(@(xs)hwn.pdf(xs),hwn.dim);
+            
+            z1 = [1;5];
+            z2 = [2;4];
+            z3 = [3;6];
+            cdNormDim1 = chd.conditionOn([1,2],z1);
+            cdNormDim2 = chd.conditionOn([1,3],z2);
+            cdNormDim3 = chd.conditionOn([2,3],z3);
+            
+            grid = linspace(0,2*pi,100);
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(hwn,[101,101,101],[transformation{:}]);
+                if strcmp([transformation{:}],'identity')
+                    tol=5e-15;
+                else
+                    tol=5e-9;
+                end
+                % Use IFFT
+                ffdNormDim1 = hfd.conditionOn([1,2],z1,false);
+                ffdNormDim2 = hfd.conditionOn([1,3],z2,false);
+                ffdNormDim3 = hfd.conditionOn([2,3],z3,false);
+
+                testCase.verifyEqual(ffdNormDim1.integral(),1);
+                testCase.verifyEqual(ffdNormDim2.integral(),1);
+                testCase.verifyEqual(ffdNormDim3.integral(),1);
+                testCase.verifyEqual(ffdNormDim1.pdf(grid),cdNormDim1.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim2.pdf(grid),cdNormDim2.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim3.pdf(grid),cdNormDim3.pdf(grid),'AbsTol',tol);
+                % Use FFTN
+                ffdNormDim1 = hfd.conditionOn([1,2],z1,true);
+                ffdNormDim2 = hfd.conditionOn([1,3],z2,true);
+                ffdNormDim3 = hfd.conditionOn([2,3],z3,true);
+
+                testCase.verifyEqual(ffdNormDim1.integral(),1);
+                testCase.verifyEqual(ffdNormDim2.integral(),1);
+                testCase.verifyEqual(ffdNormDim3.integral(),1);
+                testCase.verifyEqual(ffdNormDim1.pdf(grid),cdNormDim1.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim2.pdf(grid),cdNormDim2.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim3.pdf(grid),cdNormDim3.pdf(grid),'AbsTol',tol);
+            end
+        end
+        
+        function testSliceAt3DTo1D(testCase)
+            C = [0.7,0.4,0.2;0.4,0.6,0.1;0.2,0.1,1];
+            hwn = HypertoroidalWNDistribution([2;4;6],C);
+            chd = CustomHypertoroidalDistribution(@(xs)hwn.pdf(xs),hwn.dim);
+            
+            z1 = [1;5];
+            z2 = [2;4];
+            z3 = [3;6];
+            cdNormDim1 = chd.sliceAt([1,2],z1);
+            cdNormDim2 = chd.sliceAt([1,3],z2);
+            cdNormDim3 = chd.sliceAt([2,3],z3);
+            
+            grid = linspace(0,2*pi,100);
+            for transformation = {'identity', 'sqrt'}
+                hfd = HypertoroidalFourierDistribution.fromDistribution(hwn,[101,101,101],[transformation{:}]);
+                if strcmp([transformation{:}],'identity')
+                    tol=5e-15;
+                else
+                    tol=5e-9;
+                end
+                % Use IFFT
+                ffdNormDim1 = hfd.sliceAt([1,2],z1,false);
+                ffdNormDim2 = hfd.sliceAt([1,3],z2,false);
+                ffdNormDim3 = hfd.sliceAt([2,3],z3,false);
+
+                testCase.verifyEqual(ffdNormDim1.pdf(grid),cdNormDim1.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim2.pdf(grid),cdNormDim2.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim3.pdf(grid),cdNormDim3.pdf(grid),'AbsTol',tol);
+                % Use FFTN
+                ffdNormDim1 = hfd.sliceAt([1,2],z1,true);
+                ffdNormDim2 = hfd.sliceAt([1,3],z2,true);
+                ffdNormDim3 = hfd.sliceAt([2,3],z3,true);
+
+                testCase.verifyEqual(ffdNormDim1.pdf(grid),cdNormDim1.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim2.pdf(grid),cdNormDim2.pdf(grid),'AbsTol',tol);
+                testCase.verifyEqual(ffdNormDim3.pdf(grid),cdNormDim3.pdf(grid),'AbsTol',tol);
+            end
+        end
+        
+        function testLikelihood2DTo1D(testCase)
+            twn = ToroidalWNDistribution([3;4],[1,0.8;0.8,1]);
+            chd = CustomHypertoroidalDistribution.fromDistribution(twn);
+            xFix = 1;
+            yFix = 3;
+            
+            likelihoodDim1chd = chd.likelihood(1,xFix);
+            likelihoodDim2chd = chd.likelihood(2,yFix);
+            
+            for transformation = {'identity', 'sqrt'}
+                hgd = HypertoroidalFourierDistribution.fromDistribution(twn,[101,101],[transformation{:}]);
+                likelihoodDim1hfd = hgd.likelihood(1,xFix);
+                likelihoodDim2hfd = hgd.likelihood(2,yFix);
+                grid = linspace(-pi,3*pi,100);
+                testCase.verifyEqual(likelihoodDim1hfd.pdf(grid),likelihoodDim1chd.pdf(grid),'RelTol',5e-6);
+                testCase.verifyEqual(likelihoodDim2hfd.pdf(grid),likelihoodDim2chd.pdf(grid),'RelTol',5e-6);
+            end
+        end
+        
+        function testLikelihood3DTo2D(testCase)
+            C = [0.7,0.4,0.2;0.4,0.6,0.1;0.2,0.1,1];
+            hwn = HypertoroidalWNDistribution([2;4;6],C);
+            chd = CustomHypertoroidalDistribution.fromDistribution(hwn);
+            xFix = 1;
+            yFix = 3;
+            zFix = 4;
+            
+            likelihoodDim1chd = chd.likelihood(1,xFix);
+            likelihoodDim2chd = chd.likelihood(2,yFix);
+            likelihoodDim3chd = chd.likelihood(3,zFix);
+            
+            [mesh1,mesh2] = meshgrid(linspace(0,2*pi,20));
+            for transformation = {'identity', 'sqrt'}
+                hgd = HypertoroidalFourierDistribution.fromDistribution(hwn,[101,101,101]);
+                likelihoodDim1hfd = hgd.likelihood(1,xFix);
+                likelihoodDim2hfd = hgd.likelihood(2,yFix);
+                likelihoodDim3hfd = hgd.likelihood(3,zFix);
+                testCase.verifyEqual(likelihoodDim1hfd.pdf([mesh1(:)';mesh2(:)']),likelihoodDim1chd.pdf([mesh1(:)';mesh2(:)']),'RelTol',5e-5);
+                testCase.verifyEqual(likelihoodDim2hfd.pdf([mesh1(:)';mesh2(:)']),likelihoodDim2chd.pdf([mesh1(:)';mesh2(:)']),'RelTol',5e-5);
+                testCase.verifyEqual(likelihoodDim3hfd.pdf([mesh1(:)';mesh2(:)']),likelihoodDim3chd.pdf([mesh1(:)';mesh2(:)']),'RelTol',5e-5);
+            end
+        end
+        
+        function testLikelihood3DTo1D(testCase)
+            C = [0.7,0.4,0.2;0.4,0.6,0.1;0.2,0.1,1];
+            hwn = HypertoroidalWNDistribution([2;4;6],C);
+            hgd = HypertoroidalFourierDistribution.fromDistribution(hwn,[101,101,101]);
+            chd = CustomHypertoroidalDistribution.fromDistribution(hwn);
+            xyFix = [1;5];
+            xzFix = [2;4];
+            yzFix = [3;6];
+            
+            grid = linspace(-pi,3*pi,100);
+            
+            likelihoodDim12chd = chd.likelihood([1,2],xyFix);
+            likelihoodDim13chd = chd.likelihood([1,3],xzFix);
+            likelihoodDim23chd = chd.likelihood([2,3],yzFix);
+            
+            for transformation = {'identity', 'sqrt'}
+                likelihoodDim12hfd = hgd.likelihood([1,2],xyFix);
+                likelihoodDim13hfd = hgd.likelihood([1,3],xzFix);
+                likelihoodDim23hfd = hgd.likelihood([2,3],yzFix);
+
+                testCase.verifyEqual(likelihoodDim12hfd.pdf(grid),likelihoodDim12chd.pdf(grid),'RelTol',5e-5);
+                testCase.verifyEqual(likelihoodDim13hfd.pdf(grid),likelihoodDim13chd.pdf(grid),'RelTol',5e-5);
+                testCase.verifyEqual(likelihoodDim23hfd.pdf(grid),likelihoodDim23chd.pdf(grid),'RelTol',5e-5);
             end
         end
     end

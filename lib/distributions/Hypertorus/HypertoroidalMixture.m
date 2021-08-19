@@ -28,6 +28,24 @@ classdef HypertoroidalMixture < AbstractHypertoroidalDistribution & AbstractMixt
             end
         end
         
+        function hd = shift(this, shiftAngles)
+            % Shifts the distribution by shiftAngles.
+            %
+            % Parameters:
+            %   shiftAngles (dim x 1 column vector)
+            %       angles to shift by
+            % Return:
+            %   hd (HypertoroidalMixture)
+            %       shifted distribution
+            arguments
+                this (1,1) HypertoroidalMixture
+                shiftAngles (:,1) double
+            end
+            assert(size(shiftAngles,1)==this.dim);
+            hd = this;
+            hd.dists = cellfun(@(dist){dist.shift(shiftAngles)},hd.dists);
+        end
+        
         function cm = toCircularMixture(this)
             % Convert to a circular mixture (only in 1D case)
             %
@@ -51,30 +69,6 @@ classdef HypertoroidalMixture < AbstractHypertoroidalDistribution & AbstractMixt
             % distributions rather than hypertoroidal distributions!
             tm = ToroidalMixture(this.dists, this.w);
         end            
-    end
-    methods (Sealed)
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (dim x n)
-            %       n samples on the dim-dimensional hypertorus
-            
-            % Sample component first, then sample from the chosen component
-            d = discretesample(this.w,n);
-            s = zeros(this.dim,n);
-            occurrences=histc(d,1:length(this.dists));
-            count=1;
-            for i=1:length(this.dists)
-                s(:,count:count+occurrences(i)-1) = this.dists{i}.sample(occurrences(i));
-                count=count+occurrences(i);
-            end
-            [~,order]=sort(d);
-            s(:,order)=s;
-        end
     end
 end
 

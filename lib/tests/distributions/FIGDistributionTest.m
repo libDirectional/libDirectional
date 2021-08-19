@@ -98,7 +98,7 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
                 end
             end
         end
-        function testWLToFourierSqrt(testCase)
+        function testWLToGridSqrt(testCase)
             warningSettings=warning('off','Conversion:NoFormulaSqrt');
             for lambda=0.1:0.2:1
                 for kappa=0.1:0.5:4
@@ -108,6 +108,95 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             end
             warning(warningSettings);
         end
+        function testFourierIdToGridNoEnforcementAllValsNonnegative(testCase)
+            % Case 1: Fourier identity to FIGFAN without negative (accurate)
+            % Transsform from Fourier identity to FIG without enforcing
+            % nonnegativity for a density that does not have negative
+            % values. This should be an accurate transformation.
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            vm = VMDistribution(1,1);
+            fd = FourierDistribution.fromDistribution(vm,3,'identity');
+            % Verify grid values
+            gd = FIGDistribution.fromDistribution(fd,3,false);
+            testCase.verifyEqual(gd.gridValues, (ifft(ifftshift(fd.c),'symmetric')*numel(fd.c))');
+            % Verify density
+            testCase.verifyWarningFree(@()...
+                FIGDistributionTest.testGridConversion(testCase,fd,3,false,2E-16));
+            % Also the same when oversampling
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
+            testCase.verifyWarningFree(@()...
+                FIGDistributionTest.testGridConversion(testCase,fd,11,false,1E-16));
+        end
+        function testFourierIdToGridNoEnforcementSomeValsNegative(testCase)
+            % Case 2: Fourier Identity to FIGFAN with negative (cannot be accurate because FIG only allows nonnegative grid values)
+            % Transsform from Fourier identity to FIG without enforcing
+            % nonnegativity for a density that has negative
+            % values. This should *not* be an accurate transformation.
+            import matlab.unittest.constraints.AbsoluteTolerance
+            import matlab.unittest.constraints.IsEqualTo
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            
+            vm = VMDistribution(1,10);
+            fd = FourierDistribution.fromDistribution(vm,3,'identity');
+            testCase.verifyWarning(@()FIGDistribution.fromDistribution(fd,3,false),'FourierToFIG:ImpreciseId');
+            testCase.verifyWarning(@()FIGDistribution.fromDistribution(fd,3,false),'Normalization:notNormalized');
+            
+            testCase.applyFixture(SuppressedWarningsFixture('FourierToFIG:ImpreciseId'));
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            gd = FIGDistribution.fromDistribution(fd,3,false);
+            % Verify that result deviates by at least 0.1
+            testCase.verifyThat(gd.gridValues,~IsEqualTo(ifft(ifftshift(fd.c),'symmetric')*numel(fd.c),'Within',AbsoluteTolerance(0.1)))
+        end
+        function testFourierSqrtToGridWithEnforcementAllValsNonnegative(testCase)
+            % Case 3: Fourier Square without negative values to FIGFAN (accurate)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            vm = VMDistribution(1,1);
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            fd = FourierDistribution.fromDistribution(vm,3,'sqrt');
+            % Verify grid values
+            gd = FIGDistribution.fromDistribution(fd,3,true);
+            testCase.verifyEqual(sqrt(gd.gridValues), (ifft(ifftshift(fd.c),'symmetric')*numel(fd.c))');
+            % Verify density
+            testCase.verifyWarningFree(@()...
+                FIGDistributionTest.testGridConversion(testCase,fd,3,true,3E-16));
+            % Also the same when oversampling
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
+            testCase.verifyWarningFree(@()...
+                FIGDistributionTest.testGridConversion(testCase,fd,11,true,3E-16));
+        end
+        function testFourierSqrtToGridWithEnforcementSomeValsNegativeNoPad(testCase)
+            %% Case 4: Fourier Square with negative values to FIGFDN without padding (inaccurate)
+            import matlab.unittest.constraints.AbsoluteTolerance
+            import matlab.unittest.constraints.IsEqualTo
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            
+            vm = VMDistribution(1,10);
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            fd = FourierDistribution.fromDistribution(vm,3,'sqrt');
+            fixture.teardown();
+            testCase.verifyWarning(@()FIGDistribution.fromDistribution(fd,3,false),'FourierToFIG:OtherInterpolationWithInsufficientCoeffs');
+
+            testCase.applyFixture(SuppressedWarningsFixture('FourierToFIG:OtherInterpolationWithInsufficientCoeffs'));
+            gd = FIGDistribution.fromDistribution(fd,3,false);
+            % Verify that result deviates by at least 0.1
+            testCase.verifyThat(sqrt(gd.gridValues),~IsEqualTo(ifft(ifftshift(fd.c),'symmetric')*numel(fd.c),'Within',AbsoluteTolerance(0.1)))
+        end
+        function testFourierSqrtToGridWithEnforcementAllValsNonnegativeWithPad(testCase)
+            % Case 5: Fourier Square with negative values to FIGFAN with padding (accurate)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            vm = VMDistribution(1,10);
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            fd = FourierDistribution.fromDistribution(vm,3,'sqrt');
+            fixture.teardown();
+            % Verify density
+            testCase.verifyWarningFree(@()...
+                FIGDistributionTest.testGridConversion(testCase,fd,5,false,4E-16));
+            % Also the same when oversampling
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
+            testCase.verifyWarningFree(@()...
+                FIGDistributionTest.testGridConversion(testCase,fd,11,false,4E-16));
+        end
+        
         function testCircularUniformToGridId(testCase)
             dist = CircularUniformDistribution();
             FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
@@ -209,8 +298,8 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
         end
         
         function testMomentsGridSqrtPredictionVM(testCase)
-            for kappa1 = [1,2] %0.1:0.3:4
-                for kappa2 = [1,2] %0.1:0.3:4
+            for kappa1 = [1,2]
+                for kappa2 = [1,2]
                     vm1 = VMDistribution(0, kappa1);
                     vm2 = VMDistribution(0, kappa2);
                     vmRes = vm1.convolve(vm2);
@@ -220,6 +309,25 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
                     testCase.verifyEqual(fPredicted.trigonometricMoment(1), vmRes.trigonometricMoment(1), 'AbsTol', 1E-8);
                 end
             end
+        end
+        
+        function testNormalizationPdfSinc(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            vm = VMDistribution(1,50);
+            % It will have to renormalize, only check interpolation below
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            gd = FIGDistribution.fromDistribution(vm,3,true);
+            fixture.teardown();
+            
+            int = integral(@(x)reshape(gd.pdf(x(:)',true,71),size(x)),0,2*pi);
+            testCase.verifyEqual(int,1,'AbsTol',1e-4);
+            
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            gd = FIGDistribution.fromDistribution(vm,7,false);
+            fixture.teardown();
+            
+            int = integral(@(x)reshape(gd.pdf(x(:)',true,71),size(x)),0,2*pi);
+            testCase.verifyEqual(int,1,'AbsTol',1e-5);
         end
         % CDF tests
         function testCdfIdentityStartZero(testCase)
@@ -329,9 +437,10 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             evalAt=linspace(0,2*pi,100);
             % Only considering sinc function at points from 0 to 2*pi (this
             % yields lowest quality)
-            xvals = linspace(0,2*pi,noPoints+1);
+            
             fvals = [gd.gridValues;gd.gridValues(1)];
-            sincFun = @(x)arrayfun(@(xCurr)sinc(xCurr/stepSize-xvals/stepSize)*fvals, x);
+            % Instead of 0:noPoints could use linspace(0,2*pi,noPoints+1)/stepSize
+            sincFun = @(x)arrayfun(@(xCurr)sinc(xCurr/stepSize-(0:noPoints))*fvals, x);
             testCase.verifyEqual(sincFun(evalAt), gd.pdf(evalAt), 'AbsTol', 0.003);
             % Considering sinc function at points from -2*pi to 4*pi
             % (higher quality)
@@ -345,6 +454,17 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             fvals = [repmat(gd.gridValues,5,1);gd.gridValues(1)];
             sincFun = @(x)arrayfun(@(xCurr)sinc(xCurr/stepSize-xvals/stepSize)*fvals, x);
             testCase.verifyEqual(sincFun(evalAt), gd.pdf(evalAt), 'AbsTol', 0.0002);
+        end
+        function testGetGridPoint(testCase)
+            dist = VMDistribution(1, 1);
+            gd = FIGDistribution.fromDistribution(dist, 37);
+            entireGrid = gd.getGrid();
+            testCase.verifyEqual(gd.getGridPoint([10,11]),entireGrid(:,[10,11]),'AbsTol',1e-15);
+        end
+        function testGetClosestPoint(testCase)
+            gd = FIGDistribution.fromDistribution(VMDistribution(0,1),11);
+            closestPoints = gd.getClosestPoint([3*pi/gd.noOfGridPoints-eps,3*pi/gd.noOfGridPoints+eps]);
+            testCase.verifyEqual(closestPoints,2*pi/gd.noOfGridPoints*[1,2]);
         end
     end
 end

@@ -77,7 +77,7 @@ classdef SdHalfCondSdHalfGridDistributionTest < matlab.unittest.TestCase
             fTrans2 = @(xkk,xk)2*dist.pdf(xkk);
             sdsd_fTrans2 = SdHalfCondSdHalfGridDistribution.fromFunction(fTrans2, noGridpoints, false, 'eq_point_set', 6);
             
-            testCase.verifyEqual(sdsd_fTrans1.grid,sdsd_fTrans2.grid);
+            testCase.verifyEqual(sdsd_fTrans1.getGrid(),sdsd_fTrans2.getGrid());
             testCase.verifyEqual(sdsd_fTrans1.gridValues,sdsd_fTrans2.gridValues);
         end
         function testEqualWithAndWithoutCartS3(testCase)
@@ -90,7 +90,7 @@ classdef SdHalfCondSdHalfGridDistributionTest < matlab.unittest.TestCase
             fTrans2 = @(xkk,xk)2*dist.pdf(xkk);
             sdsd_fTrans2 = SdHalfCondSdHalfGridDistribution.fromFunction(fTrans2, noGridpoints, false, 'eq_point_set', 8);
             
-            testCase.verifyEqual(sdsd_fTrans1.grid,sdsd_fTrans2.grid);
+            testCase.verifyEqual(sdsd_fTrans1.getGrid(),sdsd_fTrans2.getGrid());
             testCase.verifyEqual(sdsd_fTrans1.gridValues,sdsd_fTrans2.gridValues);
         end
         function testIndepdenentS2(testCase)
@@ -135,12 +135,12 @@ classdef SdHalfCondSdHalfGridDistributionTest < matlab.unittest.TestCase
                 WatsonDistribution(xk(:,i),1).pdf(xkk),1:size(xk,2),'UniformOutput',false));
             sdsd = SdHalfCondSdHalfGridDistribution.fromFunction(trans,noGridPoints,true,'eq_point_set',6);
             
-            for i = 1:size(sdsd.grid,2)
-                point = sdsd.grid(:,i);
+            grid = sdsd.getGrid();
+            for i = 1:size(grid,2)
+                point = grid(:,i);
                 sgd = sdsd.fixDim(2,point);
                 testCase.verifyEqual(sgd.gridValues, sdsd.gridValues(:,i));
                 
-                point = sdsd.grid(:,i);
                 sgd = sdsd.fixDim(1,point);
                 testCase.verifyEqual(sgd.gridValues', sdsd.gridValues(i,:));
             end
@@ -151,12 +151,12 @@ classdef SdHalfCondSdHalfGridDistributionTest < matlab.unittest.TestCase
                 WatsonDistribution(xk(:,i),1).pdf(xkk),1:size(xk,2),'UniformOutput',false));
             sdsd = SdHalfCondSdHalfGridDistribution.fromFunction(trans,noGridPoints,true,'eq_point_set',8);
             
-            for i = 1:size(sdsd.grid,2)
-                point = sdsd.grid(:,i);
+            grid = sdsd.getGrid();
+            for i = 1:size(grid,2)
+                point = grid(:,i);
                 sgd = sdsd.fixDim(2,point);
                 testCase.verifyEqual(sgd.gridValues, sdsd.gridValues(:,i));
                 
-                point = sdsd.grid(:,i);
                 sgd = sdsd.fixDim(1,point);
                 testCase.verifyEqual(sgd.gridValues', sdsd.gridValues(i,:));
             end

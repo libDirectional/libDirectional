@@ -48,7 +48,7 @@ classdef ComplexWatsonDistributionTest < matlab.unittest.TestCase
             tc.verifyClass(w, 'ComplexWatsonDistribution');
             tc.verifyEqual(w.mu, mu);
             tc.verifyEqual(w.kappa, kappa);
-            tc.verifyEqual(w.d, length(mu));
+            tc.verifyEqual(w.dim, length(mu));
         end
         function testIntegral(tc)
             %% test integral

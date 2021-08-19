@@ -11,8 +11,8 @@ classdef (Abstract) AbstractGridFilter < AbstractFilter
             %   gd_ (AbstractDistribution, preferably a GridDistribution)
             %       new state
             arguments
-                this AbstractGridFilter
-                gd_ AbstractDistribution
+                this (1,1) AbstractGridFilter
+                gd_ (1,1) AbstractDistribution
             end
             if ~(isa(gd_, 'AbstractGridDistribution'))
                 warning('setState:nonGrid', 'gd_ is not a GridDistribution. Transforming the distrition with a number of coefficients that is equal to that of the filter.');
@@ -38,9 +38,8 @@ classdef (Abstract) AbstractGridFilter < AbstractFilter
                 likelihood function_handle
                 z (:,1) double
             end
-            assert(size(z,1)==this.dim);
             % Assume likelihood can use implicit expansion (for scalars also possible in older Matlab versions)
-            gridValsNew=this.gd.gridValues.*reshape(likelihood(z, this.gd.grid),[],1);
+            gridValsNew=this.gd.gridValues.*reshape(likelihood(z, this.gd.getGrid()),[],1);
             assert(isequal(size(gridValsNew),size(this.gd.gridValues)));
             this.gd.gridValues = gridValsNew;
             warnStruct = warning('off','Normalization:notNormalized');

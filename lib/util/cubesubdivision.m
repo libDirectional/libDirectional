@@ -8,7 +8,7 @@ function result = cubesubdivision(n, normalize)
         normalize = true;
     end
     
-    %number of points is 6*4^n+2
+    %number of points is 4*4^n+2
     quads = generateCube();
 
     while length(unique(cell2mat(quads),'rows')) < n

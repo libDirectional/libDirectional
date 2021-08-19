@@ -22,7 +22,7 @@ classdef ComplexBinghamDistribution < AbstractComplexHypersphericalDistribution
             assert(all(all(B_ == B_')), 'B must be hermitian');
             
             cB.B = B_;
-            cB.d = size(B_, 1);
+            cB.dim = size(B_, 1);
             
             cB.logC = ComplexBinghamDistribution.logNorm(cB.B);
             cB.C = exp(cB.logC);
