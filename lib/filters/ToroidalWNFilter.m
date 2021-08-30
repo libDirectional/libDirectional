@@ -20,7 +20,6 @@ classdef ToroidalWNFilter < AbstractToroidalFilter
             % Constructor
             twn_ = ToroidalWNDistribution([0;0],eye(2,2));
             this.setState(twn_);
-            this.dim = 2;
         end
         
         function setState(this, twn_)

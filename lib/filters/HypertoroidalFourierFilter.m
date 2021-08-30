@@ -16,7 +16,6 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             if nargin==1,transformation='sqrt';end
             this.hfd=HypertoroidalFourierDistribution.fromDistribution(...
                 HypertoroidalUniformDistribution(numel(noOfCoefficients)),noOfCoefficients,transformation);
-            this.dim = this.hfd.dim;
         end
         
         function setState(this, hfd_)

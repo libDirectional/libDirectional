@@ -112,5 +112,24 @@ classdef GaussianDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(sum(s.*repmat(w,3,1),2), mu, 'RelTol', 1E-10);
             testCase.verifyEqual((s-repmat(mu,1,nSamples))*diag(w)*(s-repmat(mu,1,nSamples))', C, 'RelTol', 1E-10);
         end
+        
+        function testMode(testCase)
+            mu = [1,2,3]';
+            C = [ 1.1 0.4 0; 0.4 0.9 0; 0 0 1];
+            g = GaussianDistribution(mu,C);
+            
+            testCase.verifyEqual(g.mode, mu, 'AbsTol',1e-6);
+        end
+        
+        function testShift(testCase)
+            mu = [1,2,3]';
+            C = [ 1.1 0.4 0; 0.4 0.9 0; 0 0 1];
+            g = GaussianDistribution(mu,C);
+            
+            shiftBy = [2;-2;3];
+            gShifted = g.shift(shiftBy);
+            
+            testCase.verifyEqual(gShifted.mode, mu+shiftBy, 'AbsTol',1e-6);
+        end
     end
 end

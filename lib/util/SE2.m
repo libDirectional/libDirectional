@@ -7,8 +7,8 @@
 
 classdef SE2   
     properties
-        alpha; % Angle of rotation.
-        translation; % Translation (which is performed after the rotation)
+        alpha double % Angle of rotation.
+        translation double % Translation (which is performed after the rotation)
     end
     
     methods        
@@ -17,9 +17,10 @@ classdef SE2
             %
             %   Parameters:
             %       alpha - rotation (as a radian)
-            assert(length(alpha) == 1, 'Only one angle expected');
-            assert(length(translation)==2, 'Translation must consist of two elements');
-            
+            arguments
+                alpha (1,1) double
+                translation (2,1) double
+            end
             this.alpha = alpha;
             this.translation = reshape(translation,2,1);
         end
@@ -34,8 +35,9 @@ classdef SE2
             %       style - 'full' represents a dual quaternion as an 8 dim
             %               vector. 'compact' (default) represents it as an 4
             %               dim vector.
-            if nargin < 2
-                style = 'compact';
+            arguments
+                this (1,1) SE2
+                style char = 'compact'
             end
             
             switch style
@@ -83,10 +85,17 @@ classdef SE2
     end
     
     methods (Static)
+        function se2 = fromDualQuaternion(dq)
+            arguments
+                dq (4,1) double
+            end
+            [angle,pos] = AbstractSE2Distribution.dualQuaternionToAnglePos(dq);
+            se2 = SE2(angle,pos);
+        end
         function res = dualQuaternionMultiply(dq1, dq2)
             % Multiplies two dual quaternions.
-            assert(all(size(dq1) == [4 1]));
-            assert(all(size(dq1) == [4 1]));
+            assert(isequal(size(dq1),[4 1]));
+            assert(isequal(size(dq1),[4 1]));
             
             res = SE2.matrixToDualQuaternion(...
                 SE2.dualQuaternionToMatrix( dq1 ) ...
@@ -111,7 +120,7 @@ classdef SE2
             %
             % A compact Matrix representation of the dual quaternion is
             % returned.
-            assert(all(size(dqMat) == [4 4]));
+            assert(isequal(size(dqMat),[4 4]));
             
             dq=zeros(4,1);
             

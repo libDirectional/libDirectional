@@ -1,4 +1,4 @@
-classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
+classdef (Abstract) AbstractHypersphericalDistribution < AbstractPeriodicDistribution
     % Abstract base class for distributions on the hypershere (S^dim)
     % Convention for Dimension: dim=2 is a circle, dim=3 a sphere.
     
@@ -11,6 +11,11 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
             %       Number of faces for 3D Plot (default 100).
             %   gridFaces (scalar)
             %       Number of grid faces for 3D Plot (default 20, 0 to disable).
+            arguments
+                this (1,1) AbstractHypersphericalDistribution
+                faces (1,1) double {mustBeNonnegative,mustBeInteger} = 100
+                gridFaces (1,1) double {mustBeNonnegative,mustBeInteger} = 20
+            end
             switch this.dim
                 case 2
                     % use polar coordinates, plot angle->pdf(angle)
@@ -20,15 +25,6 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
                     h = plot(phi, p);
                 case 3
                     % plot sphere, pdf is represented by color on sphere
-                    
-                    if nargin < 2
-                        faces = 100;
-                    end
-                    
-                    if nargin < 3
-                        gridFaces = 20;
-                    end
-                    
                     % generate spheres
                     [xSphereOuter, ySphereOuter, zSphereOuter]= sphere(gridFaces);
                     [xSphereInner, ySphereInner, zSphereInner]= sphere(faces);
@@ -46,7 +42,7 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
                     h = [];
                     if gridFaces > 0
                         h = [h, ...
-                            surf(xSphereOuter, ySphereOuter, zSphereOuter, max(max(cSphere))*ones(size(xSphereOuter)), 'FaceColor', 'none')];
+                            surf(xSphereOuter, ySphereOuter, zSphereOuter, max(cSphere,[],[1,2])*ones(size(xSphereOuter)), 'FaceColor', 'none')];
                         hold on;
                     end
                     h = [h, surf(xSphereInner, ySphereInner, zSphereInner, cSphere,'EdgeColor', 'none')];
@@ -273,20 +269,7 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
             m = polar2cart(m); % convert optimum to Cartesian coordinates 
         end
         
-        function s = sample(this, n)
-            % Stochastic sampling
-            % Fall back to Metropolis Hastings by default
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (dim x n)
-            %       one sample per column            
-            s = sampleMetropolisHastings(this, n);
-        end
-        
-        function s = sampleMetropolisHastings(this, n)
+        function s = sampleMetropolisHastings(this, n, proposal, startPoint, burnIn, skipping)
             % Metropolis Hastings sampling algorithm
             %
             % Parameters:
@@ -299,48 +282,23 @@ classdef (Abstract) AbstractHypersphericalDistribution < AbstractDistribution
             % Hastings, W. K. 
             % Monte Carlo Sampling Methods Using Markov Chains and Their Applications 
             % Biometrika, 1970, 57, 97-109
-            assert(isscalar(n));
-            assert(n>0);
-            
-            burnin = 10;
-            skipping = 5;
-            
-            totalSamples = burnin+n*skipping;
-            s = zeros(this.dim,totalSamples);
-            x = this.mode; 
-            % A better proposal distribution could be obtained by roughly estimating
-            % the uncertainty of the true distribution.
-            normalize = @(x) x/norm(x);
-            %proposal = @(x) normalize(x + mvnrnd(zeros(this.dim,1),eye(this.dim))'); 
-            proposal = @(x) normalize(x + normrnd(0,1,this.dim,1)); 
-            i=1;
-            pdfx = this.pdf(x);
-            while i<=totalSamples
-                xNew = proposal(x); %generate new sample
-                pdfxNew = this.pdf(xNew);
-                a = pdfxNew/pdfx;
-                if a>1
-                    %keep sample
-                    s(:,i)=xNew;
-                    x = xNew;
-                    pdfx = pdfxNew;
-                    i=i+1;
-                else
-                    r = rand(1);
-                    if a > r
-                        %keep sample
-                        s(:,i)=xNew;
-                        x = xNew;
-                        pdfx = pdfxNew;
-                        i=i+1;
-                    else
-                        %reject sample
-                    end
-                end
+            arguments
+                this (1,1) AbstractDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+                proposal (1,1) function_handle = @()[] % Will be replaced by default below
+                startPoint (:,1) double = this.meanDirection()
+                burnIn (1,1) double = 10
+                skipping (1,1) double = 5
             end
-            %todo handle bimodality
-            s = s(:,burnin+1:skipping:end);
-        end        
+            if nargin(proposal)==0
+                normalize = @(x) x/norm(x);
+                % Think about this carefully. In general, not good for
+                % multimodality.
+                %proposal = @(x) normalize(x + mvnrnd(zeros(this.dim,1),eye(this.dim))'); 
+                proposal = @(x) normalize(x + randn(this.dim,1)); 
+            end
+            s = sampleMetropolisHastings@AbstractDistribution(this, n, proposal, startPoint, burnIn, skipping);
+        end
         
         function s = sampleDeterministic(this)
             % Deterministic sampling

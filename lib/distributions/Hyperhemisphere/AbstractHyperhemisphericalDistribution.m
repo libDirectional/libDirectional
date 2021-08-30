@@ -57,7 +57,7 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
                     h = [];
                     if gridFaces > 0
                         h = [h, ...
-                            surf(xSphereOuter, ySphereOuter, zSphereOuter, max(max(cSphere))*ones(size(xSphereOuter)), 'FaceColor', 'none')];
+                            surf(xSphereOuter, ySphereOuter, zSphereOuter, max(cSphere,[],[1,2])*ones(size(xSphereOuter)), 'FaceColor', 'none')];
                         hold on;
                     end
                     h = [h, surf(xSphereInner, ySphereInner, zSphereInner, cSphere,'EdgeColor', 'none')];
@@ -342,6 +342,40 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
                 otherwise
                     error('Numerical calculation of Hellinger distance is currently not supported for this dimension.')
             end
+        end
+        
+        function s = sampleMetropolisHastings(this, n, proposal, startPoint, burnIn, skipping)
+            % Metropolis Hastings sampling algorithm
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of samples
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column
+            %
+            % Hastings, W. K. 
+            % Monte Carlo Sampling Methods Using Markov Chains and Their Applications 
+            % Biometrika, 1970, 57, 97-109
+            arguments
+                this (1,1) AbstractDistribution
+                n (1,1) {mustBePositive,mustBeInteger}
+                proposal (1,1) function_handle = @()[] % Will be replaced by default below
+                startPoint (:,1) double = this.mode()
+                burnIn (1,1) double = 10
+                skipping (1,1) double = 5
+            end
+            if nargin(proposal)==0
+                normalize = @(x) x/norm(x);
+                % This is just an approximation and we actually allow
+                % points and their antipode to be included when the last
+                % entry is zero on the last dimension. We ignore this
+                % because it is generally unlikely, but changes may be
+                % required if that that cause problems.
+                toUpperHemisphere = @(s) (1-2*(s(end,:)<0)).*s;
+                proposal = @(x) toUpperHemisphere(normalize(x + normrnd(0,1,this.dim,1))); 
+            end
+            s = sampleMetropolisHastings@AbstractDistribution(this, n, proposal, startPoint, burnIn, skipping);
         end
         
         function dist = totalVariationDistanceNumerical(this, other)

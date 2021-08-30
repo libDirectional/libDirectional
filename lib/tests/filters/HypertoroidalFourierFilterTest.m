@@ -167,7 +167,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             global enableExpensive
-            if ~islogical(enableExpensive) || ~enableExpensive, return; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             noiseDistribution = ToroidalWNDistribution([1; 2], [1, -0.3; -0.3, 4]);
             coeffsPerDim = 71;
             f = @a2D;
@@ -238,7 +238,7 @@ classdef HypertoroidalFourierFilterTest < matlab.unittest.TestCase
             % Test that transition density is correct if .C is multiply
             % with 2*pi for identity and with sqrt(2*pi) for sqrt
             global enableExpensive
-            if ~islogical(enableExpensive) || ~enableExpensive, return; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             noiseDistribution = ToroidalWNDistribution([1; 2], [1, -0.3; -0.3, 4]);
             coeffsPerDim = 81;
             coeffVector = coeffsPerDim * ones(1, noiseDistribution.dim);

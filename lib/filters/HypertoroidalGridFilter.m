@@ -20,7 +20,6 @@ classdef HypertoroidalGridFilter < AbstractHypertoroidalFilter & AbstractGridFil
             % prediction step for the spherical harmonics-based grid.
             this.gd = HypertoroidalGridDistribution.fromDistribution(HypertoroidalUniformDistribution(dim),...
                 noOfCoefficients, gridType);
-            this.dim = dim;
         end
         
         function setState(this, gd_)
@@ -30,19 +29,19 @@ classdef HypertoroidalGridFilter < AbstractHypertoroidalFilter & AbstractGridFil
             %   sgd_ (AbstractHypertoroidalDistribution)
             %       new state
             arguments
-                this HypertoroidalGridFilter
-                gd_ HypertoroidalGridDistribution % Do not transform automatically because size cannot be automatically restored
+                this (1,1) HypertoroidalGridFilter
+                gd_ (1,1) HypertoroidalGridDistribution % Do not transform automatically because size cannot be automatically restored
             end
             assert(this.dim==gd_.dim);
-            if ~isequal(this.gd.grid, gd_.grid)
+            if ~isequal(this.gd.getGrid(), gd_.getGrid())
                 warning('setState:gridDiffers', 'New density is defined on different grid.')
             end
             this.gd = gd_;
         end
         function predictIdentity(this, dSys)
             arguments
-                this HypertoroidalGridFilter
-                dSys AbstractHypertoroidalDistribution
+                this (1,1) HypertoroidalGridFilter
+                dSys (1,1) AbstractHypertoroidalDistribution
             end
             if ~isa(dSys,'HypertoroidalGridDistribution')
                 warning('PredictIdentity:automaticConversion','Transforming system noise. Consider pretransformation');
@@ -64,8 +63,8 @@ classdef HypertoroidalGridFilter < AbstractHypertoroidalFilter & AbstractGridFil
             % This function was added for interface compatibility with the
             % other filters. measNoise must be a VMF or WatsonDistribution.
             arguments
-                this HypertoroidalGridFilter
-                measNoise AbstractHypertoroidalDistribution
+                this (1,1) HypertoroidalGridFilter
+                measNoise (1,1) AbstractHypertoroidalDistribution
                 z (:,1) double
             end
             if nargin==3 && norm(z)>0
@@ -74,7 +73,7 @@ classdef HypertoroidalGridFilter < AbstractHypertoroidalFilter & AbstractGridFil
             if ~isa(measNoise,'HypertoroidalGridDistribution')
                 % Do not throw warning since it is pretty normal that the
                 % likelihood changes. 
-                measNoise = HypertoroidalGridDistribution(this.gd.grid,measNoise.pdf(this.gd.grid)');
+                measNoise = HypertoroidalGridDistribution(this.gd.getGrid(),measNoise.pdf(this.gd.getGrid())');
             end
             this.gd = this.gd.multiply(measNoise);
         end
@@ -110,16 +109,16 @@ classdef HypertoroidalGridFilter < AbstractHypertoroidalFilter & AbstractGridFil
         
         function predictNonlinearViaTransitionDensity(this, fTrans)
             arguments
-                this HypertoroidalGridFilter
-                fTrans TdCondTdGridDistribution
+                this (1,1) HypertoroidalGridFilter
+                fTrans (1,1) TdCondTdGridDistribution
             end
-            assert(isequal(this.gd.grid,fTrans.grid), 'predictNonlinearViaTransitionDensity:gridDiffers',...
+            assert(isequal(this.gd.getGrid(),fTrans.getGrid()), 'predictNonlinearViaTransitionDensity:gridDiffers',...
                 'fTrans is using an incompatible grid.');
             % Multiplication could be realized via this.getEstimate.gridValues'.*fTrans.gridValues
             % combined with marginalization it would be
-            % (4*pi/size(this.grid,2)*sum(this.getEstimate.gridValues'.*fTrans.gridValues,2).
+            % ((2*pi)^dim / size(this.grid,2))*sum(this.getEstimate.gridValues'.*fTrans.gridValues,2).
             % Faster with matrix multiplication
-            this.gd.gridValues = this.gd.getManifoldSize/size(this.gd.grid,2)*fTrans.gridValues*this.gd.gridValues;
+            this.gd.gridValues = this.gd.getManifoldSize/size(this.gd.gridValues,1)*fTrans.gridValues*this.gd.gridValues;
             this.gd = this.gd.normalize; % This also enforces a normalization if it is violated
         end
     end

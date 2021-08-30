@@ -7,21 +7,27 @@ classdef ToroidalParticleFilter < AbstractToroidalFilter & HypertoroidalParticle
             %
             % Parameters:
             %   nParticles (integer > 0)
-            %       number of particles to use  
+            %       number of particles to use
+            arguments
+                nParticles (1,1) double {mustBeInteger, mustBePositive}
+            end
             this@HypertoroidalParticleFilter(nParticles,2);
-            this.wd = ToroidalWDDistribution(this.wd.d,this.wd.w);
+            this.dist = ToroidalWDDistribution(this.dist.d,this.dist.w);
         end
-        function setState(this, wd_)
+        function setState(this, dist_)
             % Sets the current system state
             %
             % Parameters:
             %   distribution (AbstractToroidalDistribution)
-            %       new state            
-            assert (isa (wd_, 'AbstractToroidalDistribution'));
-            if ~isa(wd_, 'ToroidalWDDistribution')
-                wd_ = ToroidalWDDistribution(wd_.sample(length(this.wd.d)));
+            %       new state
+            arguments
+                this (1,1) ToroidalParticleFilter
+                dist_ (1,1) AbstractToroidalDistribution
             end
-            this.wd = wd_;
+            if ~isa(dist_, 'ToroidalWDDistribution')
+                dist_ = ToroidalWDDistribution(dist_.sample(length(this.dist.d)));
+            end
+            this.dist = dist_;
         end
     end
     

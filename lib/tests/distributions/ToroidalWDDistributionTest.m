@@ -133,7 +133,7 @@ classdef ToroidalWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(twdRew.d, twd.d);
             testCase.verifyEqual(twdRew.w, double(f(twd.d)));
             
-            f = @(x) 2; %does not change anything because of renormalization
+            f = @(x) 2*ones(1,size(x,2)); %does not change anything because of renormalization
             twdRew = twd.reweigh(f);
             testCase.verifyClass(twdRew, 'ToroidalWDDistribution');
             testCase.verifyEqual(twdRew.d, twd.d);

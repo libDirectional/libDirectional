@@ -34,7 +34,7 @@ classdef (Abstract) AbstractSphericalHarmonicsDistribution < AbstractHyperspheri
             zonalTestMat(sub2ind(size(zonalTestMat), 1:size(zonalTestMat, 1), 1:size(zonalTestMat, 1))) = NaN;
             % If all other entires are NaN or almost zero (allow for numerical imprecision), then the
             % function is zonal.
-            assert(all(all((zonalTestMat <= 1E-5) | isnan(zonalTestMat))), 'Other is not zonal.');
+            assert(all((zonalTestMat <= 1E-5) | isnan(zonalTestMat),[1,2]), 'Other is not zonal.');
             
             % We can truncate the harmonics to the smaller degree because
             % all entries for higher degrees would become zero

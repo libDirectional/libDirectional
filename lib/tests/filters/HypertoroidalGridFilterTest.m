@@ -4,18 +4,26 @@ classdef HypertoroidalGridFilterTest < matlab.unittest.TestCase
             noGridPoints=[23, 23];
             filter = HypertoroidalGridFilter([23, 23],2);
             testCase.verifyClass(filter.getEstimate, 'HypertoroidalGridDistribution');
-            testCase.verifySize(filter.getEstimate.grid,[2,prod(noGridPoints)]);
+            testCase.verifySize(filter.getEstimate.getGrid(),[2,prod(noGridPoints)]);
             testCase.verifySize(filter.getEstimate.gridValues,[prod(noGridPoints),1]);
         end
         
         function testSetState(testCase)
             filter = HypertoroidalGridFilter([21, 21, 5]);
-            hgdtmp = HypertoroidalGridDistribution.fromDistribution(HypertoroidalWNDistribution([1; 1; 1], eye(3)),[21,21,5]);
-            testCase.verifyWarningFree(@()filter.setState(hgdtmp));
-            testCase.verifyEqual(filter.gd,hgdtmp);
+            hgd = HypertoroidalGridDistribution.fromDistribution(HypertoroidalWNDistribution([1; 1; 1], eye(3)),[21,21,5]);
+            testCase.verifyWarningFree(@()filter.setState(hgd));
+            testCase.verifyEqual(filter.gd,hgd);
             % Test warnining
-            hgdtmp.grid=hgdtmp.grid(:,1:end-1);
+            fullGrid = hgd.getGrid();
+            hgdtmp=hgd;
+            hgdtmp.grid=fullGrid(:,end);
+            hgdtmp.gridValues(end)=[];
             hgdtmp.gridValues = hgdtmp.gridValues(1:end-1);
+            
+            testCase.verifyClass(filter.gd,'HypertoroidalGridDistribution')
+            filter = filter.copy;
+            testCase.verifyWarning(@()filter.setState(hgdtmp),'setState:gridDiffers');
+            testCase.verifyClass(filter.gd,'HypertoroidalGridDistribution')
         end
         
         function testPredictIdentity(testCase)
@@ -29,7 +37,7 @@ classdef HypertoroidalGridFilterTest < matlab.unittest.TestCase
             filter.predictIdentity(gd2);
             testCase.verifyClass(filter.gd, 'HypertoroidalGridDistribution');
             testCase.verifySize(filter.gd.gridValues, size(gd1.gridValues));
-            testCase.verifyEqual(filter.gd.grid, gdRes.grid);
+            testCase.verifyEqual(filter.gd.getGrid(), gdRes.getGrid());
             testCase.verifyEqual(filter.gd.gridValues, gdRes.gridValues, 'Rel', 1E-5);
             testCase.verifyWarning(@()filter.predictIdentity(HypertoroidalWNDistribution([1; 1], eye(2))), 'PredictIdentity:automaticConversion');
         end
@@ -56,9 +64,7 @@ classdef HypertoroidalGridFilterTest < matlab.unittest.TestCase
             hfd1 = HypertoroidalGridDistribution.fromDistribution(ToroidalVMSineDistribution([1; 3], [0.3; 0.5], 0.5), [23, 25]);
             likelihood = @(z, x)1 ./ (sum(abs(x-z)) + .1);
             filter.setState(hfd1);
-            fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             filter.updateNonlinear(likelihood, z);
-            fixture.teardown;
             testCase.verifyEqual(filter.getEstimateMean, z, 'AbsTol', 0.2); % The mean should stay approximately equal, but not entirely
         end
         
@@ -76,13 +82,13 @@ classdef HypertoroidalGridFilterTest < matlab.unittest.TestCase
             testCase.applyFixture(SuppressedWarningsFixture('PredictIdentity:automaticConversion'));
             gdFilterLin.predictIdentity(fNoiseDist);
             gdFilterNl.predictNonlinear(@(varargin)varargin{:}, fNoiseDist);
-            testCase.verifyEqual(gdFilterNl.gd.grid,gdFilterLin.gd.grid);
+            testCase.verifyEqual(gdFilterNl.gd.getGrid(),gdFilterLin.gd.getGrid());
             testCase.verifyEqual(gdFilterNl.getEstimate.gridValues, gdFilterLin.getEstimate.gridValues, 'AbsTol', tol);
 
             fNoiseDistShifted = fNoiseDist.shift([1; 1]);
             gdFilterLin.predictIdentity(fNoiseDistShifted);
             gdFilterNl.predictNonlinear(@(x)deal(x+1), fNoiseDist);
-            testCase.verifyEqual(gdFilterNl.gd.grid,gdFilterNl.gd.grid);
+            testCase.verifyEqual(gdFilterNl.gd.getGrid(),gdFilterNl.gd.getGrid());
             testCase.verifyEqual(gdFilterNl.getEstimate.gridValues, gdFilterLin.getEstimate.gridValues, 'AbsTol', tol);
         end
         

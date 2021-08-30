@@ -50,7 +50,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             cshd3 = cshd.truncate(5);
             fixture.teardown;
             testCase.verifySize(cshd3.coeffMat, [6, 11]);
-            testCase.verifyTrue(all(all(isnan(cshd3.coeffMat(5:6, :)) | cshd3.coeffMat(5:6, :) == 0)));
+            testCase.verifyTrue(all(isnan(cshd3.coeffMat(5:6, :)) | cshd3.coeffMat(5:6, :) == 0,[1,2]));
             cshd4 = cshd2.truncate(3);
             testCase.verifySize(cshd4.coeffMat, [4, 7]);
             cshd5 = cshd3.truncate(3);
@@ -256,7 +256,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
         function testCovergence(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             if enableExpensive
                 noDiffs = 10;
             else
@@ -369,14 +369,14 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             convolutionResultId = thisId.convolve(otherId);
             convolutionResultSqrt = this.convolve(other);
             
-            testCase.verifyEqual(convolutionResultSqrt.totalVariationDistanceNumerical(convolutionResultId), 0, 'AbsTol', 1E-15);
+            testCase.verifyEqual(convolutionResultSqrt.totalVariationDistanceNumerical(convolutionResultId), 0, 'AbsTol', 1.5E-15);
         end
         function testRotationGrid(testCase)
             % Test rotation by verifying function values at identically
             % transformed points.
             rng default
             global enableExpensive
-            if ~islogical(enableExpensive), enableExpensive = false; end
+            if ~islogical(enableExpensive), enableExpensive = true; end
             if enableExpensive
                 gridpoints = 7;
             else
@@ -486,17 +486,20 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             end
         end
         function testFromGrid(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             dist = HypersphericalMixture(...
                 {VMFDistribution(1/sqrt(2)*[-1;0;1],2),VMFDistribution([0;-1;0],2)},[0.5,0.5]);
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('Transformation:notEq_Point_set'));
             sgd = SphericalGridDistribution.fromDistribution(dist, 1012, 'sh_grid');
+            fixture.teardown();
             
             % Test without providing grid
             deg = (-6+sqrt(36-8*(4-numel(sgd.gridValues))))/4;
             shd1Id = SphericalHarmonicsDistributionComplex.fromGrid(reshape(sgd.gridValues,deg+2,2*deg+2));
             shd1Sqrt = SphericalHarmonicsDistributionComplex.fromGrid(reshape(sgd.gridValues,deg+2,2*deg+2), [], 'sqrt');
             % Test when providing grid
-            shd2Id = SphericalHarmonicsDistributionComplex.fromGrid(sgd.gridValues, sgd.grid);
-            shd2Sqrt = SphericalHarmonicsDistributionComplex.fromGrid(sgd.gridValues, sgd.grid, 'sqrt');
+            shd2Id = SphericalHarmonicsDistributionComplex.fromGrid(sgd.gridValues, sgd.getGrid());
+            shd2Sqrt = SphericalHarmonicsDistributionComplex.fromGrid(sgd.gridValues, sgd.getGrid(), 'sqrt');
             
             [phi, theta] = meshgrid(linspace(0, 2*pi, 10), linspace(-pi/2, pi/2, 10));
             [x, y, z] = sph2cart(phi(:)', theta(:)', 1);

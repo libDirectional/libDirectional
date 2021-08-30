@@ -3,7 +3,7 @@ classdef (Abstract) AbstractCircularFilter < AbstractHypertoroidalFilter
     % parameterized as [0, 2pi)
     methods
         function likelihoodVal = associationLikelihood(this, likelihood)
-            % Provides the association Likelihood
+            % Provides the association likelihood
             likelihoodVal = associationLikelihoodNumerical(this, likelihood);
         end
         function likelihoodVal = associationLikelihoodNumerical(this, likelihood)
@@ -12,4 +12,3 @@ classdef (Abstract) AbstractCircularFilter < AbstractHypertoroidalFilter
         end
     end
 end
-

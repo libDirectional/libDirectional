@@ -37,7 +37,7 @@ classdef S2CondS2GridDistributionTest < matlab.unittest.TestCase
             fTrans2 = @(xkk,xk)dist.pdf(xkk);
             s2s2_fTrans2 = S2CondS2GridDistribution.fromFunction(fTrans2, noGridpoints, false);
             
-            testCase.verifyEqual(s2s2_fTrans1.grid,s2s2_fTrans2.grid);
+            testCase.verifyEqual(s2s2_fTrans1.getGrid(),s2s2_fTrans2.getGrid());
             testCase.verifyEqual(s2s2_fTrans1.gridValues,s2s2_fTrans2.gridValues);
         end
         function testPlottingWarningFree(testCase)
@@ -57,7 +57,7 @@ classdef S2CondS2GridDistributionTest < matlab.unittest.TestCase
                 VMFDistribution(xk(:,i),1).pdf(xkk),1:size(xk,2),'UniformOutput',false)); 
             s2s2 = S2CondS2GridDistribution.fromFunction(trans1,noGridPoints,true);
             
-            for point = s2s2.grid
+            for point = s2s2.getGrid()
                 sgd = s2s2.fixDim(2,point);
                 testCase.verifyEqual(sgd.meanDirection,point,'AbsTol',1E-2);
             end

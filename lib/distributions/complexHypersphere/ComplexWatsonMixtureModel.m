@@ -33,7 +33,7 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
             cWMM.concentrations = concentrations_;
             cWMM.mixtureWeights = mixtureWeights_;
             
-            cWMM.d = size(modeSet_, 1);
+            cWMM.dim = size(modeSet_, 1);
             cWMM.K = size(mixtureWeights_, 1);
             
         end
@@ -49,7 +49,7 @@ classdef ComplexWatsonMixtureModel < AbstractComplexHypersphericalDistribution
             %       values of pdf at each column of za
             
             logC = ...
-                ComplexWatsonDistribution.logNorm(this.d, this.concentrations);
+                ComplexWatsonDistribution.logNorm(this.dim, this.concentrations);
             
             exponents = ...
                 bsxfun(@times, this.concentrations, abs(this.modeSet' * za).^2);

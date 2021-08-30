@@ -36,6 +36,11 @@ classdef ToroidalVMSineDistributionTest< matlab.unittest.TestCase
             testpoints = mod([1:20;6:25],2*pi);
             testCase.verifyEqual(tvm.pdf(testpoints), tvmMatrix.pdf(testpoints), 'RelTol', 1E-3); %error is quite large due to inaccurate normalization constant
             
+            %% test conversion to ToroidalVMRivestDistribution
+            tvmRivest = tvm.toToroidalVMRivestDistribution();
+            testCase.verifyClass(tvmRivest, 'ToroidalVMRivestDistribution');
+            testCase.verifyEqual(tvm.pdf(testpoints), tvmRivest.pdf(testpoints), 'RelTol', 1E-10); 
+            
             %% test trigonometric moment
             m = tvm.trigonometricMoment(1);
             testCase.verifyEqual(m, tvm.trigonometricMomentNumerical(1), 'RelTol', 1E-9);

@@ -1,11 +1,6 @@
-classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
+classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution & AbstractDiracDistribution
     % Wrapped Dirac distribution on the hypertorus with dirac positions d and
     % weights w.
-    
-    properties
-        d
-        w
-    end
     
     methods
         function this = HypertoroidalWDDistribution(d_, w_)
@@ -15,17 +10,12 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             %   d_ (dim x L)
             %       Dirac locations in [0,2pi)^dim
             %   w_ (1 x L)
-            %       weights for each Dirac            
-            this.dim = size(d_,1);
-            this.d = mod(d_, 2*pi);
-            if (nargin<2)
-                %all diracs have equal weights
-                this.w = ones(1,size(this.d,2))/size(this.d,2);
-            else
-                assert(size(w_,1) == 1 ,'Weights must be given as a 1 x L vector.');
-                assert(size(d_,2) == size(w_,2),'Number of Dircas and weights must match.');
-                this.w = w_/sum(w_);
+            %       weights for each Dirac
+            arguments
+                d_ (:,:) double
+                w_ (1,:) double = ones(1,size(d_,2))/size(d_,2);
             end
+            this@AbstractDiracDistribution(mod(d_, 2*pi), w_);
         end      
         
         function p = plot(this, varargin)
@@ -37,6 +27,12 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   p (scalar)
             %       plot handle
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+            end
+            arguments (Repeating)
+                varargin
+            end
             switch this.dim
                 case 1
                     p = stem(this.d, this.w, varargin{:});
@@ -63,7 +59,37 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             end                        
         end
         
+        function s = sample(this, n)
+            % Obtain n samples from the distribution
+            %
+            % Parameters:
+            %   n (scalar)
+            %       number of samples
+            % Returns:
+            %   s (dim x n)
+            %       one sample per column
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+                n (1,1) double {mustBeInteger,mustBePositive}
+            end
+            s = sample@AbstractDiracDistribution(this, n);
+        end
+        
+        function dist = applyFunction(this,f)
+            % Regular handling + mod 2*pi
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+                f (1,1) function_handle
+            end
+            dist = applyFunction@AbstractDiracDistribution(this,f);
+            dist.d = mod(dist.d, 2*pi);
+        end
+        
         function m = trigonometricMoment(this,n)
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+                n (1,1) double {mustBeInteger}
+            end
             % Calculate n-th trigonometric moment, i.e., 
             % E([e^(inx_1); e^(inx_2); ...; e^(inx_dim)])
             %
@@ -76,66 +102,12 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             assert(isscalar(n));
             m = sum(exp(1i*n*this.d).*repmat(this.w,this.dim,1),2);
         end
-                
-        function hwd = applyFunction(this,f)
-            % Apply a function f(x) to each Dirac component and obtain its new position
-            %
-            % Parameters:
-            %   f (function handle)
-            %       function from [0,2*pi)^dim to [0,2*pi)^dim
-            % Returns:
-            %   twd (ToroidalWDDistribution)
-            %       distribution with new Dirac locations (and same
-            %       weights as before)
-            assert(isa(f,'function_handle'));
-            
-            d_ = zeros(size(this.d));
-            for i=1:size(this.d,2)
-                d_(:,i) = f(this.d(:,i));
-            end
-            hwd=this;
-            hwd.d=d_;
-        end
-        
-        function hwd = reweigh(this, f)
-            % Uses a function f(x) to calculate the weight of each Dirac
-            % component. The new weight is given by the product of the old 
-            % weight and the weight obtained with f. Restores normalization
-            % afterwards.
-            %
-            % Parameters:
-            %   f (function handle)
-            %       function from [0,2*pi)^dim to [0, infinity)
-            %       (needs to support vectorized inputs, i.e., dim x n matrices)
-            % Returns:
-            %   twd (ToroidalWDDistribution)
-            %       distribution with new weights and same Dirac locations
-            assert(isa(f,'function_handle'));
-            
-            wNew = f(this.d);
-            assert(all(wNew >= 0));
-            assert(sum(wNew) > 0);
-            
-            hwd=this;
-            hwd.w=wNew.*this.w;
-            hwd.w=hwd.w/sum(hwd.w);
-        end
-
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (dim x n)
-            %       one sample per column
-            assert(isscalar(n));
-            ids = discretesample(this.w,n);
-            s = this.d(:,ids);
-        end
                        
         function wd = marginalizeTo1D(this,dimension)
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+                dimension (1,1) double {mustBeInteger,mustBePositive}
+            end
             % Get marginal distribution in i-th dimension
             %
             % Parameters:
@@ -145,8 +117,17 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   wd (WDDistribution)
             %       marginal distribution (marginals are WD-distributed)
-            assert(dimension>= 1 || dimension <= this.dim);
             wd = WDDistribution(this.d(dimension,:), this.w);
+        end
+        
+        function wd = marginalizeOut(this, dimensions)
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+                dimensions (1,:) double {mustBeInteger,mustBePositive}
+            end
+            remainingDims = 1:this.dim;
+            remainingDims(dimensions) = [];
+            wd = WDDistribution(this.d(remainingDims,:), this.w);
         end
         
         function hd = shift(this, shiftAngles)
@@ -158,10 +139,14 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   hd (HypertoroidalWDDistribution)
             %       shifted distribution
-            assert(all(size(shiftAngles) == [this.dim, 1]));
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+                shiftAngles (:,1) double
+            end
+            assert(size(shiftAngles,1) == this.dim);
             
             hd = this;
-            hd.d = mod(this.d+repmat(shiftAngles, 1, size(this.d,2)),2*pi);
+            hd.d = mod(this.d+shiftAngles,2*pi); % Use implicit expansion of +
         end        
         
         function result = entropy(this)
@@ -170,6 +155,9 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   result (scalar)
             %       entropy of the distribution
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+            end
             warning('ENTROPY:DISCRETE','entropy is not defined in a continous sense')
             % return discrete entropy
             % The entropy only depends on the weights!
@@ -182,6 +170,9 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   wd (WDDistribution)
             %       WDDistribution with same parameters
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+            end
             assert(this.dim == 1);
             wd = WDDistribution(this.d, this.w);
         end
@@ -192,42 +183,24 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   twd (ToroidalWDDistribution)
             %       ToroidalWDDistribution with same parameters
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+            end
             assert(this.dim == 2);
             twd = ToroidalWDDistribution(this.d, this.w);
         end        
     end
     
-    methods (Sealed)
-        function logLikelihood(~, ~)
-            error('PDF:UNDEFINED', 'not supported');
-        end     
-
-        function pdf(~, ~)
-            % Placeholder, pdf does not exist for wrapped Dirac distributions
-            error('PDF:UNDEFINED', 'pdf is not defined')
-        end    
-        
-        function integralNumerical(~, ~)
-            error('PDF:UNDEFINED', 'not supported')
-        end        
-        
-        function trigonometricMomentNumerical(~,~)
-            % Disable numerical calculation of angular moments since it relies on the pdf
-            error('PDF:UNDEFINED', 'not supported');
-        end   
-        
-        function sampleMetropolisHastings(~, ~)
-            % Disable sampling algorithm relying on pdf
-            error('PDF:UNDEFINED', 'not supported');
-        end        
-
-        function squaredDistanceNumerical(~, ~)
-            error('PDF:UNDEFINED', 'not supported');
+    methods(Static)
+        function f = fromDistribution(distribution, noOfSamples)
+            arguments
+                distribution (1,1) AbstractHypertoroidalDistribution
+                noOfSamples (1,1) {mustBePositive, mustBeInteger}
+            end
+            f = HypertoroidalWDDistribution(...
+                distribution.sample(noOfSamples),ones(1,noOfSamples)/noOfSamples);
         end
-        
-        function kldNumerical(~, ~)
-            error('PDF:UNDEFINED', 'not supported');
-        end        
     end
+    
 end
 

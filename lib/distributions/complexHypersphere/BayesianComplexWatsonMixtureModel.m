@@ -29,7 +29,7 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
             assert(size(concentrations_, 1) == size(alpha_, 1), '')
             
             bcWMM.K = size(alpha_, 1);
-            bcWMM.d = size(B_, 1);
+            bcWMM.dim = size(B_, 1);
             
             bcWMM.B = B_;
             bcWMM.concentrations = concentrations_;

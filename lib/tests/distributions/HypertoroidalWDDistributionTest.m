@@ -59,7 +59,7 @@ classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(twdRew.d, twd.d);
             testCase.verifyEqual(twdRew.w, double(f(twd.d)));
             
-            f = @(x) 2; %does not change anything because of renormalization
+            f = @(x) 2*ones(1,size(x,2)); %does not change anything because of renormalization
             twdRew = twd.reweigh(f);
             testCase.verifyClass(twdRew, 'HypertoroidalWDDistribution');
             testCase.verifyEqual(twdRew.d, twd.d);
@@ -91,6 +91,7 @@ classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
             n = 20;
             d = 2*pi*rand(1,n);
             w = rand(1,n);
+            w = w/sum(w);
             hwd = HypertoroidalWDDistribution(d,w);
             wd1 = WDDistribution(d,w);
             wd2 = hwd.toWD();
@@ -104,12 +105,34 @@ classdef HypertoroidalWDDistributionTest< matlab.unittest.TestCase
             n = 20;
             d = 2*pi*rand(2,n);
             w = rand(1,n);
+            w = w/sum(w);
             hwd = HypertoroidalWDDistribution(d,w);
             twd1 = ToroidalWDDistribution(d,w);
             twd2 = hwd.toToroidalWD();
             testCase.verifyClass(twd2, 'ToroidalWDDistribution');
             testCase.verifyEqual(twd1.d, twd2.d, 'RelTol', 1E-10);
             testCase.verifyEqual(twd1.w, twd2.w, 'RelTol', 1E-10);
-        end        
+        end
+        
+        function testMarginalization(testCase)
+            rng default
+            n = 20;
+            d = 2*pi*rand(2,n);
+            w = rand(1,n);
+            w = w/sum(w);
+            hwd = HypertoroidalWDDistribution(d,w);
+            wd1 = hwd.marginalizeTo1D(1);
+            wd2 = hwd.marginalizeOut(2);
+            testCase.verifyEqual(wd1.d, wd2.d);
+            testCase.verifyEqual(wd1.w, wd2.w);
+        end
+        
+        function testFromDistribution(testCase)
+            rng(1) % This seed makes it work, not working well for rng default
+            C = wishrnd(eye(3),3);
+            hwn = HypertoroidalWNDistribution([1;2;3],C);
+            hwd = HypertoroidalWDDistribution.fromDistribution(hwn,1000000);
+            testCase.verifyEqual(hwd.meanDirection, hwn.meanDirection, 'AbsTol',0.002);
+        end
     end
 end

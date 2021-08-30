@@ -17,16 +17,10 @@ classdef WNFilter < AbstractCircularFilter
     % arXiv preprint: Systems and Control (cs.SY), January 2015.
         
     properties
-        wn WNDistribution
+        wn (1,1) WNDistribution = WNDistribution(0,1) % Initial Estimate 
     end
     
     methods
-        function this = WNFilter()
-            % Constructor
-            % Initial Estimate 
-            wn_ = WNDistribution(0,1);
-            this.setState(wn_);
-        end
         
         function setState(this, wn_)
             % Sets the current system state

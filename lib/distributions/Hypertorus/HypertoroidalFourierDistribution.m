@@ -10,31 +10,38 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         % handle it but is really easy. Currently, the symmetric argument in
         % ifft ensures that the two parts do not diverge indefinitely
         C double
-        transformation char
+        transformation char = 'sqrt'
     end
     
     methods
         function this = HypertoroidalFourierDistribution(C, transformation)
+            arguments
+                C {mustBeNonempty} % Class is checked below to provide better error message
+                transformation char = 'sqrt' % Square root of density is standard case
+            end
             % We assume this is at least twodimensional. Use
             % FourierDistribution for the one dimensional case
             if isa(C, 'AbstractHypertoroidalDistribution')
-                error('fourierCoefficients:invalidCoefficientMatrix', 'You gave a distribution as the first argument. To convert distributions to a distribution in Fourier representation, use .fromDistribution');
+                error('fourierCoefficients:invalidCoefficientMatrix', 'You gave a distribution as the first argument. To convert distributions to a distribution in Fourier representation, use .fromDistribution.');
             elseif numel(C) == 1
                 warning('fourierCoefficients:singleCoefficient', 'Fourier series only has one element, assuming dimension 1.');
             end
             this.dim = ndims(C) - (ismatrix(C) && size(C, 2) == 1); % Correction term for 1D
-            if nargin == 1 % Square root of density is standard case
-                this.transformation = 'sqrt';
-            else
-                this.transformation = transformation;
-            end
+            this.transformation = transformation;
             this.C = C;
             % Check if normalized. If not: Normalize!
             this = this.normalize;
         end
         
         function p = value(this, xa)
+            arguments
+                this HypertoroidalFourierDistribution
+                xa double {mustBeNonempty}
+            end
             assert(size(xa, 1) == this.dim);
+            assert(all(mod(size(this.C)-1,2)==0),...
+                ['Supporting even numbers of coefficients would result (even when going from -kmax to kmax-1) in complex values! Therefore, it is not supported.\n',...
+                'Consider symmetrizing like in fromFunctionValues.']);
             maxk = (size(this.C) - 1) / 2;
             kRanges = arrayfun(@(currMaxk){-currMaxk:currMaxk}, maxk);
             individualIndexMatrices = cell(size(kRanges));
@@ -72,6 +79,10 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             % Returns:
             %   p (1 x n)
             %       value of the pdf at each location
+            arguments
+                this HypertoroidalFourierDistribution
+                xa double {mustBeNonempty}
+            end
             val = value(this, xa);
             switch this.transformation
                 case 'sqrt'
@@ -88,12 +99,14 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function hfd = truncate(this, noOfCoefficients, forceNormalization)
+            arguments
+                this HypertoroidalFourierDistribution
+                noOfCoefficients (1,:) double {mustBeInteger,mustBePositive}
+                forceNormalization (1,1) logical = false
+            end
             % Truncates Fourier series. Fills up if there are less coefficients
             % Expects number of complex coefficients (or sum of number of real
             % coefficients)
-            if nargin < 3
-                forceNormalization = false;
-            end
             if numel(noOfCoefficients) == 1 && this.dim ~= 1
                 noOfCoefficients = ones(1, this.dim) * noOfCoefficients; % If only one value given, truncate evenly
             elseif numel(noOfCoefficients) == 1 && this.dim == 1
@@ -105,9 +118,7 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
                 if ~forceNormalization
                     hfd = this;
                 else
-                    warnstruct = warning('off', 'Normalization:notNormalized'); % We want to normalize, do not throw warning
-                    hfd = this.normalize;
-                    warning(warnstruct);
+                    hfd = this.normalize(warnUnnorm=false);
                 end
                 return
             elseif any(size(this.C) < noOfCoefficients)
@@ -128,22 +139,25 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             if forceNormalization || (~strcmp(this.transformation, 'identity')) && any(noOfCoefficients < size(this.C))
                 % Disable warning as we expect normalization to be
                 % necessary
-                warnStruct = warning('off', 'Normalization:notNormalized');
-                hfd = hfd.normalize;
-                warning(warnStruct);
+                hfd = hfd.normalize(warnUnnorm=false);
             end
         end
         
         function f = multiply(this, f2, noOfCoefficients)
+            arguments
+                this HypertoroidalFourierDistribution
+                f2 HypertoroidalFourierDistribution
+                noOfCoefficients (1,:) double {mustBeInteger,mustBePositive} = size(this.C)
+            end
             assert(strcmp(this.transformation, f2.transformation));
-            if nargin == 2
-                if ismatrix(this.C)&&size(this.C,2)==1 % 1-D case
-                    noOfCoefficients=numel(this.C);
-                else
-                    noOfCoefficients = size(this.C);
-                end
-            elseif numel(noOfCoefficients) == 1
+            if this.dim == numel(noOfCoefficients)-1 && noOfCoefficients(end)==1
+                % Has trailing 1. This can happen in 1-D case. Remove it.
+                noOfCoefficients(end) = [];
+            elseif numel(noOfCoefficients)==1
+                % Only one given, assume equal numbers for all dimensions
                 noOfCoefficients = ones(1, this.dim) * noOfCoefficients;
+            elseif this.dim ~= numel(noOfCoefficients) 
+                error(noOfCoefficients(end)==1, 'Incompatible dimensions');
             end
             if strcmp(this.transformation, 'log')
                 f = this;
@@ -170,16 +184,22 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function hfd = convolve(this, f2, noOfCoefficients)
-            assert(strcmp(this.transformation, f2.transformation));
-            if nargin == 2
-                if ismatrix(this.C)&&size(this.C,2)==1 % 1-D case
-                    noOfCoefficients=numel(this.C);
-                else
-                    noOfCoefficients = size(this.C);
-                end
-            elseif numel(noOfCoefficients) == 1
-                noOfCoefficients = ones(1, this.dim) * noOfCoefficients;
+            arguments
+                this HypertoroidalFourierDistribution
+                f2 HypertoroidalFourierDistribution
+                noOfCoefficients (1,:) double {mustBeInteger,mustBePositive} = size(this.C)
             end
+            assert(strcmp(this.transformation, f2.transformation));
+            if this.dim == numel(noOfCoefficients)-1 && noOfCoefficients(end)==1
+                % Has trailing 1. This can happen in 1-D case. Remove it.
+                noOfCoefficients(end) = [];
+            elseif numel(noOfCoefficients)==1
+                % Only one given, assume equal numbers for all dimensions
+                noOfCoefficients = ones(1, this.dim) * noOfCoefficients;
+            elseif this.dim ~= numel(noOfCoefficients) 
+                error(noOfCoefficients(end)==1, 'Incompatible dimensions');
+            end
+
             if ~isequal(size(this.C), size(f2.C)) % Adjust coefficient matricies if they are not equal
                 warnStruct = warning('off', 'Truncate:TooFewCoefficients');
                 hfdtmp = this.truncate(max([size(this.C); size(f2.C)]));
@@ -208,9 +228,13 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             end
         end
         
-        function hfd = normalize(this)
+        function hfd = normalize(this, opt)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                opt.tol (1,1) double = 1e-4
+                opt.warnUnnorm (1,1) logical = true
+            end
             % Normalize Fourier density while taking its type into account
-            tol = 1e-4;
             switch this.transformation
                 case 'sqrt'
                     c00 = norm(this.C(:))^2; % Square root calculated later to use norm and not squared norm
@@ -232,51 +256,220 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
                 warning('Normalization:negative', 'C00 is negative. This can either be caused by a user error or due to negativity caused by non-square rooted version');
             elseif abs(c00) < 1e-200 % Tolerance has to be that low to avoid unnecessary errors on multiply
                 error('Normalization:almostZero', 'C00 is too close to zero, this usually points to a user error');
-            elseif abs(factorForId-1) > tol
-                warning('Normalization:notNormalized', 'Coefficients apparently do not belong to normalized density. Normalizing...');
+            elseif abs(factorForId-1) > opt.tol
+                if opt.warnUnnorm
+                    warning('Normalization:notNormalized', 'Coefficients apparently do not belong to normalized density. Normalizing...');
+                end
             else
                 return % Normalized, return original density
             end
             hfd.C = this.C / normalizationFactor;
         end
         
-        function hfd = marginalizeOut(this, dimension)
-            assert(strcmp(this.transformation, 'identity'), 'Marginals are currently only supported for the identity transformation')
-            assert(dimension >= 1 || dimension <= this.dim);
-            hfd = this;
-            
-            indices = repmat({':'}, 1, this.dim);
-            indices{dimension} = (size(this.C, dimension) + 1) / 2;
-            coeffs = size(this.C);
-            coeffs(dimension) = [];
-            if numel(coeffs) == 1 % Return a FourierDistribution if only one dimension remains
-                hfd = FourierDistribution.fromComplex(reshape(2*pi*this.C(indices{:}), [1, coeffs]), 'identity');
-                return
+        function hfd = marginalizeOut(this, dims)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                dims (1,:) double {mustBeInteger,mustBePositive}
             end
-            hfd.C = reshape(2*pi*this.C(indices{:}), coeffs);
-            hfd.dim = this.dim - 1;
+            assert(all(dims <= this.dim)); % Positivity already checked above
+            hfd = this;
+            switch this.transformation
+                case 'identity'
+                    indices = repmat({':'},[1,this.dim]);
+                    indices(dims) = num2cell((size(this.C,dims) + 1) / 2);
+                    sizesRemaining = size(this.C);
+                    sizesRemaining(dims) = [];
+                    hfd.C = reshape((2*pi)^numel(dims)*this.C(indices{:}), [sizesRemaining,1]);
+                case 'sqrt'
+                    % Ideas one can have, which are not what we want:
+                    % 1) IFFT along one dimension and then
+                    % indexing {1} and {:} - this will yield SLICE! Not a
+                    % marginal.
+                    % 2) IFFT along one dimension and then calculate mean
+                    % 2*pi - integral does not help if we are still in the
+                    % square root representation.
+                    % Working ways:
+                    % 1) Get cid and marginalize then, go back to sqrt
+                    Cid = convn(this.C,this.C,'same');
+                    indices = repmat({':'},[1,this.dim]);
+                    indices(dims) = num2cell((size(this.C,dims) + 1) / 2);
+                    sizesRemaining = size(this.C);
+                    sizesRemaining(dims) = [];
+                    Cidmarginalized = reshape((2*pi)^numel(dims)*Cid(indices{:})/prod(sizesRemaining), [sizesRemaining,1]);
+                    hfd.C = fftshift(fftn(sqrt(ifftn(ifftshift(Cidmarginalized),'symmetric'))));
+                    % 2) Get sqrt of vals on grid, square, marginalize via
+                    % mean, then square root.
+                otherwise
+                    error('Transformation not supported for this operation.');
+            end
+           hfd.dim = this.dim - numel(dims);     
         end
         
         function fd = marginalizeTo1D(this, dimension)
-            assert(strcmp(this.transformation, 'identity'), 'Marginals are currently only supported for the identity transformation')
-            assert(dimension >= 1 || dimension <= this.dim);
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                dimension (1,1) double {mustBeInteger,mustBePositive}
+            end
+            assert(dimension <= this.dim);
             
-            indices = num2cell((size(this.C) + 1)/2);
-            indices{dimension} = ':';
-            fd = FourierDistribution.fromComplex(reshape((2 * pi)^(this.dim - 1)*squeeze(this.C(indices{:})), 1, size(this.C, dimension)), 'identity');
+            if strcmp(this.transformation,'identity')
+                indices = num2cell((size(this.C) + 1)/2);
+                indices{dimension} = ':';
+                fd = FourierDistribution.fromComplex(reshape((2 * pi)^(this.dim - 1)*squeeze(this.C(indices{:})), 1, size(this.C, dimension)), 'identity');
+            else
+                hfd = this.marginalizeOut([1:dimension-1,dimension+1:this.dim]);
+                fd = FourierDistribution.fromComplex(hfd.C.',this.transformation);
+            end
+        end
+        
+        function hgd = conditionOn(this, dims, val, useFFTN)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                dims (1,:) double {mustBeInteger,mustBePositive,mustBeNonempty}
+                val (:,1) double {mustBeNonempty}
+                useFFTN (1,1) logical = false % Can use fftn to avoid having multiple ffts when conditioning on multiple dims
+            end
+            assert(all(dims<=this.dim),'Cannot perform this operation for a dimension that is higher than the dimensionality of the distribution.');
+            assert(numel(dims)==numel(val));
+            hgd = this.sliceAt(dims, val, useFFTN);
+            hgd = hgd.normalize(warnUnnorm=false);
+        end
+        
+        function hfd = sliceAt(this, dims, val, useFFTN)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                dims (1,:) double {mustBeInteger,mustBePositive}
+                val (:,1) double
+                useFFTN (1,1) logical = false % Can use fftn to avoid having multiple ffts when conditioning on multiple dims
+            end
+            assert(numel(dims)==numel(val),'Need to give as many values as dimensions to condition on.');
+            assert(all(dims<=this.dim),'Cannot condition on a dimension that is higher than the dimensionality of the distribution.');
+            shiftVec = zeros(this.dim,1);
+            shiftVec(dims) = -val;
+            
+            this = this.shift(shiftVec);
+            sizesResult = size(this.C);
+            sizesResult(dims) = [];
+            if ~useFFTN
+                Ccurr = this.C;
+                for d = dims
+                    % We need to undo the fftshift for the dimensions along
+                    % which we transform (in our paper, we assume the fft
+                    % includes and fftshift along the dimension and the
+                    % ifft includes and ifftshift - it is all just a matter
+                    % of convention anyways)
+                    Ccurr = size(this.C,d)*ifft(ifftshift(Ccurr,d),[],d);
+                end
+                indArray = repmat({':'},1,this.dim);
+                indArray(dims) = {1};
+                % If we a whole iffshift over all dimensions before and shifted
+                % back aftwards, we would need to index according to
+                % indArray(dims) = num2cell((size(Ccurr,dims)+1)/2);
+                CNew = reshape(Ccurr(indArray{:}),[sizesResult,1]);
+            else
+                indArray = repmat({':'},1,this.dim);
+                indArray(dims) = {1};
+                
+                vals = this.valueOnGrid();
+                valsToTrans = reshape((vals(indArray{:})),[sizesResult,1]);
+                % Use code from fromFunctionValues without calling it to
+                % avoid normalization
+                CNew = fftshift(fftn(valsToTrans)/numel(valsToTrans));
+                if ~(all(mod(size(CNew),2)==1))
+                    % Fill it up with the mirrored version if there are even
+                    % numbers
+                    CNew = padarray(CNew,double(mod(size(CNew),2)==0),'post');
+                    indicesForReversing = arrayfun(@(i){size(CNew,i):-1:1},1:ndims(CNew));
+                    CNew = 0.5 * (CNew+conj(CNew(indicesForReversing{:})));
+                end
+            end
+            hfd = this;
+            hfd.dim = numel(sizesResult);
+            hfd.C = CNew;
+        end
+        
+        function hfdLikelihood = likelihood(this, dims, val)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                dims (1,:) double {mustBeInteger,mustBePositive}
+                val (:,1) double
+            end
+            shiftVec = zeros(this.dim,1);
+            shiftVec(dims) = -val;
+            hfdShifted = this.shift(shiftVec);
+            
+            % We do normalize this density by using the constructor, but it
+            % does not matter because the density should e normalized
+            % anyways
+            hgdShifted = HypertoroidalGridDistribution.fromDistribution(hfdShifted,size(this.C,1:this.dim));
+            % The transformation to Fourier is skipped in .likelihood because we give a
+            % zero vector as value. Thus, only the operations we want
+            % it to perform are performed
+            hgdLikelihood = hgdShifted.likelihood(dims, zeros(numel(dims),1));
+            
+            fvals = reshape(hgdLikelihood.gridValues, [hgdLikelihood.noOfGridPoints,1]);
+            switch this.transformation
+                case 'sqrt'
+                    fvals = sqrt(fvals);
+                case 'log'
+                    fvals = log(fvals);
+                case 'identity' %keep them unchanged
+                case 'custom' %already transformed
+                otherwise
+                    error('fromFunctionValues:unrecognizedTranformation', 'Transformation not recognized or unsupported by transformation via FFT');
+            end
+            % Copied code from fromFunctionValues to prevent a noramlization
+            Cnew = fftshift(fftn(fvals)/numel(fvals));
+            if ~(all(mod(size(Cnew),2)==1))
+                % Fill it up with the mirrored version if there are even
+                % numbers
+                Cnew = padarray(Cnew,double(mod(size(Cnew),2)==0),'post');
+                indicesForReversing = arrayfun(@(i){size(Cnew,i):-1:1},1:ndims(Cnew));
+                Cnew = 0.5 * (Cnew+conj(Cnew(indicesForReversing{:})));
+            end
+            hfdLikelihood = this;
+            hfdLikelihood.C = Cnew;
+            hfdLikelihood.dim = hgdLikelihood.dim;
+        end
+        
+        function vals = valueOnGrid(this)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+            end
+            vals = ifftn(ifftshift(this.C), 'symmetric') * numel(this.C);
+        end
+        
+        function p = pdfOnGrid(this)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+            end
+            val = this.valueOnGrid();
+            switch this.transformation
+                case 'sqrt'
+                    assert(all(imag(val) < 0.0001,1:this.dim));
+                    p = real(val).^2;
+                case 'identity'
+                    p = val;
+                case 'log'
+                    warning('pdf:mayNotBeNormalized', 'Density may not be normalized');
+                    p = exp(val);
+                otherwise
+                    error('transformation:unrecognizedTransformation', 'Transformation not recognized or unsupported');
+            end
         end
         
         function hfd = transformViaFFT(this, desiredTransformation, noOfCoefficients)
             % Calculates transformation of Fourier series via FFT
             % Expects number of complex coefficients (or sum of number of real
             % coefficients)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                desiredTransformation char
+                noOfCoefficients (1,:) double = []
+            end
             assert(strcmp(this.transformation, 'identity'), 'Cannot transform via FFT if already transformed')
-            if nargin == 2
-                if ismatrix(this.C)&&size(this.C,2)==1 % 1-D case
-                    noOfCoefficients=numel(this.C);
-                else
-                    noOfCoefficients = size(this.C);
-                end
+            if isempty(noOfCoefficients)
+                noOfCoefficients = size(this.C,1:this.dim);
             end
             fvals = ifftn(ifftshift(this.C), 'symmetric') * numel(this.C); %Calculate function values via IFFT
             ftmp = HypertoroidalFourierDistribution.fromFunctionValues(fvals, noOfCoefficients, desiredTransformation);
@@ -287,7 +480,14 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         
         function hfd = transformViaCoefficients(this, desiredTransformation, noOfCoefficients)
             % Calculates transformations using Fourier coefficients
-            if nargin == 2, noOfCoefficients = size(this.C);end
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                desiredTransformation char
+                noOfCoefficients (1,:) double = []
+            end
+            if isempty(noOfCoefficients)
+                noOfCoefficients = size(this.C,1:this.dim);
+            end
             switch desiredTransformation
                 case 'identity'
                     hfd = this;
@@ -317,9 +517,13 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function hfd = shift(this, shiftAngles)
+            arguments
+                this HypertoroidalFourierDistribution
+                shiftAngles (:,1) double
+            end
             % Shift distribution by shiftAngles.
-            assert(isequal(numel(shiftAngles), this.dim));
-            if ~(any(shiftAngles)) % All angles are zero, do not change anything.
+            assert(numel(shiftAngles)==this.dim);
+            if all(shiftAngles==0) % All angles are zero, do not change anything.
                 hfd = this;
                 return;
             end
@@ -338,6 +542,11 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function int = integral(this, l, r)
+            arguments
+                this HypertoroidalFourierDistribution
+                l (:,1) double = zeros(this.dim,1)
+                r (:,1) double = 2*pi*ones(this.dim,1)
+            end
             % Calculates the integral of the pdf from l to r
             %
             % Parameters:
@@ -350,9 +559,6 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             if nargin < 2
                 int = 1;
                 return;
-            end
-            if nargin < 3
-                r = 2 * pi * ones(this.dim, 1);
             end
             assert(all(size(l) == [this.dim, 1]));
             assert(all(size(r) == [this.dim, 1]));
@@ -387,6 +593,9 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function Cov2dimD = covariance2dimD(this)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+            end
             % Calculates covariance of [cos(x1), sin(x1), cos(x2), sin(x2), ...,cos(xd), sin(xd)]
             %
             % Returns:
@@ -445,6 +654,10 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function m = trigonometricMoment(this, n)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+                n (1,1) double {mustBeInteger}
+            end
             % Calculate n-th angular moment from coefficients
             if n == 0
                 m = ones(this.dim, 1);
@@ -465,6 +678,12 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function p = plot(this, varargin)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+            end
+            arguments (Repeating)
+                varargin
+            end
             if this.dim ~= 2 % For other dimensions, just fall back to regular plotting
                 p = plot@AbstractHypertoroidalDistribution(this, varargin{:});
                 return
@@ -479,10 +698,22 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             [alpha, beta] = meshgrid(linspace(0, 2*pi, noPoints));
             p = surf(alpha, beta, fvals([1:factorsOdd(1):end, 1], [1:factorsOdd(2):end, 1]).');
         end
+        
+        function fd = toCircular(this)
+            arguments
+                this (1,1) HypertoroidalFourierDistribution
+            end
+            fd = FourierDistributionComplex(this.C, this.transformation);
+        end
     end
     
     methods(Static)
         function hfd = fromFunction(fun, noOfCoefficients, desiredTransformation)
+            arguments
+               fun (1,1) function_handle
+               noOfCoefficients (1,:) {mustBePositive,mustBeInteger} % Do not write double to prevent casting of strings such as accidentially given 'sqrt'
+               desiredTransformation char = 'sqrt'
+            end
             % Creates Fourier distribution from function
             % Function must be able to take vector arguments
             % Dimension of noOfCoefficients has to be in accordance to
@@ -497,34 +728,58 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             hfd = HypertoroidalFourierDistribution.fromFunctionValues(fvals, noOfCoefficients, desiredTransformation);
         end
         
-        function hfd = fromFunctionValues(fvals, noOfCoefficients, desiredTransformation)
+        function hfd = fromFunctionValues(fvals, noOfCoefficients, desiredTransformation, alreadyTransformed)
+            arguments
+               fvals double % n-d-array
+               noOfCoefficients (1,:) double {mustBePositive,mustBeInteger} = size(fvals)+double(mod(size(fvals),2)==0)
+               desiredTransformation char = 'sqrt'
+               alreadyTransformed (1,1) logical = false
+            end
+            if nargin==1 && ismatrix(fvals)&&size(fvals,2)==1 % The default values will not work for 1-D case, change this here
+                noOfCoefficients(end)=[];
+            end
+            % Ensure that n (or 1) sizes are given for n-d tensors
+            assert(numel(noOfCoefficients)==ndims(fvals) || numel(noOfCoefficients)==1);
             % Creates Fourier distribution from function values
             % Assumes fvals are not yet transformed, use custom if they already
             % are transformed
-            assert(all(noOfCoefficients > 1) && all(mod(noOfCoefficients-1, 2) == 0),...
-                'Invalid number of coefficients, numbers for all dimensions have to be odd and greater than 1.');
+            assert(all(mod(noOfCoefficients-1, 2) == 0),...
+                'Invalid number of coefficients, numbers for all dimensions have to be odd.');
             % Cannot directly compare the size of fvals with noOfCoefficients because we
             % allow truncation afterward. But we ensure there is no 1 x n
             % matrix by accident, since it has to be n x 1.
             assert(all(size(fvals)>1)||ismatrix(fvals)&&size(fvals,2)==1,...% Later condition ensures [n,1] matrices work
                 'Some dimension has only one entry along it. Fix this.');
-            % Ensure dimensions match
-            assert(numel(noOfCoefficients)==ndims(fvals) || numel(noOfCoefficients)==1);
-            switch desiredTransformation
-                case 'sqrt'
-                    fvals = sqrt(fvals);
-                case 'log'
-                    fvals = log(fvals);
-                case 'identity' %keep them unchanged
-                case 'custom' %already transformed
-                otherwise
-                    error('fromFunctionValues:unrecognizedTranformation', 'Transformation not recognized or unsupported by transformation via FFT');
+            if ~alreadyTransformed
+                switch desiredTransformation
+                    case 'sqrt'
+                        fvals = sqrt(fvals);
+                    case 'log'
+                        fvals = log(fvals);
+                    case 'identity' %keep them unchanged
+                    case 'custom' %already transformed
+                    otherwise
+                        error('fromFunctionValues:unrecognizedTranformation', 'Transformation not recognized or unsupported by transformation via FFT');
+                end
             end
-            hfd = HypertoroidalFourierDistribution(fftshift(fftn(fvals)/numel(fvals)), desiredTransformation);
+            fourierCoefficients = fftshift(fftn(fvals)/numel(fvals));
+            if ~(all(mod(size(fourierCoefficients),2)==1))
+                % Fill it up with the mirrored version if there are even
+                % numbers
+                fourierCoefficients = padarray(fourierCoefficients,double(mod(size(fourierCoefficients),2)==0),'post');
+                indicesForReversing = arrayfun(@(i){size(fourierCoefficients,i):-1:1},1:ndims(fourierCoefficients));
+                fourierCoefficients = 0.5 * (fourierCoefficients+conj(fourierCoefficients(indicesForReversing{:})));
+            end
+            hfd = HypertoroidalFourierDistribution(fourierCoefficients, desiredTransformation);
             hfd = hfd.truncate(noOfCoefficients);
         end
         
         function hfd = fromDistribution(distribution, noOfCoefficients, desiredTransformation)
+            arguments
+                distribution (1,1) AbstractHypertoroidalDistribution
+                noOfCoefficients (1,:) {mustBePositive,mustBeInteger} % Do not write double to prevent casting of strings such as accidentially given 'sqrt'
+                desiredTransformation = 'sqrt'
+            end
             % Creates Fourier distribution from a different distribution
             % Always uses FFT as no formulae for pupular distributions
             % available
@@ -535,9 +790,6 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             assert(isa(distribution, 'AbstractToroidalDistribution') && (size(noOfCoefficients, 2) == 2) || ...
                 isa(distribution, 'AbstractHypertoroidalDistribution') && (size(noOfCoefficients, 2) == distribution.dim), ...
                 'fromDistribution:invalidObject', 'First argument has to be a (hyper)toroidal distribution with appropriate dimensionality.');
-            if nargin == 2
-                desiredTransformation = 'sqrt';
-            end
             if isa(distribution, 'AbstractCircularDistribution') % Convert via FourierDistribution for circular distributions
                 fd = FourierDistribution.fromDistribution(distribution, noOfCoefficients, desiredTransformation);
                 hfd = HypertoroidalFourierDistribution(fd.c.', desiredTransformation);
@@ -572,6 +824,8 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
                     otherwise
                         error('Transformation not recognized or unsupported');
                 end
+            elseif isa(distribution, 'HypertoroidalGridDistribution')
+                hfd = HypertoroidalFourierDistribution.fromFunctionValues(distribution.gridValues,noOfCoefficients,desiredTransformation);
             elseif strcmp(desiredTransformation, 'identity') && isa(distribution, 'HypertoroidalWNDistribution')
                 % Could also handle 1-D explicitly
                 if (distribution.dim == 2) % Solution for 2D that is more efficient in both computation and memory
@@ -601,8 +855,10 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
         end
         
         function hfd = fromSamples(samples, noOfCoefficients, desiredTransformation)
-            if nargin == 2
-                desiredTransformation = 'sqrt';
+            arguments
+                samples (:,:) double {mustBeNonempty}
+                noOfCoefficients (1,:) {mustBePositive,mustBeInteger} % Do not write double to prevent casting of strings such as accidentially given 'sqrt'
+                desiredTransformation = 'sqrt'
             end
             wd = HypertoroidalWDDistribution(samples);
             hfd = HypertoroidalFourierDistribution.fromDistribution(wd,...

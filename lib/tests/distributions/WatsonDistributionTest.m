@@ -21,6 +21,7 @@ classdef WatsonDistributionTest< matlab.unittest.TestCase
             modeNumerical = w.modeNumerical;
             difference = min(abs(modeNumerical-w.mode), abs(modeNumerical+w.mode));
             testCase.verifyEqual(difference, zeros(w.dim,1), 'AbsTol',1E-5)
+
             %% test integral
             testCase.verifyEqual(w.integral(), 1, 'RelTol', 1E-5);
             
