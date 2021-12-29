@@ -34,7 +34,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   B (BinghamDistribution)
             %       an object representing the constructed distribution
-            
+            arguments
+                Z_ (:,1) double
+                M_ (:,:) double
+            end
             B.dim = size(M_,1);
             
             % Check Dimensions
@@ -67,6 +70,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   p (1 x n row vector)
             %       values of the pdf at each column of xa
+            arguments
+                this (1,1) BinghamDistribution
+                xa (:,:) double
+            end
             assert(size(xa,1) == this.dim);
             
             C = this.M * diag(this.Z) * this.M';
@@ -91,6 +98,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   B (BinghamDistribution)
             %       Bingham distribution representing this*B2 (after
             %       renormalization)
+            arguments
+                this (1,1) BinghamDistribution
+                B2 (1,1) BinghamDistribution
+            end
             assert(isa(B2, 'BinghamDistribution'));
             if this.dim == B2.dim
                 C = this.M * diag(this.Z) * this.M' + B2.M * diag(B2.Z) * B2.M'; % new exponent
@@ -122,6 +133,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   B (BinghamDistribution)
             %       Bingham distribution representing the convolution
+            arguments
+                this (1,1) BinghamDistribution
+                B2 (1,1) BinghamDistribution
+            end
             B1=this;
             B1S = B1.moment();
             B2S = B2.moment();
@@ -206,6 +221,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   s (dim x n)
             %       one sample per column
+            arguments
+                this (1,1) BinghamDistribution
+                n (1,1) {mustBeInteger, mustBePositive}
+            end
             s = sampleKent(this, n);
         end
         
@@ -216,10 +235,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Kent, J. T.; Ganeiber, A. M. & Mardia, K. V.
             % A New Method to Simulate the Bingham and Related Distributions in Directional Data Analysis with Applications
             % arXiv preprint arXiv:1310.8110, 2013
-            
-            assert(isscalar(n));
-            assert(n>0);
-            
+            arguments
+                this (1,1) BinghamDistribution
+                n (1,1) {mustBeInteger, mustBePositive}
+            end
             s = zeros(this.dim, n);
             i = 1;
             A = - this.M * diag(this.Z) * this.M'; % Kent uses a minus sign here!
@@ -266,10 +285,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   X (dimx n matrix)
             %       generated samples (one sample per column)
-            
-            assert(isscalar(n));
-            assert(n>0);
-            
+            arguments
+                this (1,1) BinghamDistribution
+                n (1,1) {mustBeInteger, mustBePositive}
+            end
             burnin = 5;
             samplerate = 10;
             
@@ -308,10 +327,16 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Returns:
             %   m (column vector)
             %       mode of the distribution (note that -m is the mode as well)
+            arguments
+                this (1,1) BinghamDistribution
+            end
             m = this.M(:,end); %last column of M
         end
         
         function S = moment(this)
+            arguments
+                this (1,1) BinghamDistribution
+            end
             % Calculate scatter/covariance matrix of Bingham distribution
             % Returns:
             %   S (d x d matrix)
@@ -352,7 +377,11 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %     generated samples (one sample per column)
             %   weights (1 x ... vector)
             %     weight > 0 for each sample (weights sum to one)
-            if nargin < 2 % default value for lambda
+            arguments
+                this (1,1) BinghamDistribution
+                lambda = []
+            end
+            if isempty(lambda) % default value for lambda
                 if this.dim == 2
                     lambda = 'uniform';
                 else
@@ -409,7 +438,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             % Igor Gilitschenski, Gerhard Kurz, Uwe D. Hanebeck, Roland Siegwart,
             % Optimal Quantization of Circular Distributions
             % Proceedings of the 19th International Conference on Information Fusion (Fusion 2016), Heidelberg, Germany, July 2016.
-            
+            arguments
+                this (1,1) BinghamDistribution
+                N (1,1) {mustBeInteger, mustBePositive}
+            end
             assert(this.dim == 2, 'sampleOptimalQuantization only implemented for 2d Bingham');
             
             mu = atan2(this.M(2,2), this.M(1,2));
@@ -436,6 +468,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   samples (d x n  matrix)
             %     generated samples (one sample per column)
             %   weights (1 x n vector)
+            arguments
+                this (1,1) BinghamDistribution
+                n (1,1) {mustBeInteger, mustBePositive}
+            end
             s = mvnrnd(zeros(1,this.dim), eye(this.dim), n)';
             s = s./repmat(sqrt(sum(s.^2,1)),this.dim, 1);
             
@@ -453,6 +489,10 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   alpha (scalar)
             %       the confidence interval ranges from mode-alpha to
             %       mode+alpha
+            arguments
+                this (1,1) BinghamDistribution
+                p (1,1) {mustBeInRange(p,0,1,'exclusive')}
+            end
             if this.dim==2
                 assert(p>0)
                 assert(p<1)
@@ -475,8 +515,9 @@ classdef BinghamDistribution < AbstractHypersphericalDistribution
             %   P (1 x 1 matrix for d=2, if angle = true (angle represenation)
             %      d x d matrix for d>=2, if angle = false (vector
             %      representation)
-            if nargin<2
-                angle = false;
+            arguments
+                this (1,1) BinghamDistribution
+                angle = false
             end
             if angle
                 assert(this.dim==2)

@@ -1,6 +1,7 @@
 classdef HypersphericalParticleFilterTest< matlab.unittest.TestCase    
     methods (Test)
         function test3D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             rng(1);
             nSamples=20000;
             vmfInit=VMFDistribution([1;0;0],10);
@@ -17,11 +18,11 @@ classdef HypersphericalParticleFilterTest< matlab.unittest.TestCase
 
             hpf.predictIdentity(vmfSys);
             vmfFilter.predictIdentity(vmfSys);
-            warningSetting=warning('off','updateIdentity:muReplaced');
+            fixture = testCase.applyFixture(SuppressedWarningsFixture('updateIdentity:muReplaced'));
             hpf.updateIdentity(vmfMeas,[0;0;1]);
             hpf.updateIdentity(vmfMeas,[0;0;1]);
             hpf.updateIdentity(vmfMeas,[0;0;1]);
-            warning(warningSetting);
+            fixture.teardown();
             vmfFilter.updateIdentity(vmfMeas,[0;0;1]);
             vmfFilter.updateIdentity(vmfMeas,[0;0;1]);
             vmfFilter.updateIdentity(vmfMeas,[0;0;1]);

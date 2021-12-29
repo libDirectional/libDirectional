@@ -14,4 +14,9 @@ classdef (Abstract) AbstractUniformDistribution < AbstractDistribution
             p = (1/this.getManifoldSize)*ones(1,size(xa,2));
         end 
     end
+    methods (Sealed)
+        function m = mode(~) %#ok<STOUT>
+            error('Mode not available for uniform distribution');
+        end
+    end
 end

@@ -57,7 +57,11 @@ classdef (Abstract) AbstractMixture < AbstractDistribution
             
             % Sample component first, then sample from the chosen component
             d = discretesample(this.w,n);
-            s = zeros(this.dim,n);
+            if isa(this.dists{1},'SE2BinghamDistribution')
+              s = zeros(this.dim+1,n);
+            else
+              s = zeros(this.dim,n);
+            end
             occurrences=histc(d,1:length(this.dists));
             count=1;
             indRange = 1:length(this.dists);

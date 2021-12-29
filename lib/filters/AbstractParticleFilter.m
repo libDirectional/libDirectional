@@ -36,7 +36,7 @@ classdef (Abstract) AbstractParticleFilter < AbstractFilter
             this.predictNonlinear(@(x) x, noiseDistribution);
         end
         
-        function predictNonlinear(this, f, noiseDistribution, functionIsVectorized)
+        function predictNonlinear(this, f, noiseDistribution, functionIsVectorized, shiftInsteadOfAdd)
             % Predicts assuming a nonlinear system model, i.e.,
             % x(k+1) = f(x(k)) + w(k),
             % where w(k) is additive noise given by noiseDistribution.
@@ -54,6 +54,7 @@ classdef (Abstract) AbstractParticleFilter < AbstractFilter
                 % Provide distribution or keep empty
                 noiseDistribution = []
                 functionIsVectorized (1,1) logical = true
+                shiftInsteadOfAdd (1,1) logical = ~(isa(noiseDistribution,'AbstractHypertoroidalDistribution')||isa(noiseDistribution,'AbstractHypercylinddricalDistribution'))
             end
             assert(isempty(noiseDistribution) || this.dist.dim == noiseDistribution.dim);
             % Apply f
@@ -61,12 +62,25 @@ classdef (Abstract) AbstractParticleFilter < AbstractFilter
                 this.dist.d = f(this.dist.d);
             else
                 this.dist = this.dist.applyFunction(f);           
-            end  
-            % Calculate effect of (additive) noise. Bounded dimensions have
-            % to be wrapped in subclasses
+            end
             if ~isempty(noiseDistribution)
-                noise = noiseDistribution.sample(numel(this.dist.w));
-                this.dist.d = this.dist.d + noise;
+                if ~shiftInsteadOfAdd
+                    % Calculate effect of (additive) noise. Bounded dimensions have
+                    % to be wrapped in subclasses
+                    noise = noiseDistribution.sample(numel(this.dist.w));
+                    this.dist.d = this.dist.d + noise;
+                else
+                    % We leave it up to the subclasses to check the noise
+                    % is "neural".
+                    % This means: All 0s for hypertoroidal, linear domains 
+                    % and Cartesian products thereof; [0;...;0;1] for 
+                    % hyperspherical/hyperhemispherical domains 
+                    % (can be Cartesian product with linear domains)
+                    for i=1:length(this.dist.d)
+                        noiseCurr = noiseDistribution.setMode(this.dist.d(:,i));
+                        this.dist.d(:,i) = noiseCurr.sample(1);
+                    end
+                end
             end 
         end
         
@@ -103,14 +117,22 @@ classdef (Abstract) AbstractParticleFilter < AbstractFilter
             this.dist.d=d;
         end
         
-        function updateIdentity(this, noiseDistribution, z)
+        function updateIdentity(this, noiseDistribution, z, shiftInsteadOfAdd)
             arguments
                 this (1,1) AbstractParticleFilter
                 noiseDistribution (1,1) AbstractDistribution
                 z (:,1) double
+                shiftInsteadOfAdd (1,1) logical = ~(isa(noiseDistribution,'AbstractHypertoroidalDistribution')||isa(noiseDistribution,'AbstractHypercylinddricalDistribution'))
             end
-            assert(size(z,1)==noiseDistribution.dim);
-            this.updateNonlinear(LikelihoodFactory.additiveNoiseLikelihood(@(x) x, noiseDistribution), z);
+            assert(isempty(z) || size(z,1)==noiseDistribution.dim);
+            if ~shiftInsteadOfAdd
+                likelihood = LikelihoodFactory.additiveNoiseLikelihood(@(x) x, noiseDistribution);
+                this.updateNonlinear(likelihood, z);
+            else
+                noiseForLikelihood = noiseDistribution.setMode(z);
+                likelihood = @(x)noiseForLikelihood.pdf(x);
+                this.updateNonlinear(likelihood);
+            end
         end
         
         function updateNonlinear(this, likelihood, z)
@@ -134,7 +156,7 @@ classdef (Abstract) AbstractParticleFilter < AbstractFilter
             % and specify the measurement as z or use a likelihood that
             % depends only on x and omit z.
             if isa(likelihood,'AbstractDistribution')
-                assert(isempty(z), 'Cannot pass a density and a masurement. To assume additive noise, use updateIdentity.');
+                assert(isempty(z), 'Cannot pass a density and a measurement. To assume additive noise, use updateIdentity.');
                 likelihood = @(x)likelihood.pdf(x);
             end
                 

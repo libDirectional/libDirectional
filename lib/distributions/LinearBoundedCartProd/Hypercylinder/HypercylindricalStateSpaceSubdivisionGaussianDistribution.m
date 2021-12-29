@@ -1,48 +1,48 @@
-classdef HypercylindricalAreaPartGaussianDistribution < AreaPartGaussianDistribution & HypercylindricalAreaPartDistribution
+classdef HypercylindricalStateSpaceSubdivisionGaussianDistribution < StateSpaceSubdivisionGaussianDistribution & HypercylindricalStateSpaceSubdivisionDistribution
     methods
-        function this = HypercylindricalAreaPartGaussianDistribution(gd_, gaussians)
+        function this = HypercylindricalStateSpaceSubdivisionGaussianDistribution(gd_, gaussians)
             % In this class, the grid must be on the hypertorus.
             arguments
                 gd_ (1,1) HypertoroidalGridDistribution
                 gaussians (:,1) GaussianDistribution
             end
-            this@HypercylindricalAreaPartDistribution(gd_, gaussians);
-            this@AreaPartGaussianDistribution(gd_, gaussians);
+            this@HypercylindricalStateSpaceSubdivisionDistribution(gd_, gaussians);
+            this@StateSpaceSubdivisionGaussianDistribution(gd_, gaussians);
         end
         
         function m = mode(this)
             arguments
-                this (1,1) HypercylindricalAreaPartGaussianDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionGaussianDistribution
             end
-            m = mode@AreaPartGaussianDistribution(this);
+            m = mode@StateSpaceSubdivisionGaussianDistribution(this);
         end
         
         function muLin = linearMean(this)
             arguments
-                this (1,1) HypercylindricalAreaPartGaussianDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionGaussianDistribution
             end
             % Use GM reduction for the linear part
-            muLin = linearMean@AreaPartGaussianDistribution(this);
+            muLin = linearMean@StateSpaceSubdivisionGaussianDistribution(this);
         end
         
         function CLin = linearCovariance(this)
             arguments
-                this (1,1) HypercylindricalAreaPartGaussianDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionGaussianDistribution
             end
             % Use GM reduction for the linear part
-            CLin = linearCovariance@AreaPartGaussianDistribution(this);
+            CLin = linearCovariance@StateSpaceSubdivisionGaussianDistribution(this);
         end
         
         function mu = hybridMean(this)
             arguments
-                this (1,1) HypercylindricalAreaPartGaussianDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionGaussianDistribution
             end
-            mu = hybridMean@AreaPartGaussianDistribution(this);
+            mu = hybridMean@StateSpaceSubdivisionGaussianDistribution(this);
         end
         
         function m = hybridMoment(this)
             arguments
-                this (1,1) HypercylindricalAreaPartGaussianDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionGaussianDistribution
             end
             trigMomComplex = this.gd.trigonometricMoment(1);
             trigMomReal = [real(trigMomComplex)';imag(trigMomComplex)'];
@@ -59,11 +59,11 @@ classdef HypercylindricalAreaPartGaussianDistribution < AreaPartGaussianDistribu
             end
             % Even for WN, the conditional is a HypercylindricalWN divided
             % by a WN. No analytical formula is known to me
-            hcrbdNonGauss = HypercylindricalAreaPartDistribution.fromFunction(@(x)dist.pdf(x),...
+            hcrbdNonGauss = HypercylindricalStateSpaceSubdivisionDistribution.fromFunction(@(x)dist.pdf(x),...
                 noOfGridPoints, dist.linD, dist.boundD, gridType);
             % Superclass generates CustomLinearDistributions. Convert.
             linDists = arrayfun(@(dist)GaussianDistribution.fromDistribution(dist),hcrbdNonGauss.linearDistributions);
-            hcrbd = HypercylindricalAreaPartGaussianDistribution(hcrbdNonGauss.gd,linDists);
+            hcrbd = HypercylindricalStateSpaceSubdivisionGaussianDistribution(hcrbdNonGauss.gd,linDists);
         end
         
         function hcrbd = fromFunction(fun, noOfGridPoints, dimLin, dimBound, gridType, intRange)
@@ -75,9 +75,9 @@ classdef HypercylindricalAreaPartGaussianDistribution < AreaPartGaussianDistribu
                 gridType char = 'CartesianProd'
                 intRange (1,:) double = [-inf,inf]
             end
-            hcrbdNonGauss = HypercylindricalAreaPartDistribution.fromFunction(...
+            hcrbdNonGauss = HypercylindricalStateSpaceSubdivisionDistribution.fromFunction(...
                 fun, noOfGridPoints, dimLin, dimBound, gridType, intRange);
-            hcrbd = HypercylindricalAreaPartGaussianDistribution(hcrbdNonGauss.gd,linDists);
+            hcrbd = HypercylindricalStateSpaceSubdivisionGaussianDistribution(hcrbdNonGauss.gd,linDists);
         end
     end
 end

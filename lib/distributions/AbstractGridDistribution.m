@@ -98,7 +98,7 @@ classdef (Abstract) AbstractGridDistribution < AbstractDistribution
                 warning('Using numerical integral for this type of grid.');
                 int = this.integralNumerical();
             else
-                warning('Integration with limits currently only supported numerically.')
+                warning('Grid:CanOnlyIntegrateWithLimitsNumerically','Integration with limits currently only supported numerically.')
                 int = this.integralNumerical(l, r);
             end
         end

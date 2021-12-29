@@ -1,6 +1,4 @@
 classdef CustomLinBoundedDistribution < CustomDistribution & AbstractLinBoundedDistribution
-    % Hypercylindrical distribution with custom pdf.
-    
     methods
         function this = CustomLinBoundedDistribution(f_, boundD_, linD_)
             arguments

@@ -18,7 +18,7 @@ classdef HyperhemisphericalUniformDistribution < AbstractHyperhemisphericalDistr
             %       one sample per column     
             %
             arguments
-                this (1,1) HypersphericalUniformDistribution
+                this (1,1) HyperhemisphericalUniformDistribution
                 n (1,1) {mustBeInteger, mustBePositive}
             end
             s = HypersphericalUniformDistribution(this.dim).sample(n);

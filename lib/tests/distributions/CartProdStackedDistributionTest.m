@@ -30,5 +30,11 @@ classdef CartProdStackedDistributionTest < matlab.unittest.TestCase
             cpdShifted = cpd.shift([2,4]);
             testCase.verifyEqual(cpdShifted.hybridMean(), [5;6]);
         end
+
+        function testSetMode(testCase)
+            cpd = CartProdStackedDistribution({VMDistribution(3,1),GaussianDistribution(2,1)});
+            cpdShifted = cpd.setMode([2,4]);
+            testCase.verifyEqual(cpdShifted.mode(), [2;4]);
+        end
     end
 end

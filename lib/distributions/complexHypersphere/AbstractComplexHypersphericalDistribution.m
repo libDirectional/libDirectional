@@ -2,6 +2,9 @@ classdef (Abstract) AbstractComplexHypersphericalDistribution < AbstractDistribu
     % Abstract base class for distributions on the hypershere (Sd)
     
     methods
+        function m = mean(~) %#ok<STOUT> 
+            error('Mean currently not supported.')
+        end
         function i = integral(this, n)
             % Calculate integral of pdf to check normalization
             % (should always be 1)

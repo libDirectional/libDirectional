@@ -36,6 +36,10 @@ classdef ComplexWatsonDistribution < AbstractComplexHypersphericalDistribution
             W.logC = ComplexWatsonDistribution.logNorm(W.dim, W.kappa);
             W.C = exp(W.logC);
         end
+
+        function m = mean(this)
+            m = this.mu;
+        end
         
         function p = pdf(this, za)
             % Evaluates pdf at each column of za

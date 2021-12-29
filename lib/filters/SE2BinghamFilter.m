@@ -76,6 +76,61 @@ classdef SE2BinghamFilter < AbstractSE2Filter
             this.curEstimate = SE2BinghamDistribution.fit(rSamples); %todo: weights are ignored!
         end
         
+        function this = predictNonlinearNonAdditive(this,a,sysNoise)
+            % nonlinear prediction step  with system dynamics
+            % described as x_{k+1} = a(x_k, w)
+            % Input:
+            %   a(function handle): system model
+            %   sysNoise: system noise of arbitrary form
+            arguments
+                this (1,1) SE2BinghamFilter
+                a (1,1) function_handle
+                sysNoise (1,1) SE2BinghamDistribution % Otherwise, samples would need to be different
+            end
+            assert(nargin(a)==2, 'System function should take 2 input arguments for the prediction with nonadditive noise.');
+
+            [eSamples, eWeights] = this.curEstimate.sampleDeterministic();
+            [vSamples, vWeights] = sysNoise.sampleDeterministic();
+
+            % number of samples 
+            eNumSamples = numel(eWeights);
+            vNumSamples = numel(vWeights);
+
+            rSamples = zeros(4, eNumSamples*vNumSamples);
+            rWeights = zeros(1, eNumSamples*vNumSamples);
+
+            for i=1:eNumSamples
+            	for j=1:vNumSamples
+                    rSamples(:,j+vNumSamples*(i-1)) = a(eSamples(:,i),vSamples(:,j));
+                	rWeights(:,j+vNumSamples*(i-1)) = eWeights(:,i)*vWeights(:,j);
+            	end
+            end
+
+            % Fit new samples.
+            this.curEstimate = SE2BinghamDistribution.fit(rSamples,rWeights);
+        end
+        
+        function this = predictNonlinear(this, a, sysNoise, functionUsesAnglePos)
+            arguments
+                this (1,1) SE2BinghamFilter
+                a (1,1) function_handle
+                sysNoise (1,1) SE2BinghamDistribution % Otherwise, samples would need to be different
+                functionUsesAnglePos (1,1) logical = true % Set to false if function takes quaternion instead
+            end
+            assert(nargin(a)==1, 'System function should take 1 input arguments for the prediction with additive noise.');
+            function xkkQuaternion = axw(xk, wk)
+                if functionUsesAnglePos
+                    xkProp = a(AbstractSE2Distribution.dualQuaternionToAnglePos(xk));
+                else
+                    xkProp = AbstractSE2Distribution.dualQuaternionToAnglePos(a(xk));
+                end
+                xkk = xkProp + AbstractSE2Distribution.dualQuaternionToAnglePos(wk);
+                xkk(1,:) = mod(xkk(1,:), 2*pi);
+                xkkQuaternion = AbstractSE2Distribution.anglePosToDualQuaternion(xkk);
+            end
+            this.predictNonlinearNonAdditive(@axw, sysNoise);
+        end
+        
         function this = updateIdentity(this, measNoise, z)
             % Incorporates measurement into current estimate.
             %
@@ -106,6 +161,61 @@ classdef SE2BinghamFilter < AbstractSE2Filter
             this.curEstimate = SE2BinghamDistribution(newC);
         end
         
+        function this = updateNonlinear(this, likelihood, z)
+            % updateProgressive handles nonlinear cases, forward call to
+            % that function
+            this = updateProgressive(this, likelihood, z);
+        end
+        
+        function this = updateProgressive(this, likelihood, z, tau)
+            % update step that progressively fuse the measurement given the likelihood
+            % Reference goes to:
+            % Kailai Li, Gerhard Kurz, Lukas Bernreiter, Uwe D. Hanebeck,
+            % Nonlinear Progressive Filtering for SE(2) Estimation,
+            % Proceedings of the 21th International Conference on Information Fusion (Fusion 2018), 
+            % Cambridge, United Kingdom, July 2018.
+            % Input:
+            %   likelihood(function handle): function from Zx(S^1xR^2) to
+            %                                [0, infinity), where Z is the
+            %                                measurement space containing z
+            %   z(arbitrary): current measurement 
+            %   tau(scalar): threshold of controlling progression step, should be
+            %                between 0 and 1
+            arguments
+                this (1,1) SE2BinghamFilter
+                likelihood (1,1) function_handle
+                z (:,1) double % Measurement does not need to be in state space
+                tau (1,1) double = 0.02
+            end
+            assert(nargin(likelihood)==2);
+
+            lambda = 1;
+            steps = 0;
+            while lambda > 0
+                [samples, weights] = this.curEstimate.sampleDeterministic();
+                l = zeros(size(weights));
+                for i=1:size(samples,2)
+                    l(i) = likelihood(z,samples(:,i));  
+                end        
+                lmin = min(l);
+                lmax = max(l);
+                if lmax == 0
+                    warning('Progressive update failed because likelihood is 0 everwhere');
+                    return
+                end
+                currentLambda = min(log(tau)/log(lmin/lmax),lambda);
+                if currentLambda <= 0
+                    warning('Progressive update with given threshold impossible')
+                    currentLambda = 0.001;
+                end
+                weightsNew = weights .* l.^currentLambda;
+                weightsNew = weightsNew/sum(weightsNew);
+                this.curEstimate = SE2BinghamDistribution.fit(samples,weightsNew);
+                lambda = lambda - currentLambda;
+                steps = steps + 1;
+            end      
+        end
+
         function est = getEstimate(this)
             arguments
                 this (1,1) SE2BinghamFilter

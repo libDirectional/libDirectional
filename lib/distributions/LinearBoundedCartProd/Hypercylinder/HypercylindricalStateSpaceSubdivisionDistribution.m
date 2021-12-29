@@ -1,37 +1,37 @@
-classdef HypercylindricalAreaPartDistribution < AreaPartDistribution & AbstractHypercylindricalDistribution
+classdef HypercylindricalStateSpaceSubdivisionDistribution < StateSpaceSubdivisionDistribution & AbstractHypercylindricalDistribution
     methods
-        function this = HypercylindricalAreaPartDistribution(gd_, linDistributions)
+        function this = HypercylindricalStateSpaceSubdivisionDistribution(gd_, linDistributions)
             arguments
                 gd_ (1,1) AbstractGridDistribution
                 linDistributions (:,1) AbstractLinearDistribution
             end
-            this@AreaPartDistribution(gd_, linDistributions);
+            this@StateSpaceSubdivisionDistribution(gd_, linDistributions);
         end
         
         function h = plot(this, interpolate)
             arguments
-                this (1,1) HypercylindricalAreaPartDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionDistribution
                 interpolate (1,1) logical = false
             end
             if interpolate % Cannot call plotInterpolated directly because only superclass methods with same name can be called
                 h = plot@AbstractHypercylindricalDistribution(this);
             else
-                h = plot@AreaPartDistribution(this);
+                h = plot@StateSpaceSubdivisionDistribution(this);
             end
         end
         
         function h = plotInterpolated(this)
             arguments
-                this (1,1) HypercylindricalAreaPartDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionDistribution
             end
             h = plot(this, true);
         end
         
         function m = mode(this)
             arguments
-                this (1,1) HypercylindricalAreaPartDistribution
+                this (1,1) HypercylindricalStateSpaceSubdivisionDistribution
             end
-            m = mode@AreaPartDistribution(this);
+            m = mode@StateSpaceSubdivisionDistribution(this);
         end
     end
     
@@ -42,7 +42,7 @@ classdef HypercylindricalAreaPartDistribution < AreaPartDistribution & AbstractH
                 noOfGridPoints {mustBeInteger,mustBePositive}
                 gridType char = 'CartesianProd'
             end
-            hcrbd = HypercylindricalAreaPartDistribution.fromFunction(@(x)dist.pdf(x),...
+            hcrbd = HypercylindricalStateSpaceSubdivisionDistribution.fromFunction(@(x)dist.pdf(x),...
                 noOfGridPoints, dist.linD, dist.boundD, gridType);
         end
         function hcrbd = fromFunction(fun, noOfGridPoints, dimLin, dimBound, gridType, intRange)
@@ -70,7 +70,7 @@ classdef HypercylindricalAreaPartDistribution < AreaPartDistribution & AbstractH
                 cds(i) = CustomLinearDistribution(@(x)funCurr(x)/gd.gridValues(i),1);
             end
             
-            hcrbd = HypercylindricalAreaPartDistribution(gd,cds);
+            hcrbd = HypercylindricalStateSpaceSubdivisionDistribution(gd,cds);
         end
     end
 end

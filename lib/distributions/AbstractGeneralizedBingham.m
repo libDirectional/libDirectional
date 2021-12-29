@@ -1,4 +1,4 @@
-classdef (Abstract) AbstractGeneralizedBingham < AbstractLinBoundedDistribution
+classdef (Abstract) AbstractGeneralizedBingham < AbstractLinPeriodicDistribution
     % Distribution on S^(d-1) x R^n.
     %  
     

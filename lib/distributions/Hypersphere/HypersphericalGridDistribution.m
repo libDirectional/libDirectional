@@ -1,4 +1,4 @@
-classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & AbstractGridDistribution
+classdef HypersphericalGridDistribution < AbstractHypersphereSubsetGridDistribution & AbstractHypersphericalDistribution
 	methods
         function this = HypersphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_, gridType)
             % Constructor
@@ -8,17 +8,8 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
                 enforcePdfNonnegative_ logical = true
                 gridType char = 'unknown'
             end
-            assert(size(grid_,2)==size(gridValues_,1));
-            if size(grid_,1)>size(grid_,2)
-                warning('Dimension is higher than number of grid points. Verify that is really intended.');
-            end
-            this.dim = size(grid_,1);
-            this.grid = grid_;
-            this.gridValues = gridValues_;
-            this.enforcePdfNonnegative = enforcePdfNonnegative_;
-            this.gridType= gridType;
-            % Check if normalized. If not: Normalize!
-            this = this.normalize;
+            this@AbstractHypersphereSubsetGridDistribution(grid_, gridValues_, enforcePdfNonnegative_);
+            this.gridType = gridType;
         end      
         
         function mu = meanDirection(this)
@@ -28,25 +19,7 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
             end
             mu = mu/norm(mu);
         end
-        
-        function f = normalize(this, opt)
-            arguments
-                this (1,1) HypersphericalGridDistribution
-                opt.tol (1,1) double = 1e-2
-                opt.warnUnnorm (1,1) logical = true
-            end
-            f = normalize@AbstractGridDistribution(this,tol=opt.tol,warnUnnorm=opt.warnUnnorm);
-        end
-                
-        function hgd = multiply(this, other)
-            arguments
-                this HypersphericalGridDistribution
-                other HypersphericalGridDistribution
-            end
-            assert(isequal(this.grid,other.grid), 'Multiply:IncompatibleGrid','Can only multiply for equal grids.');
-            hgd = multiply@AbstractGridDistribution(this, other);
-        end   
-        
+
         function p = pdf(this, xa)
             arguments
                 this HypersphericalGridDistribution
@@ -65,13 +38,6 @@ classdef HypersphericalGridDistribution < AbstractHypersphericalDistribution & A
             hdd = HypersphericalDiracDistribution(this.grid, this.gridValues'/sum(this.gridValues));
             h = hdd.plot;
             hold off
-        end
-        
-        function int = integral(this)
-            arguments
-                this (1,1) HypersphericalGridDistribution
-            end
-            int = integral@AbstractGridDistribution(this);
         end
         
         function h = plotInterpolated(this)

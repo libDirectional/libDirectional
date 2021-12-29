@@ -1,7 +1,10 @@
-classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistribution
+classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractHypersphereSubsetDistribution
     % Abstract base class for distributions on the hypershere (S^dim)
     
     methods
+        function m = mean(this)
+            m = this.meanAxis();
+        end
         function h = plot(this, faces, gridFaces)
             % Plots the pdf of a hyperspherical distribution
             %
@@ -10,6 +13,11 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
             %       Number of faces for 3D Plot (default 100).
             %   gridFaces (scalar)
             %       Number of grid faces for 3D Plot (default 20, 0 to disable).
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+                faces (1,1) double {mustBeNonnegative,mustBeInteger} = 100
+                gridFaces (1,1) double {mustBeNonnegative,mustBeInteger} = 20
+            end
             switch this.dim
                 case 2
                     % use polar coordinates, plot angle->pdf(angle)
@@ -19,19 +27,6 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
                     h = plot(phi, p);
                 case 3
                     % plot sphere, pdf is represented by color on sphere
-                    
-                    if nargin < 2
-                        faces = 100;
-                    else
-                        assert(mod(faces,2)==0);
-                    end
-                    
-                    if nargin < 3
-                        gridFaces = 20;
-                    else
-                        assert(mod(gridFaces,2)==0);
-                    end
-                    
                     % generate spheres
                     [xSphereOuter, ySphereOuter, zSphereOuter] = sphere(gridFaces);
                     xSphereOuter=reshape(xSphereOuter(zSphereOuter(:)>=0),[gridFaces/2+1,gridFaces+1]);
@@ -67,16 +62,8 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
                         hold off
                     end
                 otherwise
-                    error('cannot plot hyperspherical distribution with this number of dimensions');
+                    error('Cannot plot hyperspherical distribution with this number of dimensions');
             end
-        end
-        
-        function mu = meanDirection(this)
-            % Calculate mean direction of pdf
-            % Returns:
-            %   mu (vector)
-            %       mean direction
-            mu = meanDirectionNumerical(this);
         end
         
         function mu = meanDirectionNumerical(this)
@@ -84,197 +71,73 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
             % Returns:
             %   mu (vector)
             %       mean direction
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+            end
             warning(['The result is the mean direction on the upper hemisphere ',...
             'along the last dimension. It is not a mean of a symmetric ',...
             'distribution, which would not have a proper mean. ',...
             'It is also not one of the modes of the symmetric distribution ',...
             'since it is biased toward [0;...;0;1] because the lower half ',...
             'is considered inexistant.']);
-            mu = NaN(this.dim,1);
-            switch this.dim
-                case 2
-                    for i=1:2
-                        f = @(x) x(i,:).*this.pdf(x);
-                        fAngles = @(phi) reshape(f([cos(phi(:)'); sin(phi(:)')]),size(phi));
-                        mu(i) = integral(fAngles,0,pi, 'AbsTol', 0.01);
-                    end
-                case 3
-                    for i=1:3
-                        f = @(x) x(i,:).*this.pdf(x);
-                        r = 1;
-
-                        % spherical coordinates
-                        fangles = @(phi1,phi2) f([ ...
-                        r.*sin(phi1).*sin(phi2); ...
-                        r.*cos(phi1).*sin(phi2); ...
-                        r.*cos(phi2); ...
-                        ]);
-
-                        g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
-                        mu(i) = integral2(g, 0, 2*pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-                    end
-                case 4
-                    % use matlab integration
-                    for i=1:4
-                        f = @(x) x(i,:).*this.pdf(x);
-                        r = 1;
-
-                        % hyperspherical coordinates
-                        fangles = @(phi1,phi2,phi3) f([ ...
-                        r.*sin(phi1).*sin(phi2).*sin(phi3); ...
-                        r.*cos(phi1).*sin(phi2).*sin(phi3); ...
-                        r.*cos(phi2).*sin(phi3); ...
-                        r.*cos(phi3)
-                        ]);
-
-                        g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
-                        ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
-
-                        mu(i) = integral3(ga, 0, 2*pi, 0, pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-                    end
-                otherwise
-                    % use monte carlo integration
-                    Sd = 0.5*AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
-                    
-                    n = 10000; % number of samples for integration
-                    r = HyperhemisphericalUniformDistribution(this.dim).sample(n);
-                    p = this.pdf(r);
-                    
-                    mu = r*p'/n * Sd;
+            if this.dim==2
+                mu = meanDirectionNumerical@AbstractHypersphereSubsetDistribution(this, [0, pi]);
+            elseif this.dim<=4
+                mu = meanDirectionNumerical@AbstractHypersphereSubsetDistribution(this, [zeros(this.dim-1,1), [2*pi; pi*ones(this.dim-3,1);pi/2]]); % 2*pi, pi, ..., pi/2
+            else
+                % use monte carlo integration
+                Sd = this.getManifoldSize();
+                
+                n = 10000; % number of samples for integration
+                r = HyperhemisphericalUniformDistribution(this.dim).sample(n);
+                p = this.pdf(r);
+                
+                mu = r*p'/n * Sd;
             end
             if norm(mu)<1e-9
                 warning('Density may not have actually have a mean direction because integral yields a point very close to the origin.')
             end
             mu = mu/norm(mu);
         end
-        
-        function i = integral(this)
-            % Calculate integral of pdf to check normalization
-            % (should always be 1)
-            % Returns:
-            %   i (scalar)
-            %       integral over hypersphere surface of pdf (uses
-            %       approximation, not very accurate for higher dimensions)
-            i = this.integralNumerical();
+
+        function m = momentNumerical(this)
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+            end
+            if this.dim==2
+                m = momentNumerical@AbstractHypersphereSubsetDistribution(this, [0, pi]);
+            else
+                m = momentNumerical@AbstractHypersphereSubsetDistribution(this, [zeros(this.dim-1,1), [2*pi; pi*ones(this.dim-3,1);pi/2]]);
+            end
         end
         
         function i = integralNumerical(this)
-            % Calculate integral of pdf to check normalization
-            % (should always be 1)
-            % Returns:
-            %   i (scalar)
-            %       integral over hypersphere surface of pdf (uses
-            %       approximation, not very accurate for higher dimensions)
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+            end
             if this.dim==2
-                %use matlab integration
-                f = @(phi) this.pdf([cos(phi); sin(phi)]);
-                i = integral(f,0,pi, 'AbsTol', 0.01);
-            elseif this.dim ==3
-                % use matlab integration
-                f = @(x) this.pdf(x);
-                r=1;
-                
-                % spherical coordinates
-                fangles = @(phi1,phi2) f([ ...
-                r.*sin(phi1).*sin(phi2); ...
-                r.*cos(phi1).*sin(phi2); ...
-                r.*cos(phi2); ...
-                ]);
-
-                g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
-
-                i = integral2(g, 0, 2*pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-            elseif this.dim==4     
-                % use matlab integration
-                f = @(x) this.pdf(x);
-                r=1;
-                
-                % hyperspherical coordinates
-                fangles = @(phi1,phi2,phi3) f([ ...
-                r.*sin(phi1).*sin(phi2).*sin(phi3); ...
-                r.*cos(phi1).*sin(phi2).*sin(phi3); ...
-                r.*cos(phi2).*sin(phi3); ...
-                r.*cos(phi3)
-                ]);
-
-                g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
-                ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
-
-                i = integral3(ga, 0, 2*pi, 0, pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
+                i = integralNumerical@AbstractHypersphereSubsetDistribution(this, [0, pi]);
+            elseif this.dim<=4
+                i = integralNumerical@AbstractHypersphereSubsetDistribution(this, [zeros(this.dim-1,1), [2*pi; pi*ones(this.dim-3,1);pi/2]]);
             else
                 % use monte carlo integration
                 n = 10000; % number of samples for integration
-                r = HyperhemisphericalUniformDistribution.sample(n);
+                r = HyperhemisphericalUniformDistribution(this.dim).sample(n);
                 p = this.pdf(r);
                 Sd = AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
                 i = sum(p)/n * Sd; % average value of pdf times surface area of unit sphere
             end
         end
         
-        function result = entropy(this)
-            % Calculates the entropy analytically if possible, 
-            % fall back to numerical calculation by default
-            %
-            % Returns:
-            %   result (scalar)
-            %       entropy of the distribution
-            result = this.entropyNumerical();
-        end        
-        
         function i = entropyNumerical(this)
-            % Calculates the entropy numerically
-            %
-            % Returns:
-            %   i (scalar)
-            %       entropy of the distribution
-            if this.dim==2
-                %use matlab integration
-                f = @(phi) this.pdf([cos(phi); sin(phi)]).*log(this.pdf([cos(phi); sin(phi)]));
-                i = -integral(f,0,pi, 'AbsTol', 0.01);
-            elseif this.dim ==3
-                % use matlab integration
-                f = @(x) this.pdf(x).*log(this.pdf(x));
-                r=1;
-                
-                % spherical coordinates
-                fangles = @(phi1,phi2) f([ ...
-                r*sin(phi1).*sin(phi2); ...
-                r*cos(phi1).*sin(phi2); ...
-                r*cos(phi2); ...
-                ]);
-
-                g = @(phi1,phi2) fangles(phi1,phi2) .* sin(phi2); % volume correcting term
-                ga = @(phi1,phi2) reshape(g(phi1(:)', phi2(:)'), size(phi1));
-
-                i = -integral2(ga, 0, 2*pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-            elseif this.dim==4     
-                % use matlab integration
-                f = @(x) this.pdf(x).*log(this.pdf(x));
-                r=1;
-                
-                % hyperspherical coordinates
-                fangles = @(phi1,phi2,phi3) f([ ...
-                r*sin(phi1).*sin(phi2).*sin(phi3); ...
-                r*cos(phi1).*sin(phi2).*sin(phi3); ...
-                r*cos(phi2).*sin(phi3); ...
-                r*cos(phi3)
-                ]);
-
-                g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
-                ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
-
-                i = -integral3(ga, 0, 2*pi, 0, pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-            else
-                error('not supported')
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
             end
-        end
-        
-        function m = mode(this)
-            % Calculate the mode by finding maximum of PDF numerically 
-            % Returns:
-            %   m (column vector)
-            %       mode of the distribution 
-            m = this.modeNumerical(); % fallback to numerical calculation (nonlinear optimization)
+            if this.dim==2
+                i = entropyNumerical@AbstractHypersphereSubsetDistribution(this, [0, pi]);
+            else
+                i = entropyNumerical@AbstractHypersphereSubsetDistribution(this, [zeros(this.dim-1,1), [2*pi; pi*ones(this.dim-3,1);pi/2]]);
+            end
         end
         
         function m = modeNumerical(this)
@@ -282,6 +145,9 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
             % Returns:
             %   m (column vector)
             %       mode of the distribution 
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+            end
             fun = @(s) -this.pdf(polar2cart(s)); % objective function 
             s0 = rand(this.dim-1,1)*pi; % initial point 
             options = optimoptions('fminunc', 'Display','notify-detailed', 'OptimalityTolerance',1e-12, 'MaxIterations',2000, 'StepTolerance',1e-12 ); 
@@ -289,58 +155,28 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
             m = fminunc(fun, s0, options);  
             m = polar2cart(m); % convert optimum to Cartesian coordinates 
         end
-        
+
         function dist = hellingerDistanceNumerical(this, other)
-            % Numerically calculates the Hellinger distance to another
-            % distribution.
-            %
-            % Parameters:
-            %   other (AbstractHypersphericalDistribution)
-            %       distribution to compare to
-            % Returns:
-            %   dist (scalar)
-            %       hellinger distance of this distribution to other distribution
-            assert(isa(other, 'AbstractHypersphericalDistribution'));
-            assert(this.dim==other.dim,'Cannot compare distributions with different number of dimensions');
-            
-            % Implementation is always performed using matlab integration
-            % (Implementation is similar to .integral)
-            switch this.dim
-                case 2
-                    f = @(phi) (sqrt(this.pdf([cos(phi); sin(phi)]))-sqrt(other.pdf([cos(phi); sin(phi)]))).^2;
-                    dist = 0.5*integral(f,0,pi, 'AbsTol', 0.01);
-                case 3
-                    f = @(x) (sqrt(this.pdf(x))-sqrt(other.pdf(x))).^2;
-                    r=1;
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+                other (1,1) AbstractHyperhemisphericalDistribution
+            end
+            if this.dim==2
+                dist = hellingerDistanceNumerical@AbstractHypersphereSubsetDistribution(this, other, [0, pi]);
+            else
+                dist = hellingerDistanceNumerical@AbstractHypersphereSubsetDistribution(this, other, [zeros(this.dim-1,1), [2*pi; pi*ones(this.dim-3,1);pi/2]]);
+            end
+        end
 
-                    % spherical coordinates
-                    fangles = @(phi1,phi2) f([ ...
-                    r.*sin(phi1).*sin(phi2); ...
-                    r.*cos(phi1).*sin(phi2); ...
-                    r.*cos(phi2); ...
-                    ]);
-
-                    g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
-
-                    dist = 0.5*integral2(g, 0, 2*pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-                case 4
-                    f = @(x) (sqrt(this.pdf(x))-sqrt(other.pdf(x))).^2;
-                    r=1;
-
-                    % hyperspherical coordinates
-                    fangles = @(phi1,phi2,phi3) f([ ...
-                    r.*sin(phi1).*sin(phi2).*sin(phi3); ...
-                    r.*cos(phi1).*sin(phi2).*sin(phi3); ...
-                    r.*cos(phi2).*sin(phi3); ...
-                    r.*cos(phi3)
-                    ]);
-
-                    g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
-                    ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
-
-                    dist = 0.5*integral3(ga, 0, 2*pi, 0, pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-                otherwise
-                    error('Numerical calculation of Hellinger distance is currently not supported for this dimension.')
+        function dist = totalVariationDistanceNumerical(this, other)
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+                other (1,1) AbstractHyperhemisphericalDistribution
+            end
+            if this.dim==2
+                dist = totalVariationDistanceNumerical@AbstractHypersphereSubsetDistribution(this, other, [0, pi]);
+            else
+                dist = totalVariationDistanceNumerical@AbstractHypersphereSubsetDistribution(this, other, [zeros(this.dim-1,1), [2*pi; pi*ones(this.dim-3,1);pi/2]]);
             end
         end
         
@@ -378,60 +214,12 @@ classdef (Abstract) AbstractHyperhemisphericalDistribution < AbstractDistributio
             s = sampleMetropolisHastings@AbstractDistribution(this, n, proposal, startPoint, burnIn, skipping);
         end
         
-        function dist = totalVariationDistanceNumerical(this, other)
-            % Numerically calculates the total varation distance to another distribution
-            %
-            % Parameters:
-            %   other (AbstractHypersphericalDistribution)
-            %       distribution to compare with
-            % Returns:
-            %   dist (scalar)
-            %       total variation distance of this distribution to other distribution
-            assert(isa(other, 'AbstractHypersphericalDistribution'));
-            assert(this.dim==other.dim, 'Cannot compare distributions with different number of dimensions');
-            
-            switch this.dim
-                case 2
-                    f = @(phi) abs(this.pdf([cos(phi); sin(phi)])-other.pdf([cos(phi); sin(phi)]));
-                    dist = 0.5*integral(f,0,pi, 'AbsTol', 0.01);
-                case 3
-                    f = @(x) abs(this.pdf(x)-other.pdf(x));
-                    r=1;
-
-                    % spherical coordinates
-                    fangles = @(phi1,phi2) f([ ...
-                    r.*sin(phi1).*sin(phi2); ...
-                    r.*cos(phi1).*sin(phi2); ...
-                    r.*cos(phi2); ...
-                    ]);
-
-                    g = @(phi1,phi2) reshape(fangles(phi1(:)',phi2(:)').*sin(phi2(:)'),size(phi1)); % volume correcting term
-
-                    dist = 0.5*integral2(g, 0, 2*pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-                case 4
-                    f = @(x) abs(this.pdf(x)-other.pdf(x));
-                    r=1;
-
-                    % hyperspherical coordinates
-                    fangles = @(phi1,phi2,phi3) f([ ...
-                    r.*sin(phi1).*sin(phi2).*sin(phi3); ...
-                    r.*cos(phi1).*sin(phi2).*sin(phi3); ...
-                    r.*cos(phi2).*sin(phi3); ...
-                    r.*cos(phi3)
-                    ]);
-
-                    g = @(phi1,phi2,phi3) fangles(phi1,phi2,phi3) .* sin(phi2).*(sin(phi3)).^2; % volume correcting term
-                    ga = @(phi1,phi2,phi3) reshape(g(phi1(:)', phi2(:)', phi3(:)'), size(phi1));
-
-                    dist = 0.5*integral3(ga, 0, 2*pi, 0, pi, 0, pi/2, 'AbsTol', 1e-3, 'RelTol', 1e-3);
-                otherwise
-                    error('Numerical calculation of total variation distance is currently not supported for this dimension.')
-            end
-        end
         function s = getManifoldSize(this)
-            s = 0.5 * AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim);
+            arguments
+                this (1,1) AbstractHyperhemisphericalDistribution
+            end
+            s = AbstractHyperhemisphericalDistribution.computeUnitHyperhemisphereSurface(this.dim);
         end
-        
     end
     
     methods (Static)

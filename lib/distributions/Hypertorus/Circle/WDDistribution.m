@@ -317,11 +317,6 @@ classdef WDDistribution < AbstractCircularDistribution & HypertoroidalWDDistribu
             end
             wd = WDDistribution(d_,w_);
         end
-        
-        function result = entropyNumerical(~)
-            warning('entropy is not defined in a continous sense')
-            result = 0;
-        end
     end   
     
     methods (Static)

@@ -86,6 +86,15 @@ classdef GaussianDistribution < AbstractLinearDistribution
             m = this.mu;
         end
 
+        function dist = setMode(this, newMode)
+            arguments
+                this (1,1) GaussianDistribution
+                newMode (:,1) double
+            end
+            dist = this;
+            dist.mu = newMode;
+        end
+
         function C = covariance(this)
             arguments
                 this (1,1) GaussianDistribution
@@ -104,6 +113,22 @@ classdef GaussianDistribution < AbstractLinearDistribution
             dist.C = this.C - K*this.C;
         end
         
+        function dist = marginalizeOut(this,dimensions)
+            arguments
+                this (1,1) GaussianDistribution
+                dimensions (1,:) double {mustBeInteger,mustBePositive}
+            end
+            assert(all(dimensions<=this.dim));
+            dimsSorted = unique(dimensions); % Mainly for next assertion
+            assert(numel(dimsSorted)==numel(dimensions));
+            remaingDims = 1:this.dim;
+            remaingDims(dimsSorted) = [];
+            dist = this;
+            dist.mu = dist.mu(remaingDims);
+            dist.C = dist.C(remaingDims, remaingDims);
+            dist.dim = numel(remaingDims);
+        end
+
         function wn = toWN(this)
             % Convert to WN (only for 1D Gaussians)
             %

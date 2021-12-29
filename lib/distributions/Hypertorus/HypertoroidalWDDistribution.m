@@ -189,6 +189,13 @@ classdef HypertoroidalWDDistribution < AbstractHypertoroidalDistribution & Abstr
             assert(this.dim == 2);
             twd = ToroidalWDDistribution(this.d, this.w);
         end        
+
+        function result = integral(this)
+            arguments
+                this (1,1) HypertoroidalWDDistribution
+            end
+            result = integral@AbstractDiracDistribution(this);
+        end
     end
     
     methods(Static)

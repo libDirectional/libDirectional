@@ -1,7 +1,4 @@
 classdef SE2PWDDistributionTest< matlab.unittest.TestCase    
-    properties
-    end
-    
     methods (Test)
         function testSE2PWDDistribution(testCase)
             d = [ 1 2 3 4 5 6;

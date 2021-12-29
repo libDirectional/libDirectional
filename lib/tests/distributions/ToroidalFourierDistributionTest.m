@@ -23,6 +23,7 @@ classdef ToroidalFourierDistributionTest < matlab.unittest.TestCase
             end
         end
         function testFromFunctionAndMoments(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             tvm = ToroidalVMSineDistribution([1; 2], [0.3; 0.5], 0.5);
             tfd1 = ToroidalFourierDistribution.fromDistribution(tvm, [15, 15], 'identity');
             tfd2 = ToroidalFourierDistribution.fromDistribution(tvm, [15, 15], 'sqrt');
@@ -33,10 +34,9 @@ classdef ToroidalFourierDistributionTest < matlab.unittest.TestCase
                 testCase.verifyEqual(tfd2.trigonometricMoment(i), tvmMoment, 'AbsTol', 1E-6);
                 testCase.verifyEqual(tfd2.trigonometricMomentNumerical(i), tvmMoment, 'AbsTol', 1E-6);
             end
-            warningSettings = warning('off', 'Truncate:TooFewCoefficients');
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
             testCase.verifyEqual(tfd1.trigonometricMoment(16), [0; 0]);
             testCase.verifyEqual(tfd2.trigonometricMoment(30), [0; 0]);
-            warning(warningSettings);
         end
         function testCorrelation(testCase)
             tvm = ToroidalVMSineDistribution([1; 2], [0.3; 0.5], 0.5);

@@ -23,6 +23,13 @@ classdef LinearDiracDistribution < AbstractLinearDistribution & AbstractDiracDis
         function C = covariance(this)
             [~,C] = LinearDiracDistribution.weightedSamplesToMeanAndCov(this.d,this.w);
         end
+
+        function result = integral(this)
+            arguments
+                this (1,1) HypersphericalDiracDistribution
+            end
+            result = integral@AbstractDiracDistribution(this);
+        end
         
         function h = plot(this, varargin)
             switch this.dim

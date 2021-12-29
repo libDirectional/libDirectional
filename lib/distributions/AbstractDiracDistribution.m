@@ -110,7 +110,22 @@ classdef (Abstract) AbstractDiracDistribution < AbstractDistribution
             % return discrete entropy
             % The entropy only depends on the weights!
             result = -sum(this.w.*log(this.w));
-        end    
+        end
+
+        function result = integral(this)
+            % Calculate integral to check normalization
+            % (should always be 1)
+            % Returns:
+            %   result (scalar)
+            %       integral over hypersphere surface of pdf (uses
+            %       approximation, not very accurate for higher dimensions)
+            %  Cannot be sealed because additional arguments
+            % (integration limits) for 1-D case !!!
+            arguments
+                this (1,1) AbstractDiracDistribution
+            end
+            result = sum(this.w);
+        end
     end
     
     methods (Sealed)
@@ -143,7 +158,28 @@ classdef (Abstract) AbstractDiracDistribution < AbstractDistribution
         
         function kldNumerical(~, ~)
             error('PDF:UNDEFINED', 'not supported');
-        end        
+        end       
+
+        function m = mode(this, relTol)
+            arguments
+                this (1,1) AbstractDiracDistribution
+                relTol (1,1) double = 0.001
+            end
+            % sample with maximum weight
+            [highestVal,ind] = max(this.w);
+            if (highestVal/numel(this.w))<(1+relTol)
+                warning('The samples may be equally weighted, .mode is likely to return a bad result.')
+            end
+            m = this.d(:,ind);
+        end
+
+        function modeNumerical(~)
+            error('PDF:UNDEFINED', 'not supported');
+        end
+
+        function entropyNumerical(~)
+            error('PDF:UNDEFINED', 'not supported');
+        end
     end
 end
 

@@ -11,8 +11,8 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter & AbstractHyperhemisp
             %       dimension of the space in which the hypersphere is
             %       embedded
             arguments
-                noOfCoefficients {mustBeInteger,mustBePositive}
-                dim {mustBeInteger,mustBePositive}
+                noOfCoefficients (1,1) double {mustBeInteger,mustBePositive}
+                dim (1,1) double {mustBeInteger,mustBePositive}
                 gridType char = 'eq_point_set_symm'
             end
             % Only allow eq_point_set because large errors are made in the
@@ -28,8 +28,8 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter & AbstractHyperhemisp
             %   gd_ (AbstractDistribution)
             %       new state
             arguments
-                this HyperhemisphericalGridFilter
-                gd_ AbstractDistribution
+                this (1,1) HyperhemisphericalGridFilter
+                gd_ (1,1) AbstractDistribution
             end
             assert(this.dim==gd_.dim);
             if isa(gd_, 'HyperhemisphericalGridDistribution')
@@ -55,8 +55,8 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter & AbstractHyperhemisp
             % supporting VMFDistribution (predictIdentity only makes sense
             % for zonal densities).
             arguments
-                this HyperhemisphericalGridFilter
-                dSys AbstractDistribution
+                this (1,1) HyperhemisphericalGridFilter
+                dSys (1,1) AbstractDistribution
             end
             assert(dSys.dim==this.dim);
             warning('PredictIdentity:Inefficient','Using inefficient prediction. Consider precalculating the SdHalfCondSdHalfGridDistribution and using predictNonlinearViaTransitionDensity.');
@@ -69,17 +69,20 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter & AbstractHyperhemisp
             % This function was added for interface compatibility with the
             % other filters. measNoise must be a VMF or WatsonDistribution.
             arguments
-                this HyperhemisphericalGridFilter
-                measNoise AbstractDistribution
+                this (1,1) HyperhemisphericalGridFilter
+                measNoise (1,1) AbstractDistribution
                 z (:,1) double
             end
             assert(size(z,1)==this.dim);
-            assert(isa(measNoise,'WatsonDistribution') ||... % Watson is symmetric
+            assert( isa(measNoise,'AbstractHyperhemisphericalDistribution')||...
+                isa(measNoise,'WatsonDistribution') ||... % Watson is symmetric
                 isa(measNoise,'HypersphericalMixtureDistribution')... % Allow for mixtures of two von mises
                 && numel(measNoise.dists)==2 && all(measNoise.w==0.5) && isequal(measNoise{1}.mu,-measNoise{2}.mu)... 
                 || isa(measNoise,'VMFDistribution') && z(end)==0); % Allow VMF with means that cause it to be symmetric
             if nargin==3
-                if isa(measNoise,'WatsonDistribution') || isa(measNoise,'VMFDistribution') && z(end)==0
+                if isa(measNoise,'HyperhemisphericalWatsonDistribution')
+                    measNoise = measNoise.setMode(z);
+                elseif isa(measNoise,'WatsonDistribution') || isa(measNoise,'VMFDistribution') && z(end)==0
                     if norm(measNoise.mu-[zeros(this.dim-1,1); 1]) > 1E-6
                         error('UpdateIdentity:UnexpectedMeas', 'z needs to be [0;...; 0; 1] to use updateIdentity.');
                     end
@@ -104,8 +107,8 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter & AbstractHyperhemisp
         
         function predictNonlinearViaTransitionDensity(this, fTrans)
             arguments
-                this HyperhemisphericalGridFilter
-                fTrans SdHalfCondSdHalfGridDistribution
+                this (1,1) HyperhemisphericalGridFilter
+                fTrans (1,1) SdHalfCondSdHalfGridDistribution
             end
             assert(isequal(this.gd.getGrid(),fTrans.getGrid()), 'predictNonlinearViaTransitionDensity:gridDiffers',...
                 'fTrans is using an incompatible grid.');
@@ -117,14 +120,26 @@ classdef HyperhemisphericalGridFilter < AbstractGridFilter & AbstractHyperhemisp
             gridValuesnew = this.gd.getManifoldSize/size(this.gd.gridValues,1)*fTrans.gridValues*this.gd.gridValues;
             this.gd = HyperhemisphericalGridDistribution(this.gd.getGrid(),gridValuesnew); % This also enforces a normalization if it is violated
         end
+        
+        function p = getPointEstimate(this)
+            arguments
+                this (1,1) HyperhemisphericalGridFilter
+            end
+            % For estimate: fit Bingham to it and obtain mode
+            gdFullSphere = this.gd.toFullSphere();
+            p = BinghamDistribution.fit(gdFullSphere.getGrid(), gdFullSphere.gridValues'/sum(gdFullSphere.gridValues)).mode();
+            if p(end)<0
+                p = -p;
+            end
+        end
     end
     methods (Static)
         function sdHalfCondSdHalf = sysNoiseToTransitionDensity(dSys, noGridPoints)
             arguments
-                dSys AbstractDistribution
+                dSys (1,1) AbstractDistribution
                 noGridPoints (1,1) double
             end
-            if isa(dSys,'WatsonDistribution')
+            if isa(dSys,'HyperhemisphericalWatsonDistribution')||isa(dSys,'WatsonDistribution')
                 trans = @(xkk,xk)cell2mat(arrayfun(@(i)...
                     2*WatsonDistribution(xk(:,i),dSys.kappa).pdf(xkk),1:size(xk,2),'UniformOutput', false));
             elseif isa(dSys,'HypersphericalMixture') && numel(dSys.dists)==2 && all(dSys.w==0.5) && isequal(dSys.dists{1}.mu, -dSys.dists{2}.mu) && dSys.dists{1}.kappa==dSys.dists{2}.kappa

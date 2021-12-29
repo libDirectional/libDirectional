@@ -9,10 +9,11 @@ function kappa = besselratioInverse(v, x, type)
     %       where to evaluate
     %   type (string)
     %       can be used to choose between several algorithms
-
-    if nargin<3
-        type='sraamos';
-    end  
+    arguments
+        v (1,1) double
+        x (1,1) double
+        type char = 'sraamos'
+    end
     
     if x == 0
         kappa = 0;
