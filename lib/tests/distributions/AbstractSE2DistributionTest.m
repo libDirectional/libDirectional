@@ -6,13 +6,16 @@ classdef AbstractSE2DistributionTest< matlab.unittest.TestCase
             se2wn = SE2WNDistribution([1;2;3],diag([1,5,5]));
             
             testCase.applyFixture(SuppressedWarningsFixture('MATLAB:hg:AutoSoftwareOpenGL')); % Supress warnings on jenkins server
-            testCase.verifyWarningFree(@()se2wn.plotSE2State());
+            testCase.verifyWarningFree(@()se2wn.plotState());
         end
         
-        function testPlotSE2Trajectory(testCase)
+        function testPlotTrajectory(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             testCase.applyFixture(SuppressedWarningsFixture('MATLAB:hg:AutoSoftwareOpenGL')); % Supress warnings on jenkins server
-            testCase.verifyWarningFree(@()AbstractSE2Distribution.plotSE2trajectory(linspace(0,pi/4,10),[1:10;1:10],true));
+            testCase.verifyWarningFree(@()AbstractSE2Distribution.plotTrajectory(linspace(0,pi/4,10),[1:10;1:10],animate=true));
+            testCase.verifyWarningFree(@()AbstractSE2Distribution.plotTrajectory(linspace(0,pi/4,10),[1:10;1:10],animate=false));
+            testCase.verifyWarningFree(@()AbstractSE2Distribution.plotTrajectory(linspace(0,pi/4,10),[1:10;1:10],posColor=[1,0,1],angleColor=[0,1,1]));
+            testCase.verifyWarningFree(@()AbstractSE2Distribution.plotTrajectory(linspace(0,pi/4,10),[1:10;1:10],fade=true));
         end
         
         function testAnglePosToDualQuaternion(testCase)

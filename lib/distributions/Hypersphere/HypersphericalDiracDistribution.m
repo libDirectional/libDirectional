@@ -1,25 +1,8 @@
-classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution & AbstractDiracDistribution
+classdef HypersphericalDiracDistribution < AbstractHypersphereSubsetDiracDistribution & AbstractHypersphericalDistribution
     % Dirac distribution on the hypersphere with dirac positions d and
     % weights w.
     
-    methods
-        function this = HypersphericalDiracDistribution(d_, w_)
-            % Constructor, w_ is optional
-            %
-            % Parameters:
-            %   d_ (dim x L)
-            %       Dirac locations on the unit hypersphere
-            %   w_ (1 x L)
-            %       weights for each Dirac
-            arguments
-                d_ (:,:) double {mustBeNonempty}
-                w_ (1,:) double = ones(1,size(d_,2))/size(d_,2);
-            end
-            % Check normalization
-            assert ( max(abs(sum(d_.^2)) - ones(1, size(d_,2))) < 1E-5);
-            this@AbstractDiracDistribution(d_, w_);
-        end      
-        
+    methods   
         function p = plot(this, varargin)
             % Create an appropriate plot
             %
@@ -41,48 +24,6 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution & 
             end                        
         end
         
-        function result = integral(this)
-            % Calculate integral to check normalization
-            % (should always be 1)
-            % Returns:
-            %   result (scalar)
-            %       integral over hypersphere surface of pdf (uses
-            %       approximation, not very accurate for higher dimensions)            
-            result = sum(this.w);
-        end
-        
-        function result = entropy(this)
-            % Calculates the entropy analytically 
-            %
-            % Returns:
-            %   result (scalar)
-            %       entropy of the distribution
-            warning('ENTROPY:DISCRETE','entropy is not defined in a continous sense')
-            % return discrete entropy
-            % The entropy only depends on the weights!
-            result = -sum(this.w.*log(this.w));
-        end       
-        
-        function s = sample(this, n)
-            % Obtain n samples from the distribution
-            %
-            % Parameters:
-            %   n (scalar)
-            %       number of samples
-            % Returns:
-            %   s (dim x n)
-            %       one sample per column
-            arguments
-                this (1,1) HypersphericalDiracDistribution
-                n (1,1) double {mustBeInteger,mustBePositive}
-            end
-            s = sample@AbstractDiracDistribution(this, n);
-        end
-        
-        function entropyNumerical(~)
-            error('PDF:UNDEFINED', 'not supported');
-        end   
-        
         function wd = toWD(this)
             % Convert to a WD distribution (only in 2D case)
             %
@@ -96,17 +37,6 @@ classdef HypersphericalDiracDistribution < AbstractHypersphericalDistribution & 
         function mu = meanDirection(this)
             vecSum = sum(this.d.*this.w, 2);
             mu = vecSum/norm(vecSum);
-        end
-        
-        function m = mode(this)
-            % sample with maximum weight
-            [~,ind] = max(this.w);
-            m = this.d(:,ind);
-        end
-        
-        function modeNumerical(~)
-            % Placeholder, pdf does not exist for Dirac distributions
-            error('PDF:UNDEFINED', 'not supported, use mode() instead to obtain sample with maximum weight')
         end
         
         function [s,info] = sampleDeterministicLCD(this, n)

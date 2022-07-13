@@ -30,11 +30,11 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter & AbstractP
             this.dist = dist_;
         end
         
-        function predictNonlinear(this, f, noiseDistribution)
+        function predictNonlinear(this, f, noiseDistribution, functionIsVectorized)
             % Predicts assuming a nonlinear system model.
             % Currently only supports VMFDistributions. mu is not used in
             % the calculation. To avoid a warning, use mu=[0;0;1] to indicate that
-            % your noise is intended to be "zero mean".
+            % your noise is intended to be "neutral" concerning its mean.
             %
             % Parameters:
             %   f (function handle)
@@ -47,24 +47,14 @@ classdef HypersphericalParticleFilter < AbstractHypersphericalFilter & AbstractP
                 this (1,1) AbstractParticleFilter
                 f (1,1) function_handle
                 % Provide distribution or keep empty
-                noiseDistribution = []
+                noiseDistribution {mustBeA(noiseDistribution,{'VMFDistribution','WatsonDistribution','double'})} = VMFDistribution.empty
+                functionIsVectorized (1,1) logical = true
             end
             assert(isempty(noiseDistribution) || this.dist.dim == noiseDistribution.dim);
-            assert(isempty(noiseDistribution)|| isa(noiseDistribution, 'VMFDistribution'),...
-                'Currently, only VMF-distributed noise terms or are allowed.');
-            if isa(noiseDistribution, 'VMFDistribution') && ~isequal(noiseDistribution.mu,[zeros(noiseDistribution.dim-1,1);1])
-                warning('mu of noiseDistribution is ignored...');
+            if ~isempty(noiseDistribution) && ~isequal(noiseDistribution.mu,[zeros(noiseDistribution.dim-1,1);1])
+                warning('mu of noiseDistribution is not "neutral", which we define as [0;0;...;0;1].');
             end
-            % Apply f
-            this.dist = this.dist.applyFunction(f);
-            % Calculate effect of (additive) noise
-            noiseModified = noiseDistribution;
-            if ~isempty(noiseDistribution)
-                for i=1:length(this.dist.d)
-                    noiseModified.mu=this.dist.d(:,i);
-                    this.dist.d(:,i)=noiseModified.sample(1);
-                end
-            end
+            predictNonlinear@AbstractParticleFilter(this, f, noiseDistribution, functionIsVectorized, true);
         end
         
         function predictCustom(this, genNewSamples)

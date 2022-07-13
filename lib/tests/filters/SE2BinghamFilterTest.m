@@ -1,8 +1,5 @@
 classdef SE2BinghamFilterTest < matlab.unittest.TestCase
    
-    properties
-    end
-    
     methods (Test)
         function testSE2BinghamFilter(testCase)
             filter = SE2BinghamFilter();
@@ -43,6 +40,61 @@ classdef SE2BinghamFilterTest < matlab.unittest.TestCase
             testCase.verifyClass(seUpdateIdentity2, 'SE2BinghamDistribution');
             
             %todo properly verify results
+        end
+        
+        function testUpdateNonlinear(testCase)
+            function p = likelihoodBf(z,x)
+                gaussianMeasNoiseCov = 0.5*eye(2);
+                [~,pos] = AbstractSE2Distribution.dualQuaternionToAnglePos(x);
+                p = mvnpdf(pos',z',gaussianMeasNoiseCov)';
+            end
+            sampleForFitting = 10000;
+            initialPriorPeriodic = VMDistribution(0,1);
+            initialPriorLinear = GaussianDistribution([0;0],eye(2));
+            initialPrior = SE2CartProdStackedDistribution({initialPriorPeriodic;initialPriorLinear});
+            
+            se2bf = SE2BinghamFilter();
+            se2bf.setState(SE2BinghamDistribution.fit(initialPrior.sample(sampleForFitting)));
+            
+            stateAndMeasForced = [1;1];
+            for i=1:100
+                se2bf.updateProgressive(@likelihoodBf,stateAndMeasForced);
+            end
+            est = se2bf.getPointEstimate(true);
+            testCase.verifyEqual(est(2:3),stateAndMeasForced,'AbsTol',1e-4);
+        end
+        
+        function testPredictNonlinear(testCase)
+            rng default
+            muPriorLinear = [5;2];
+            initialPriorLinear = GaussianDistribution(muPriorLinear, 0.1*eye(2));
+            
+            vmSysNoise = VMDistribution(0, 10);
+            gaussianSysNoise = GaussianDistribution([0; 0], 0.1*eye(2));
+            sysNoise = SE2CartProdStackedDistribution( ...
+                {vmSysNoise, gaussianSysNoise});
+
+            stepSize = 2.5;
+            genNextStateWithoutNoise = ...
+                        @(x)[x(1, :); x(2:3, :) + stepSize * [cos(x(1)); sin(x(1))]];
+
+            noSamplesForFitting = 10000;
+            sysNoiseForFilter = SE2BinghamDistribution.fit(sysNoise.sample(noSamplesForFitting));
+            
+            se2bf = SE2BinghamFilter();
+            for currPriorAngle = linspace(-pi/2,5/2*pi,10)
+                initialPriorPeriodic = VMDistribution(currPriorAngle, 1);
+                initialPrior = SE2CartProdStackedDistribution( ...
+                    {initialPriorPeriodic; initialPriorLinear});
+                
+                priorForFilter = SE2BinghamDistribution.fit(initialPrior.sample(noSamplesForFitting));               
+                se2bf.setState(priorForFilter);
+                testCase.verifyEqual(se2bf.getPointEstimate,[mod(currPriorAngle,2*pi); muPriorLinear], 'AbsTol', 0.1);
+                
+                se2bf.predictNonlinear(genNextStateWithoutNoise, sysNoiseForFilter);
+                testCase.verifyEqual(se2bf.getPointEstimate,...
+                    genNextStateWithoutNoise([mod(currPriorAngle,2*pi); muPriorLinear]), 'AbsTol', 0.1);
+            end
         end
     end
 end

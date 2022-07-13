@@ -1,0 +1,2 @@
+classdef SE2StateSpaceSubdivisionGaussianDistribution < HypercylindricalStateSpaceSubdivisionGaussianDistribution & AbstractSE2Distribution
+end

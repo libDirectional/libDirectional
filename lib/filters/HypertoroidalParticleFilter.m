@@ -47,19 +47,8 @@ classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter & AbstractPar
                 noiseDistribution AbstractHypertoroidalDistribution = HypercylindricalDiracDistribution.empty
                 functionIsVectorized (1,1) logical = true
             end
-            % Apply f
-            if functionIsVectorized
-                distF = this.dist;
-                distF.d = f(this.dist.d);
-            else
-                distF = this.dist.applyFunction(f);           
-            end  
-            % Calculate effect of (additive) noise 
-            if ~isempty(noiseDistribution)
-                noise = noiseDistribution.sample(numel(this.dist.w));
-                distF.d = mod(distF.d + noise, 2*pi);
-            end
-            this.dist = distF;
+            predictNonlinear@AbstractParticleFilter(this, f, noiseDistribution, functionIsVectorized, false);
+            this.dist.d = mod(this.dist.d,2*pi);
         end
         
         function predictNonlinearNonAdditive(this, f, samples, weights)

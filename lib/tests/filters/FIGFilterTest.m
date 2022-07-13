@@ -23,12 +23,12 @@ classdef FIGFilterTest < matlab.unittest.TestCase
         function testPrediction(testCase)
             % Validity of operation is tested in Fourier class, only test
             % filter interface
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
             for currEnforcement = [false, true]
                 filter = FIGFilter(101, currEnforcement);
                 vm = VMDistribution(3, 2);
-                warnstruct = warning('off', 'Predict:automaticConversion');
                 filter.predictIdentity(vm);
-                warning(warnstruct);
                 fd1 = FIGDistribution.fromDistribution(CircularUniformDistribution(), 101, currEnforcement);
                 fd2 = fd1.convolve(FIGDistribution.fromDistribution(vm, 101, currEnforcement));
                 testCase.verifyLength(filter.gd.gridValues, 101);

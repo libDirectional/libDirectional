@@ -157,6 +157,22 @@ classdef VMDistribution < AbstractCircularDistribution
             end
             vm = VMDistribution(this.mu+angle, this.kappa); % Mod is done in constructor
         end
+
+        function m = mode(this)
+            arguments
+                this (1,1) VMDistribution
+            end
+            m = this.mu;
+        end
+
+        function dist = setMode(this, newMode)
+            arguments
+                this (1,1) VMDistribution
+                newMode (1,1) double
+            end
+            dist = this;
+            dist.mu = newMode;
+        end
         
         function kld = kld(this, other)
             % Analytically calculates  the Kullback-Leibler divergence to another VM distribution

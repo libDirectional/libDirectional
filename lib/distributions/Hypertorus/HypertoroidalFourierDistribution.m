@@ -399,7 +399,7 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
             hfdShifted = this.shift(shiftVec);
             
             % We do normalize this density by using the constructor, but it
-            % does not matter because the density should e normalized
+            % does not matter because the density should be normalized
             % anyways
             hgdShifted = HypertoroidalGridDistribution.fromDistribution(hfdShifted,size(this.C,1:this.dim));
             % The transformation to Fourier is skipped in .likelihood because we give a
@@ -418,7 +418,7 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
                 otherwise
                     error('fromFunctionValues:unrecognizedTranformation', 'Transformation not recognized or unsupported by transformation via FFT');
             end
-            % Copied code from fromFunctionValues to prevent a noramlization
+            % Copied code from fromFunctionValues to prevent a normalization
             Cnew = fftshift(fftn(fvals)/numel(fvals));
             if ~(all(mod(size(Cnew),2)==1))
                 % Fill it up with the mirrored version if there are even

@@ -55,7 +55,7 @@ classdef SE2PWDDistribution < HypercylindricalDiracDistribution & AbstractSE2Dis
         function ddist = fromDistribution(dist, nParticles)
             arguments
                 dist (1,1) AbstractHypercylindricalDistribution
-            nParticles (1,1) {mustBeInteger,mustBePositive}
+                nParticles (1,1) {mustBeInteger,mustBePositive}
             end
             assert(dist.boundD==1,dist.linD==2);
             ddist = SE2PWDDistribution(dist.sample(nParticles), 1/nParticles * ones(1,nParticles));

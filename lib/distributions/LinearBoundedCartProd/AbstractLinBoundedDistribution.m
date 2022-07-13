@@ -5,7 +5,13 @@ classdef (Abstract) AbstractLinBoundedDistribution < AbstractCartProdDistributio
     properties (SetAccess = protected)
         linD {mustBeInteger,mustBeNonnegative} % number of linear dimensions
         boundD {mustBeInteger,mustBeNonnegative} % number of bounded (e.g., periodic or hyperrectangular) dimensions
-        periodicManifoldType char ...
-            {mustBeMember(periodicManifoldType,{'unspecified','hypertorus','hypersphere','hyperhemisphere'})} = 'unspecified'
+    end
+    methods
+        function m = mean(this)
+            m = this.hybridMean();
+        end
+        function m = hybridMean(this)
+            m = [this.marginalizeLinear().mean(); this.marginalizePeriodic().mean()];
+        end
     end
 end

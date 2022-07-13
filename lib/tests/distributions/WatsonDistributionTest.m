@@ -85,5 +85,10 @@ classdef WatsonDistributionTest< matlab.unittest.TestCase
             %testCase.verifySize(samples, [length(mu), n]);
             %testCase.verifyEqual(sum(samples.*samples), ones(1,n), 'RelTol', 1E-10);
         end
+        function testShifting(testCase)
+            dist = WatsonDistribution([0; 0; 0; 1], 0.5);
+            distShifted = dist.shift([1;2;3;4]/norm([1;2;3;4]));
+            testCase.verifyEqual(distShifted.mu, [1;2;3;4]/norm([1;2;3;4]), 'RelTol', 1E-10);
+        end
     end
 end

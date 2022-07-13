@@ -36,13 +36,13 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             end
         end
         function testWNToGridSqrt(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             mu = 0.9;
-            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'))
             for sigma = .2:.1:2
                 dist = WNDistribution(mu, sigma);
                 FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
             end
-            warning(warningSettings);
         end
         function testWCToGridId(testCase)
             mu = 1.2;
@@ -53,18 +53,19 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
         end
         
         function testWCToGridSqrt(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             mu = 1.3;
-            warningSettings = warning('off', 'Conversion:ApproximationHypergeometric');
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:ApproximationHypergeometric'))
             for gamma = .8:.1:3
                 dist = WCDistribution(mu, gamma);
                 FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-7);
             end
-            warning(warningSettings);
         end
         
         function testWEToGridId(testCase)
             % Treat differently due to lack of continuity
-            warningSettings=warning('off','Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             for lambda=.1:.1:2
                 xvals=-2*pi:0.01:3*pi;
                 xvals=xvals(mod(xvals,2*pi)>0.5 & mod(xvals,2*pi)<(2*pi-0.5));
@@ -73,11 +74,11 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
                 testCase.verifySize(gd.gridValues,[3001,1]);
                 testCase.verifyEqual(gd.pdf(xvals),dist.pdf(xvals),'AbsTol', 5E-3);
             end
-            warning(warningSettings);
         end
         function testWEToGridSqrt(testCase)
             % For sqrt, same applies as to identity
-            warningSettings=warning('off','Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             for lambda=.1:.1:2
                 xvals=-2*pi:0.01:3*pi;
                 xvals=xvals(mod(xvals,2*pi)>0.5 & mod(xvals,2*pi)<(2*pi-0.5));
@@ -86,7 +87,6 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
                 testCase.verifySize(gd.gridValues,[3001,1]);
                 testCase.verifyEqual(gd.pdf(xvals),dist.pdf(xvals),'AbsTol', 5E-3);
             end
-            warning(warningSettings);
         end
         function testWLToGridId(testCase)
             % Only test parameter combinations that don't result in too
@@ -99,14 +99,14 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             end
         end
         function testWLToGridSqrt(testCase)
-            warningSettings=warning('off','Conversion:NoFormulaSqrt');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'));
             for lambda=0.1:0.2:1
                 for kappa=0.1:0.5:4
                     dist=WLDistribution(lambda,kappa);
                     FIGDistributionTest.testGridConversion(testCase,dist,1001,true,1E-3);
                 end
             end
-            warning(warningSettings);
         end
         function testFourierIdToGridNoEnforcementAllValsNonnegative(testCase)
             % Case 1: Fourier identity to FIGFAN without negative (accurate)
@@ -213,26 +213,26 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
         end
         function testGCMToGridSqrt(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'));
             vm = VMDistribution(1, 2);
             wn = WNDistribution(2, 1);
             dist = CircularMixture({vm, wn}, [0.3, 0.7]);
             FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
-            warning(warningSettings);
         end
         function testCCDToGridId(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormula');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormula'));
             vm = VMDistribution(1, 2);
             dist = CustomCircularDistribution(@(x)vm.pdf(x));
             FIGDistributionTest.testGridConversion(testCase, dist, 101, false, 1E-8);
-            warning(warningSettings);
         end
         function testCCDToGridSqrt(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormula');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormula'));
             vm = VMDistribution(1, 2);
             dist = CustomCircularDistribution(@(x)vm.pdf(x));
             FIGDistributionTest.testGridConversion(testCase, dist, 101, true, 1E-8);
-            warning(warningSettings);
         end
         function testValue(testCase)
             vm = VMDistribution(3, 1);
@@ -331,34 +331,40 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
         end
         % CDF tests
         function testCdfIdentityStartZero(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             fd = FIGDistribution.fromDistribution(VMDistribution(1, 3), 101, false);
             xvals = 0:0.01:2 * pi;
+            testCase.applyFixture(SuppressedWarningsFixture('Grid:CanOnlyIntegrateWithLimitsNumerically'));
             intValsNumerically = arrayfun(@(xend)integral(@(x)fd.pdf(x), 0, xend), xvals);
             testCase.verifyEqual(fd.cdf(xvals, 0), intValsNumerically, 'AbsTol', 1E-8);
         end
         function testCdfSqrtStartZero(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             fd = FIGDistribution.fromDistribution(VMDistribution(1, 3), 101, true);
             xvals = 0:0.01:2 * pi;
+            testCase.applyFixture(SuppressedWarningsFixture('Grid:CanOnlyIntegrateWithLimitsNumerically'));
             intValsNumerically = arrayfun(@(xend)integral(@(x)fd.pdf(x), 0, xend), xvals);
             testCase.verifyEqual(fd.cdf(xvals, 0), intValsNumerically, 'AbsTol', 1E-8);
         end
         function testCdfIdentityStartNonzero(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             fd = FIGDistribution.fromDistribution(VMDistribution(1, 3), 101, false);
             xvals = 0:0.01:2 * pi;
             startingPoint = 1;
+            testCase.applyFixture(SuppressedWarningsFixture('Grid:CanOnlyIntegrateWithLimitsNumerically'));
             intValsNumerically = [arrayfun(@(xend)integral(@(x)fd.pdf(x), 0, xend)+integral(@(x)fd.pdf(x), startingPoint, 2*pi), xvals(xvals < startingPoint)), ...
                 arrayfun(@(xend)integral(@(x)fd.pdf(x), startingPoint, xend), xvals(xvals >= startingPoint))];
             testCase.verifyEqual(fd.cdf(xvals, startingPoint), intValsNumerically, 'AbsTol', 1E-8);
         end
         % Other tests
         function testTruncation(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             vm = VMDistribution(3, 1);
             fd1 = FIGDistribution.fromDistribution(vm, 100, true);
             testCase.verifyWarning(@()fd1.truncate(102), 'Truncate:TooFewGridPoints');
-            warningSettings = warning('off', 'Truncate:TooFewGridPoints');
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewGridPoints'));
             fd2 = fd1.truncate(102);
             testCase.verifySize(fd2.gridValues,[102,1]);
-            warning(warningSettings);
             fd3 = fd2.truncate(51);
             testCase.verifySize(fd3.gridValues,[51,1]);
         end
@@ -378,25 +384,26 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
         end
         
         function testNormalizationAfterTruncation(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:DownsampleViaFourier'));
             dist = VMDistribution(0, 5);
             fdNonnegative = FIGDistribution.fromDistribution(dist, 1000, true);
             testCase.verifyEqual(integral(@(x)fdNonnegative.pdf(x), 0, 2*pi), 1, 'RelTol', 1E-4);
-            warnStruct = warning('off', 'Truncate:DownsampleViaFourier');
             fdSqrtTrunc = fdNonnegative.truncate(7);
-            warning(warnStruct);
             % Verify that use of .truncate results in a normalized density
             testCase.verifyEqual(integral(@(x)fdSqrtTrunc.pdf(x), 0, 2*pi), 1, 'RelTol', 1E-4);
             % Verify that no warning is given due to normalization in
             % Fourier
             testCase.verifyWarningFree(@()integral(@(x)fdSqrtTrunc.pdf(x), 0, 2*pi));
         end
-        %}
         function testIntegral(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             dist = VMDistribution(0, 5);
+            testCase.applyFixture(SuppressedWarningsFixture('Grid:CanOnlyIntegralNumericallyWithLimits'));
             for transformation = {false, true}
-                warningSetting = warning('off', 'Normalization:cannotTest');
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
                 fd = FIGDistribution.fromDistribution(dist, 15, [transformation{:}]);
-                warning(warningSetting);
+                fixture.teardown();
                 testCase.verifyEqual(fd.integral(0, 1.5), fd.integralNumerical(0, 1.5), 'RelTol', 1E-8);
                 testCase.verifyEqual(fd.integral(1.5, 0), fd.integralNumerical(1.5, 0), 'RelTol', 1E-8);
                 testCase.verifyEqual(fd.integral(10, -10), fd.integralNumerical(10, -10), 'RelTol', 1E-8);

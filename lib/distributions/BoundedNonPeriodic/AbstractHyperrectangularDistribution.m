@@ -1,4 +1,4 @@
-classdef (Abstract) AbstractHyperrectangularDistribution < AbstractDistribution
+classdef (Abstract) AbstractHyperrectangularDistribution < AbstractBoundedNonPeriodicDistribution
     properties
         bounds (:,2)
     end

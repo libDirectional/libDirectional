@@ -12,9 +12,6 @@ classdef SE2CartProdStackedDistribution < CartProdStackedDistribution & Abstract
             this.boundD = dists{1}.dim;
             this.linD = dists{2}.dim;
         end
-        function mu = hybridMean(this)
-            mu = hybridMean@CartProdStackedDistribution(this);
-        end
         function stackedDist = shift(this, shiftVals)
             arguments
                 this (1,1) SE2CartProdStackedDistribution

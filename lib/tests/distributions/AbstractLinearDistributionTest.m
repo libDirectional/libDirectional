@@ -63,5 +63,12 @@ classdef AbstractLinearDistributionTest< matlab.unittest.TestCase
             
             testCase.verifyEqual(g.covarianceNumerical(),C,'AbsTol',1e-9);
         end
+
+        function testPlotState(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('MATLAB:hg:AutoSoftwareOpenGL')); % Supress warnings on jenkins server
+            gd = GaussianDistribution([1;2;3],blkdiag([1,0.5;0.5,1],1));
+            testCase.verifyWarningFree(@()gd.plotState());
+        end
     end
 end

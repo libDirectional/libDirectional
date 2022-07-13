@@ -81,13 +81,14 @@ classdef (Abstract) AbstractLinearDistribution < AbstractDistribution
         function h = plot(this,range,varargin)
             arguments
                 this (1,1) AbstractLinearDistribution
-                range double = [] 
+                range {mustBeNumeric} = []
             end
             arguments (Repeating)
                 varargin
             end
             % We have to choose some heuristic regarding the area to plot.
             % This works pretty good for Gaussians.
+            assert(isempty(range) || numel(range) == 2*this.dim);
             mu = this.mean();
             C = this.covariance();
             switch this.dim
@@ -212,6 +213,40 @@ classdef (Abstract) AbstractLinearDistribution < AbstractDistribution
                 l(i) = m(i)-scalingFactor*sqrt(P(i-this.boundD,i-this.boundD));
                 r(i) = m(i)+scalingFactor*sqrt(P(i-this.boundD,i-this.boundD));
             end
+        end
+
+        function lineHandles = plotState(this)
+            arguments
+                this (1,1) AbstractLinearDistribution
+            end
+            assert(this.dim==3);
+            [x,y,z]=sphere(150); % Create smooth sphere
+            h=mesh(x,y,z);
+            
+
+            skipx=10;
+            skipy=10;
+            x=get(h,'xdata'); % Get lines from smooth sphere
+            y=get(h,'ydata');
+            z=get(h,'zdata');
+            delete(h)
+
+            [V,D] = eig(this.C);
+            allCoords=V*sqrt(D)*[x(:)';y(:)';z(:)'] + this.mean();
+            x = reshape(allCoords(1,:),size(x));
+            y = reshape(allCoords(2,:),size(y));
+            z = reshape(allCoords(3,:),size(z));
+
+            xKeep=x(1:skipx:end,:); % Only plot some of the lines as grid would be too fine otherwise
+            yKeep=y(1:skipx:end,:);
+            zKeep=z(1:skipx:end,:);
+            lineHandles=line(xKeep',yKeep',zKeep','color',0.7*[1 1 1]);
+
+            xKeep=x(:,1:skipy:end);
+            yKeep=y(:,1:skipy:end);
+            zKeep=z(:,1:skipy:end);
+            lineHandles=[lineHandles;...
+                line(xKeep,yKeep,zKeep,'color',0.7*[1 1 1])]';
         end
     end
 end

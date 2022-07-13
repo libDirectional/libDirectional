@@ -4,6 +4,7 @@ classdef WDDistributionTest< matlab.unittest.TestCase
     
     methods (Test)
         function testWDDistribution(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             d = [1 2 3];
             w = [0.2 0.6 0.2];
             wd = WDDistribution(d, w);
@@ -114,11 +115,8 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             
             %% entropy
             testCase.verifyWarning(@wd.entropy, 'ENTROPY:DISCRETE');
-            %disable warning for the next function call
-            warning('off','ENTROPY:DISCRETE');
+            testCase.applyFixture(SuppressedWarningsFixture('ENTROPY:DISCRETE'));
             e = wd.entropy();
-            %reenable warning
-            warning('on','ENTROPY:DISCRETE');
             testCase.verifyGreaterThanOrEqual(e, 0);
         end
         

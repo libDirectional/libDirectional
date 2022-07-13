@@ -244,7 +244,7 @@ classdef SE2BinghamDistribution < AbstractSE2Distribution
             s(3:4,:) =  means + (randn(n,2)*R)';
         end
         
-        function h = plotSE2State(this, scalingFactor, circleColor, angleColor, samplesForMatching)
+        function h = plotState(this, scalingFactor, circleColor, angleColor, samplesForMatching)
             arguments
                 this (1,1) AbstractSE2Distribution
                 scalingFactor (1,1) double = 1
@@ -254,7 +254,7 @@ classdef SE2BinghamDistribution < AbstractSE2Distribution
             end
             samples = this.sample(samplesForMatching);
             dist = SE2PWDDistribution(AbstractSE2Distribution.dualQuaternionToAnglePos(samples));
-            h = dist.plotSE2State(scalingFactor, circleColor, angleColor);
+            h = dist.plotState(scalingFactor, circleColor, angleColor);
         end
     end
     

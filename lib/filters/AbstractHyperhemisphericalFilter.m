@@ -4,7 +4,7 @@ classdef (Abstract) AbstractHyperhemisphericalFilter < AbstractFilter
             arguments
                 this AbstractHyperhemisphericalFilter
             end
-            est = this.getEstimate().mode;
+            est = this.getEstimate().meanAxis();
         end
     end
 end

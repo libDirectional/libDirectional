@@ -1,6 +1,7 @@
 classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
     methods(Test)
         function testSetStateS2(testCase)
+            rng default
             noGridPoints = 1001;
             sgf = HyperhemisphericalGridFilter(noGridPoints, 3);
             testCase.verifySize(sgf.getEstimate.gridValues, [noGridPoints,1]);
@@ -18,6 +19,8 @@ classdef HyperhemisphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyClass(sgf.gd,'HyperhemisphericalGridDistribution')
             % Verify that it is no longer a uniform distribution
             testCase.verifyGreaterThan(sum(abs(sgf.getEstimate.gridValues-(1/sgf.getEstimate.getManifoldSize))),60);
+            % Verify estimate matches a mode of the Bingham
+            testCase.verifyEqual(min(vecnorm(sgf.getPointEstimate() - [bd.mode(),-bd.mode()])), 0, 'AbsTol',1e-11);
 
             % Verify warnings
             fullGrid = sgdState.getGrid();

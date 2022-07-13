@@ -131,5 +131,16 @@ classdef GaussianDistributionTest< matlab.unittest.TestCase
             
             testCase.verifyEqual(gShifted.mode, mu+shiftBy, 'AbsTol',1e-6);
         end
+
+        function testMarginalization(testCase)
+            mu = [1,2,3]';
+            C = [ 1.1 0.4 0; 0.4 0.9 0; 0 0 1];
+            g = GaussianDistribution(mu,C);
+            
+            grid = linspace(-10,10,300);
+            distMarginalized = g.marginalizeOut([2,3]);
+            marginlized1DViaIntegral=@(x)arrayfun(@(xCurr)integral2(@(y,z)reshape(g.pdf([xCurr*ones(1,size(y,2));y(:)';z(:)']),size(y)),-inf,inf,-inf,inf),x);
+            testCase.verifyEqual(distMarginalized.pdf(grid), marginlized1DViaIntegral(grid), 'AbsTol', 1E-10);
+        end
     end
 end

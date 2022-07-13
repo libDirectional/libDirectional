@@ -101,5 +101,40 @@ classdef AbstractHypersphericalDistributionTest< matlab.unittest.TestCase
                 testCase.verifyGreaterThan(dist1.totalVariationDistanceNumerical(dist2), 0.2);
             end
         end
+
+        function testModeNumerical2D(testCase)
+            M = eye(2,2);
+            Z = [-3 0]';
+            bd = BinghamDistribution(Z,M);
+            bd.F=bd.F*bd.integralNumerical();
+            testCase.verifyEqual(bd.momentNumerical(), bd.moment(),'AbsTol',0.001);
+
+            phi = 0.7;
+            M = [cos(phi),-sin(phi);sin(phi),cos(phi)];
+            Z = [-5 0]';
+            bd = BinghamDistribution(Z,M);
+            bd.F=bd.F*bd.integralNumerical();
+            testCase.verifyEqual(bd.momentNumerical(), bd.moment(),'AbsTol',0.001);
+        end
+
+        function testModeNumerical3D(testCase)
+            M = eye(4,4);
+            Z = [-10 -2 -1 0]';
+            bd = BinghamDistribution(Z,M);
+            bd.F=bd.F*bd.integralNumerical();
+            testCase.verifyEqual(bd.momentNumerical(), bd.moment(),'AbsTol',0.003);
+        end
+
+        function testModeNumerical4D(testCase)
+            q = [1,2,3,4]';
+            q = q/norm(q);
+            M = [quaternionMultiplication(q, [1 0 0 0]'), quaternionMultiplication(q, [0 1 0 0]'), quaternionMultiplication(q, [0 0 1 0]'), quaternionMultiplication(q, [0 0 0 1]')];
+            Z = [-10 -2 -1 0]';
+            bd = BinghamDistribution(Z,M);
+            % Improve normalization constant for Bingham distribution
+            bd.F=bd.F*bd.integralNumerical();
+
+            testCase.verifyEqual(bd.momentNumerical(), bd.moment(),'AbsTol',0.001);
+        end
     end
 end

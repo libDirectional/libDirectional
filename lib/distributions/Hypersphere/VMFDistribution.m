@@ -10,7 +10,7 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
     properties
         kappa (1,1) double  % concentration (scalar)
         mu (:,1) double      % mean as a unit vector
-        C {mustBeNonzero}    % normalization constant
+        C {mustBeNonnegative}    % normalization constant
     end
     
     methods
@@ -129,6 +129,16 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
             m = this.mu;
         end        
         
+        function dist = setMode(this, newMode)
+            arguments
+                this (1,1) VMFDistribution
+                newMode (:,1) double
+            end
+            assert(isequal(size(newMode),size(this.mu)));
+            dist = this;
+            dist.mu = newMode;
+        end
+
         function vmf = multiply(this, other)
             % Multiplies this density with another VMF density (exact).
             %
@@ -517,6 +527,17 @@ classdef VMFDistribution < AbstractHypersphericalDistribution
                 this (1,1) VMFDistribution
             end
             r = VMFDistribution.Ad(this.dim, this.kappa)*this.mu;
+        end
+
+        function distShifted = shift(this, offsets)
+            % There is no true shifting for the hypersphere. This is a function for compatibility and only works when mu is [0,0,...,1].
+            arguments
+                this (1,1) VMFDistribution
+                offsets (:,1) double {mustBeNonempty}
+            end
+            assert(isequal(this.mu,[zeros(this.dim-1,1);1]), 'There is no true shifting for the hypersphere. This is a function for compatibility and only works when mu is [0,0,...,1].');
+            distShifted = this;
+            distShifted.mu = offsets;
         end
     end
     

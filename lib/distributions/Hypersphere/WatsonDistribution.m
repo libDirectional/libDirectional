@@ -20,10 +20,13 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             %       location parameter (unit vector)
             %   kappa_ (scalar)
             %       concentration parameter (>=0)
+            arguments
+                mu_ (:,1) double
+                kappa_ (1,1) {mustBeReal} % Can be negative
+            end
             epsilon = 1E-6;
             assert(size(mu_,2) == 1, 'mu must be a row vector');
             assert(abs(norm(mu_) - 1)<epsilon, 'mu must be normalized');
-            assert(isscalar(kappa_));
             
             W.mu = mu_;
             W.kappa = kappa_;
@@ -130,6 +133,26 @@ classdef WatsonDistribution < AbstractHypersphericalDistribution
             else
                 m = this.modeNumerical(); % fallback to numerical
             end
+        end
+
+        function dist = setMode(this, newMode)
+            arguments
+                this (1,1) WatsonDistribution
+                newMode (:,1) double
+            end
+            assert(isequal(size(newMode),size(this.mu)));
+            dist = this;
+            dist.mu = newMode;
+        end
+
+        function distShifted = shift(this, offsets)
+            % There is no true shifting for the hypersphere. This is a function for compatibility and only works when mu is [0,0,...,1].
+            arguments
+                this (1,1) WatsonDistribution
+                offsets (:,1) double {mustBeNonempty}
+            end
+            assert(isequal(this.mu,[zeros(this.dim-1,1);1]), 'There is no true shifting for the hypersphere. This is a function for compatibility and only works when mu is [0,0,...,1].');
+            distShifted = this.setMode(offsets);
         end
     end
 end

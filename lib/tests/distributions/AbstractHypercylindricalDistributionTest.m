@@ -62,5 +62,21 @@ classdef AbstractHypercylindricalDistributionTest< matlab.unittest.TestCase
             hwn = HypercylindricalWNDistribution([1,2],[2,0.3;0.3,1],1);
             testCase.verifyEqual(hwn.linearMeanNumerical(), 2,'AbsTol', 1e-10);
         end
+
+        function testConditionOnPeriodic(testCase)
+            hwn = HypercylindricalWNDistribution([1,2],[2,0.3;0.3,1],1);
+            dist = hwn.conditionOnPeriodic(1.5);
+            testCase.verifyEqual(diff(hwn.pdf([1.5*ones(1,11);-5:5])./dist.pdf(-5:5)), zeros(1,10),'AbsTol', 1e-10);
+            dist = hwn.conditionOnPeriodic(1.5+2*pi);
+            testCase.verifyEqual(diff(hwn.pdf([1.5*ones(1,11);-5:5])./dist.pdf(-5:5)), zeros(1,10),'AbsTol', 1e-10);
+        end
+
+        function testConditionOnLinear(testCase)
+            hwn = HypercylindricalWNDistribution([1,2],[2,0.3;0.3,1],1);
+            dist = hwn.conditionOnLinear(1.5);
+            testCase.verifyEqual(diff(hwn.pdf([-5:5;1.5*ones(1,11)])./dist.pdf(-5:5)), zeros(1,10),'AbsTol', 1e-10);
+            dist = hwn.conditionOnLinear(1.5+2*pi);
+            testCase.verifyNotEqual(diff(hwn.pdf([-5:5;1.5*ones(1,11)])./dist.pdf(-5:5)), zeros(1,10));
+        end
     end
 end

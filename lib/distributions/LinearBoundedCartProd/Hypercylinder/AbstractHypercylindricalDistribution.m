@@ -1,4 +1,4 @@
-classdef (Abstract) AbstractHypercylindricalDistribution < AbstractLinBoundedDistribution
+classdef (Abstract) AbstractHypercylindricalDistribution < AbstractLinPeriodicDistribution
     % Base class for distributions on the hypercylinder [0,2pi)^boundD x R^linD 
     
     methods
@@ -246,7 +246,7 @@ classdef (Abstract) AbstractHypercylindricalDistribution < AbstractLinBoundedDis
                 normalize (1,1) logical = true
             end
             assert(size(input,1) == this.linD);
-            fCondUnnorm = @(x)this.f([x;repmat(input,1,size(x,2))]);
+            fCondUnnorm = @(x)this.pdf([x;repmat(input,1,size(x,2))]);
             dist = CustomHypertoroidalDistribution(fCondUnnorm, this.boundD);
             if normalize % Conditional need not be normalized
                 dist = dist.normalize();
@@ -260,7 +260,7 @@ classdef (Abstract) AbstractHypercylindricalDistribution < AbstractLinBoundedDis
                 normalize (1,1) logical = true
             end
             assert(size(input,1) == this.boundD);
-            fCondUnnorm = @(x)this.f([repmat(input,1,size(x,2));x]);
+            fCondUnnorm = @(x)this.pdf([repmat(input,1,size(x,2));x]);
             dist = CustomLinearDistribution(fCondUnnorm, this.linD);
             if normalize % Conditional need not be normalized
                 dist = dist.normalize();

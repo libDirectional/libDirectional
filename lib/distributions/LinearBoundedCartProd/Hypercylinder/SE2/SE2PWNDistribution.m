@@ -1,4 +1,4 @@
-classdef SE2PWNDistribution < HypercylindricalWNDistribution
+classdef SE2PWNDistribution < HypercylindricalWNDistribution & AbstractSE2Distribution
     % Partially wrapped normal distribution for SE(2). The first component 
     % is wrapped, the second and the third are not.
     % 

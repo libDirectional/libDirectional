@@ -35,13 +35,13 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             end
         end
         function testWNToFourierSqrt(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'));
             mu = 0.9;
-            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
             for sigma = .2:.1:2
                 dist = WNDistribution(mu, sigma);
                 FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-8);
             end
-            warning(warningSettings);
         end
         function testWCToFourierId(testCase)
             mu = 1.2;
@@ -51,17 +51,18 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             end
         end
         function testWCToFourierSqrt(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:ApproximationHypergeometric'));
             mu = 1.3;
-            warningSettings = warning('off', 'Conversion:ApproximationHypergeometric');
             for gamma = .8:.1:3
                 dist = WCDistribution(mu, gamma);
                 FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-7);
             end
-            warning(warningSettings);
         end
         function testWEToFourierId(testCase)
             %Treat differently due to lack of continuity
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             for lambda = .1:.1:2
                 xvals = -2 * pi:0.01:3 * pi;
                 xvals = xvals(mod(xvals, 2*pi) > 0.5 & mod(xvals, 2*pi) < (2 * pi - 0.5));
@@ -70,11 +71,11 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
                 testCase.verifyEqual(length(fd.a)+length(fd.b), 1001);
                 testCase.verifyEqual(fd.pdf(xvals), dist.pdf(xvals), 'AbsTol', 5E-3);
             end
-            warning(warningSettings);
         end
         function testWEToFourierSqrt(testCase)
             %For sqrt, same applies as to identity
-            warningSettings = warning('off', 'Normalization:notNormalized');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             for lambda = .1:.1:2
                 xvals = -2 * pi:0.01:3 * pi;
                 xvals = xvals(mod(xvals, 2*pi) > 0.5 & mod(xvals, 2*pi) < (2 * pi - 0.5));
@@ -83,7 +84,6 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
                 testCase.verifyEqual(length(fd.a)+length(fd.b), 1001);
                 testCase.verifyEqual(fd.pdf(xvals), dist.pdf(xvals), 'AbsTol', 5E-3);
             end
-            warning(warningSettings);
         end
         function testWLToFourierId(testCase)
             %Only test parameter combinations that don't result in too
@@ -96,19 +96,19 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             end
         end
         function testWLToFourierSqrt(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'));
             for lambda = 0.1:0.2:1
                 for kappa = 0.1:0.5:4
                     dist = WLDistribution(lambda, kappa);
                     FourierDistributionTest.testFourierConversion(testCase, dist, 1001, 'sqrt', 1E-3);
                 end
             end
-            warning(warningSettings);
         end
         function testWDToFourierMoments(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
-            wd = WDDistribution([1,2,3],[1,1,1]/3);
             testCase.applyFixture(SuppressedWarningsFixture('Conversion:WDMatching'));
+            wd = WDDistribution([1,2,3],[1,1,1]/3);
             fdId = FourierDistribution.fromDistribution(wd,19,'identity');
             fdSqrt = FourierDistribution.fromDistribution(wd,50001,'sqrt');
             
@@ -174,12 +174,12 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-8);
         end
         function testGvMToFourierLog(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             dist1 = GvMDistribution([1; 2; 2.5], [2; 3; 4]);
             dist2 = GvMDistribution((1:50)', linspace(2, 10, 50)');
-            warnstruct = warning('off', 'Normalization:cannotTest');
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             FourierDistributionTest.testFourierConversion(testCase, dist1, 101, 'log', 1E-8);
             testCase.verifyWarning(@()FourierDistribution.fromDistribution(dist2, 99, 'log'), 'Conversion:GvMTooFewCoefficients');
-            warning(warnstruct);
         end
         function testGCMToFourierId(testCase)
             vm = VMDistribution(1, 2);
@@ -188,26 +188,26 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'identity', 1E-8);
         end
         function testGCMToFourierSqrt(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'));
             vm = VMDistribution(1, 2);
             wn = WNDistribution(2, 1);
             dist = CircularMixture({vm, wn}, [0.3, 0.7]);
             FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-8);
-            warning(warningSettings);
         end
         function testCCDToFourierId(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormula');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormula'));
             vm = VMDistribution(1, 2);
             dist = CustomCircularDistribution(@(x)vm.pdf(x));
             FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'identity', 1E-8);
-            warning(warningSettings);
         end
         function testCCDToFourierSqrt(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormula');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormula'));
             vm = VMDistribution(1, 2);
             dist = CustomCircularDistribution(@(x)vm.pdf(x));
             FourierDistributionTest.testFourierConversion(testCase, dist, 101, 'sqrt', 1E-8);
-            warning(warningSettings);
         end
         function testFIGToFourier(testCase)
             vm = VMDistribution(1,2);
@@ -288,7 +288,8 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             end
         end
         function testConvolveWN(testCase)
-            warningSettings = warning('off', 'Conversion:NoFormulaSqrt');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Conversion:NoFormulaSqrt'));
             xvals = -2 * pi:0.01:3 * pi;
             for transformation={'identity', 'sqrt'}
                 currTrans=[transformation{:}];
@@ -304,7 +305,6 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
                     end
                 end
             end
-            warning(warningSettings);
         end
         function testMomentsFourierRootPredictionVM(testCase)
             for kappa1 = 0.1:0.3:4
@@ -320,7 +320,8 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             end
         end
         function testErrorsPredictAndFilter(testCase)
-            warningSettings = warning('off', 'Normalization:cannotTest');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             fd1 = FourierDistribution.fromDistribution(VMDistribution(0, 1), 101, 'sqrt');
             fd2 = FourierDistribution.fromDistribution(VMDistribution(0, 1), 101, 'identity');
             testCase.verifyError(@()fd1.multiply(fd2), 'Multiply:differentTransformations');
@@ -328,7 +329,6 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             fd3 = fd2.transformViaCoefficients('square', 101);
             testCase.verifyError(@()fd3.multiply(fd3), 'Multiply:unsupportedTransformation');
             testCase.verifyError(@()fd3.convolve(fd3), 'Convolve:unsupportedTransformation');
-            warning(warningSettings);
         end
         % Test transformations
         function testTransformViaFFT(testCase)
@@ -375,22 +375,22 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(fd3.b, fd1.b, 'AbsTol', 1E-8);
         end
         function testCustomTransformation(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             xvals = -2 * pi:0.01:3 * pi;
             vm = VMDistribution(3, 1);
             fvals = vm.pdf(linspace(0, 2*pi, 100)).^3;
             fvals(end) = [];
-            warningSettings = warning('off', 'Normalization:cannotTest');
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             fd = FourierDistribution.fromFunctionValues(fvals, 99, 'custom');
-            warning(warningSettings);
             testCase.verifyEqual(fd.value(xvals), vm.pdf(xvals).^3, 'AbsTol', 1E-8);
         end
         function testTransformToMoreCoeffs(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             vm = VMDistribution(3, 1);
             fdSqrt = FourierDistribution.fromDistribution(vm, 1001, 'sqrt');
             fdId = FourierDistribution.fromDistribution(vm, 101, 'identity');
-            warningSettings = warning('off', 'Truncate:TooFewCoefficients');
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
             fdIdSqrt = fdId.transformViaFFT('sqrt', 1001);
-            warning(warningSettings);
             testCase.verifyEqual(length(fdIdSqrt.a)+length(fdIdSqrt.b), 1001);
             testCase.verifyEqual(fdIdSqrt.a, fdSqrt.a, 'AbsTol', 1E-8);
             testCase.verifyEqual(fdIdSqrt.b, fdSqrt.b, 'AbsTol', 1E-8);
@@ -440,12 +440,12 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(fdConvertedTwice.b,fdOrig.b);
         end
         function testTruncation(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             vm = VMDistribution(3, 1);
             fd1 = FourierDistribution.fromDistribution(vm, 101, 'sqrt');
             testCase.verifyWarning(@()fd1.truncate(1001), 'Truncate:TooFewCoefficients');
-            warningSettings = warning('off', 'Truncate:TooFewCoefficients');
+            testCase.applyFixture(SuppressedWarningsFixture('Truncate:TooFewCoefficients'));
             fd2 = fd1.truncate(1001);
-            warning(warningSettings);
             testCase.verifyEqual(length(fd2.a)+length(fd2.b), 1001, 'AbsTol', 1E-8);
             fd3 = fd2.truncate(51);
             testCase.verifyEqual(length(fd3.a)+length(fd3.b), 51, 'AbsTol', 1E-8);
@@ -479,33 +479,33 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(integral(@(x)fdSqrtTrunc.pdf(x), 0, 2*pi), 1, 'RelTol', 1E-4);
         end
         function testNormalizationLog(testCase)
-            warningSetting = warning('off', 'Normalization:cannotTest');
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             fdLog1 = FourierDistribution.fromDistribution(VMDistribution(1, 2), 21, 'log');
             fdLog2 = FourierDistribution.fromDistribution(VMDistribution(2, 1), 21, 'log');
-            warningSetting = [warningSetting, warning('off', 'Multiply:NotNormalizing')];
+            testCase.applyFixture(SuppressedWarningsFixture('Multiply:NotNormalizing'));
             fdMult = fdLog1.multiply(fdLog2);
             testCase.verifyEqual(fdMult.integralNumerical(0, 2*pi), 1, 'AbsTol', 1E-4);
             fdMultTrunc = fdMult.truncate(5);
-            warning(warningSetting);
             testCase.verifyEqual(fdMultTrunc.integralNumerical(0, 2*pi), 1, 'AbsTol', 1E-4);
         end
         function testIntegral(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             dist = VMDistribution(0, 5);
             for transformation = {'identity', 'sqrt', 'log'}
-                warningSetting = warning('off', 'Normalization:cannotTest');
                 fd = FourierDistribution.fromDistribution(dist, 15, [transformation{:}]);
-                warning(warningSetting);
                 testCase.verifyEqual(fd.integral(0, 1.5), fd.integralNumerical(0, 1.5), 'RelTol', 1E-8);
                 testCase.verifyEqual(fd.integral(1.5, 0), fd.integralNumerical(1.5, 0), 'RelTol', 1E-8);
                 testCase.verifyEqual(fd.integral(10, -10), fd.integralNumerical(10, -10), 'RelTol', 1E-8);
             end
         end
         function testPdfOnGrid(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             for transformation = {'identity', 'sqrt', 'log'}
                 dist = VMDistribution(0, 5);
-                warningSetting = warning('off', 'Normalization:cannotTest'); % Prevent warning for log
                 fd = FourierDistribution.fromDistribution(dist, 15, [transformation{:}]);
-                warning(warningSetting);
                 [vals, xgrid] = fd.pdfOnGrid(99);
                 testCase.verifyEqual(vals, fd.pdf(xgrid), 'RelTol', 1E-8);
             end
@@ -519,11 +519,11 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(fd1.hellingerDistanceNumerical(dist2), dist1.hellingerDistanceNumerical(dist2), 'RelTol', 1E-8);
         end
         function testTransformViaFFTForTransformed(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             dist = VMDistribution(2, 5);
             fdSqrt = FourierDistribution.fromDistribution(dist, 11, 'sqrt');
-            warningSetting = warning('off', 'Normalization:cannotTest');
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
             fdLog = FourierDistribution.fromDistribution(dist, 11, 'log');
-            warning(warningSetting);
             fdIdFromSqrt = fdSqrt.transformViaFFT('square');
             fdIdFromLog = fdLog.transformViaFFT('power');
             fdIdFromSqrt101 = fdSqrt.transformViaFFT('square', 511);
@@ -542,36 +542,32 @@ classdef FourierDistributionTest < matlab.unittest.TestCase
             % For few coefficients and distributions will little common
             % probability mass, significantly negative values occur for
             % identity transformation.
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             kappa = 10;
             dist1 = VMDistribution(1, kappa);
             dist2 = VMDistribution(3, kappa);
             fd1Id = FourierDistribution.fromDistribution(dist1, 5, 'identity');
             fd2Id = FourierDistribution.fromDistribution(dist2, 5, 'identity');
             testCase.verifyWarning(@()fd1Id.multiply(fd2Id), 'Normalization:negative');
-            warnstruct = warning('off', 'Normalization:negative');
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:negative'));
             distMultId = fd1Id.multiply(fd2Id);
-            warning(warnstruct);
             xvals = 0:0.01:2 * pi;
             testCase.verifyTrue(any(distMultId.pdf(xvals) < -0.01));
         end
         function testNonnegativitySqrtAndLog(testCase)
             % No negative values occur for sqrt and log transformations in
             % this scenario.
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
+            testCase.applyFixture(SuppressedWarningsFixture('Multiply:NotNormalizing'));
             kappa = 10;
             dist1 = VMDistribution(1, kappa);
             dist2 = VMDistribution(3, kappa);
             for transformation = {'sqrt', 'log'}
-                warningSetting = [];
-                if strcmp(transformation, 'sqrt')
-                    warningSetting = warning('off', 'Normalization:notNormalized'); % We know this will happen because too few coefficients are used
-                else % If log we also know that we cannot test for normalization
-                    warningSetting = [warningSetting, warning('off', 'Normalization:cannotTest')]; %#ok<AGROW>
-                end
                 fd1 = FourierDistribution.fromDistribution(dist1, 5, [transformation{:}]);
                 fd2 = FourierDistribution.fromDistribution(dist2, 5, [transformation{:}]);
-                warningSetting = [warningSetting, warning('off', 'Multiply:NotNormalizing')]; %#ok<AGROW>
                 distMult = fd1.multiply(fd2);
-                warning(warningSetting);
                 xvals = 0:0.01:2 * pi;
                 testCase.verifyGreaterThanOrEqual(distMult.pdf(xvals), 0);
             end

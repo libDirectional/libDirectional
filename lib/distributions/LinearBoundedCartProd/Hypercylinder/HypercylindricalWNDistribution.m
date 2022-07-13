@@ -84,6 +84,15 @@ classdef HypercylindricalWNDistribution < AbstractHypercylindricalDistribution
             end
             m = this.mu;
         end
+
+        function dist = setMode(this, newMode)
+            arguments
+                this (1,1) HypercylindricalWNDistribution
+                newMode (:,1) double
+            end
+            dist = this;
+            dist.mu = newMode;
+        end
         
         function mu = hybridMoment(this)
             % Calculates mean of [x1, x2, .., x_linD, cos(x_(linD+1), sin(x_(linD+1)), ..., cos(x_(linD+boundD), sin(x_(linD+boundD))]

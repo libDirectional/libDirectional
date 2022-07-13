@@ -1,4 +1,4 @@
-classdef HypercylindricalDiracDistribution < AbstractHypercylindricalDistribution & AbstractDiracDistribution
+classdef HypercylindricalDiracDistribution < AbstractHypercylindricalDistribution & LinBoundedDiracDistribution
     % Partially wrapped dirac distribution with Dirac positions d and
     % weights w
     %
@@ -25,11 +25,8 @@ classdef HypercylindricalDiracDistribution < AbstractHypercylindricalDistributio
                 d_ (:,:) double
                 w_ (1,:) double = ones(1,size(d_,2))/size(d_,2); % All Diracs have equal weights by default
             end
-            linD_ = size(d_,1) - boundD_; 
             d_(1:boundD_,:) = mod(d_(1:boundD_,:),2*pi);
-            this@AbstractDiracDistribution(d_, w_);
-            this.linD = linD_;
-            this.boundD = boundD_;
+            this@LinBoundedDiracDistribution(boundD_, d_, w_);
         end
         
         function mu = hybridMoment(this)
@@ -66,45 +63,6 @@ classdef HypercylindricalDiracDistribution < AbstractHypercylindricalDistributio
             dist = HypertoroidalWDDistribution(this.d(1:this.boundD,:), this.w);
         end
         
-        function dist = marginalizePeriodic(this)
-            % Marginalizes the periodic dimensions, returns a
-            % LinearDiracDistribution of the remaining linear dimensions
-            %
-            % Returns:
-            %   dist (LinearDiracDistribution)
-            %       marginal distribution
-            arguments
-                this (1,1) HypercylindricalDiracDistribution
-            end
-            dist = LinearDiracDistribution(this.d(this.boundD+1:end,:), this.w);
-        end
-        
-        function r = integral(this)
-            % Integrates the density to check normalization
-            %
-            % Returns:
-            %   r (scalar)
-            %       integral over the entire density
-            arguments
-                this (1,1) HypercylindricalDiracDistribution
-            end
-            r = sum(this.w);
-        end
-        
-        function m = mode(this)
-            % 
-            %
-            % Returns:
-            %   m (linD + boundD x 1 column vector)
-            %       the mode
-            arguments
-                this (1,1) HypercylindricalDiracDistribution
-            end
-            periodic = this.marginalizeLinear();
-            linear = this.marginalizePeriodic();
-            m = [periodic.mode(); linear.mode()];            
-        end
-        
         function m = hybridMean(this)
             % 
             %
@@ -118,27 +76,13 @@ classdef HypercylindricalDiracDistribution < AbstractHypercylindricalDistributio
             linear = this.marginalizePeriodic();
             m = [periodic.meanDirection(); linear.mean()];            
         end
-        
-        function m = linearMean(this)
+
+        function result = integral(this)
             arguments
-                this (1,1) HypercylindricalDiracDistribution
+                this (1,1) HypertoroidalWDDistribution
             end
-            m = this.marginalizePeriodic().mean();
+            result = integral@AbstractDiracDistribution(this);
         end
-        
-        function C = linearCovariance(this)
-            % Computes covariance of linear dimensions
-            %
-            % Returns:
-            %   C (linD x linD)
-            %       covariance matrix
-            arguments
-                this (1,1) HypercylindricalDiracDistribution
-            end
-            m  = repmat(mean(this.d(this.boundD+1:end,:),2), 1, size(this.d,2));
-            C = (this.d(this.boundD+1:end,:)-m) *  diag(this.w) * (this.d(this.boundD+1:end,:)-m)';
-        end
-        
     end
     
      methods (Static)

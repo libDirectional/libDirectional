@@ -1,4 +1,4 @@
-classdef HyperhemisphericalGridDistribution < AbstractHyperhemisphericalDistribution & AbstractGridDistribution
+classdef HyperhemisphericalGridDistribution < AbstractHypersphereSubsetGridDistribution & AbstractHyperhemisphericalDistribution
     methods
         function this = HyperhemisphericalGridDistribution(grid_, gridValues_, enforcePdfNonnegative_)
             % Constructor
@@ -8,13 +8,7 @@ classdef HyperhemisphericalGridDistribution < AbstractHyperhemisphericalDistribu
                 enforcePdfNonnegative_ logical = true
             end
             assert(all(grid_(end,:)>=0), 'Always using upper hemisphere (along last dimension).');
-            assert(size(grid_,2)==size(gridValues_,1));
-            this.dim = size(grid_,1);
-            this.grid = grid_;
-            this.gridValues = gridValues_;
-            this.enforcePdfNonnegative = enforcePdfNonnegative_;
-            % Check if normalized. If not: Normalize!
-            this = this.normalize;
+            this@AbstractHypersphereSubsetGridDistribution(grid_, gridValues_, enforcePdfNonnegative_);
         end      
         
         function mu = meanDirection(this)
@@ -24,15 +18,6 @@ classdef HyperhemisphericalGridDistribution < AbstractHyperhemisphericalDistribu
             [~,indexMax] = max(this.gridValues);
             mu = this.grid(:,indexMax);
         end
-        
-        function f = normalize(this, opt)
-            arguments
-                this (1,1) HyperhemisphericalGridDistribution
-                opt.tol (1,1) double = 1e-2
-                opt.warnUnnorm (1,1) logical = true
-            end
-            f = normalize@AbstractGridDistribution(this,tol=opt.tol,warnUnnorm=opt.warnUnnorm);
-        end
                 
         function hgd = toFullSphere(this)
             % Convert hemisphere to full sphere (grid is symmetric but
@@ -41,23 +26,7 @@ classdef HyperhemisphericalGridDistribution < AbstractHyperhemisphericalDistribu
             gridValues_ = 0.5*[this.gridValues;this.gridValues];
             hgd = HypersphericalGridDistribution(grid_,gridValues_);
         end
-        
-        function int = integral(this)
-            arguments
-                this (1,1) HyperhemisphericalGridDistribution
-            end
-            int = integral@AbstractGridDistribution(this);
-        end
-        
-        function hgd = multiply(this, other)
-            arguments
-                this HyperhemisphericalGridDistribution
-                other HyperhemisphericalGridDistribution
-            end
-            assert(isequal(this.grid,other.grid), 'Multiply:IncompatibleGrid','Can only multiply for equal grids.');
-            hgd = multiply@AbstractGridDistribution(this, other);
-        end   
-        
+
         function h = plot(this)
             hdd = HypersphericalDiracDistribution(this.grid, this.gridValues');
             h = hdd.plot;
@@ -74,13 +43,13 @@ classdef HyperhemisphericalGridDistribution < AbstractHyperhemisphericalDistribu
             warning(warnStruct);
         end
         
-        function h = plotInterpolatedFullSphere(this)
+        function h = plotFullSphereInterpolated(this)
             if this.dim~=3
                 error('Can currently only plot for hemisphere of S2 sphere.')
             end
             hgd = this.toFullSphere;
             shd = SphericalHarmonicsDistributionComplex.fromGrid(hgd.gridValues, hgd.grid, 'identity');
-            chhd = CustomHyperhemisphericalDistribution.fromDistribution(shd);
+            chhd = CustomHypersphericalDistribution.fromDistribution(shd);
             h = chhd.plot;
         end
         
