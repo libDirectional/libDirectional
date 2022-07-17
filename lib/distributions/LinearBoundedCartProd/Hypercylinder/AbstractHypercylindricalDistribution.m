@@ -68,7 +68,7 @@ classdef (Abstract) AbstractHypercylindricalDistribution < AbstractLinPeriodicDi
                 approximateMean (:,1) double = NaN(this.linD,1)
             end
             assert(size(approximateMean,1)==this.linD);
-            if any(isnan(approximateMean))
+            if anynan(approximateMean)
                 approximateMean = this.linearMean();
             end
             if this.boundD==1 && this.linD==1
@@ -118,13 +118,13 @@ classdef (Abstract) AbstractHypercylindricalDistribution < AbstractLinPeriodicDi
             end
             assert(this.boundD == 1 && this.linD == 1);
             
-            if any(isnan(limitsLinear))
+            if anynan(limitsLinear)
                 scaleLin = 3;
                 m = this.linearMean();
-                if ~any(isnan(m))
+                if ~anynan(m)
                     P = this.linearCovariance();
                 end
-                if ~any(isnan(m)) && ~any(isnan(P))
+                if ~anynan(m) && ~anynan(P)
                     limitsLinear(1) = m(1)-scaleLin*sqrt(P(1,1));
                     limitsLinear(2) = m(1)+scaleLin*sqrt(P(1,1));
                 else

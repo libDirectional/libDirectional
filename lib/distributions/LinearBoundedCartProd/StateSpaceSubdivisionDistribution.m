@@ -83,7 +83,7 @@ classdef StateSpaceSubdivisionDistribution < AbstractLinPeriodicDistribution
                             currXaIndices = indices==currGridInd;
                             flincondbound(currXaIndices) = this.linearDistributions(currGridInd).pdf(xaLin(:,currXaIndices));
                         end
-                        assert(~any(isnan(flincondbound)));
+                        assert(~anynan(flincondbound));
                     end
                 case 'mixture'
                     % Use a mixture of the densities according to the

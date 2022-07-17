@@ -17,7 +17,7 @@ classdef SphericalHarmonicsDistributionComplex < AbstractSphericalHarmonicsDistr
             
             if nargin == 1, transformation = 'identity';end
             assert(size(coeffMat, 2) == (2 * size(coeffMat, 1) - 1), 'Size of coeffMat is invalid.');
-            assert(~any(any(isnan(tril(coeffMat)))), 'Lower triangular part must not be NaN.');
+            assert(~anynan(tril(coeffMat)), 'Lower triangular part must not be NaN.');
             % Complex spherical harmonics can describe complex functions.
             % Therefore, we have to verify that the coefficients describe a
             % real function.
