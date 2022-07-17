@@ -842,7 +842,7 @@ classdef HypertoroidalFourierDistribution < AbstractHypertoroidalDistribution
                         0.5*pdist2(indAsVec', zeros(1, distribution.dim), 'mahalanobis', inv(distribution.C)).^2) ...
                         /(2 * pi)^distribution.dim, size(individualIndexMatrices{1}));
                 end
-                if ~any(isnan(C)) % The exponential function can lead to Inf/NaN values. If this occurs, use FFT instead
+                if ~anynan(C) % The exponential function can lead to Inf/NaN values. If this occurs, use FFT instead
                     hfd = HypertoroidalFourierDistribution(C, desiredTransformation);
                 else
                     pdfFun = @(varargin)reshape(distribution.pdf(cell2mat(cellfun(@(currCell){currCell(:)}, varargin))'), size(varargin{1}));

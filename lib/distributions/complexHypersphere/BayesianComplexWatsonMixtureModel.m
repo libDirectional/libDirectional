@@ -181,7 +181,7 @@ classdef BayesianComplexWatsonMixtureModel < AbstractComplexHypersphericalDistri
                     sum(posterior.gamma, 2) ...
                     );
                 
-                assert(~any(isnan(posterior.gamma(:))));
+                assert(~anynan(posterior.gamma(:)));
                 
                 %% M-step
                 numberOfObservationsPerClass = sum(posterior.gamma, 1);

@@ -1,0 +1,2 @@
+classdef SE3StateSpaceSubdivisionGaussianDistribution < StateSpaceSubdivisionGaussianDistribution & AbstractSE3Distribution
+end
