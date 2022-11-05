@@ -9,6 +9,7 @@ classdef FIGFilterTest < matlab.unittest.TestCase
         end
         
         function testSetState(testCase)
+            import matlab.unittest.constraints.IssuesWarnings
             filter = FIGFilter(101);
             gd = FIGDistribution.fromDistribution(VMDistribution(2, 3), 101);
             filter.setState(gd);
@@ -17,7 +18,9 @@ classdef FIGFilterTest < matlab.unittest.TestCase
             gdtmp = gd;
             gdtmp.gridValues = 1:3;
             testCase.verifyWarning(@()filter.setState(gdtmp), 'setState:noOfGridValuesDiffer');
-            testCase.verifyWarning(@()filter.setState(VMDistribution(2, 3)), 'setState:nonGrid');
+            % Also not normalized for that low number of points
+            testCase.verifyThat(@()filter.setState(VMDistribution(2, 3)),...
+                IssuesWarnings({'setState:nonGrid', 'Normalization:notNormalized'}));
         end
         
         function testPrediction(testCase)

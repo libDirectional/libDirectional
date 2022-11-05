@@ -21,6 +21,8 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             testCase.verifyClass(sgf.gd,'HypersphericalGridDistribution')
             % Verify that it is no longer a uniform distribution
             fixture = testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
+            % Ignore potential warning in integral2
+            testCase.applyFixture(SuppressedWarningsFixture('MATLAB:integral2:maxFunEvalsPass'));
             testCase.verifyGreaterThan(sgf.getEstimate.totalVariationDistanceNumerical(HypersphericalUniformDistribution(3)),0.2);
             fixture.teardown;
 
@@ -75,9 +77,12 @@ classdef HypersphericalGridFilterTest < matlab.unittest.TestCase
             sgf.setState(HypersphericalGridDistribution.fromDistribution(bd,noGridPoints));
             
             % Verify that it is not a uniform distribution
-            fixture = testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
+            fixtureInterpolationWarning = testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
+
+            fixtureIntegralWarning = testCase.applyFixture(SuppressedWarningsFixture('MATLAB:integral2:maxFunEvalsPass'));
             testCase.verifyGreaterThan(sgf.getEstimate.totalVariationDistanceNumerical(HypersphericalUniformDistribution(3)),0.2);
-            fixture.teardown;
+            fixtureInterpolationWarning.teardown;
+            fixtureIntegralWarning.teardown;
             % Predict 10 times with VM-distributed noise
             trans = @(xkk,xk)cell2mat(arrayfun(@(i)VMFDistribution(xk(:,i),1).pdf(xkk),1:size(xk,2),'UniformOutput',false));
             sdsd = SdCondSdGridDistribution.fromFunction(trans,noGridPoints,true,'eq_point_set',6);

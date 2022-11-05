@@ -119,6 +119,7 @@ classdef HypertoroidalGridFilterTest < matlab.unittest.TestCase
         end
         
         function testPredictNonlinear2D(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             noiseDistribution = ToroidalWNDistribution([1; 2], [1, -0.3; -0.3, 4]);
             coeffsPerDim = 51;
             coeffVector = coeffsPerDim * ones(1, noiseDistribution.dim);
@@ -142,6 +143,7 @@ classdef HypertoroidalGridFilterTest < matlab.unittest.TestCase
             fourierFilterNl = HypertoroidalGridFilter(coeffVector);
             fourierFilterNl.setState(HypertoroidalGridDistribution.fromDistribution(densityInit, coeffVector));
             fourierFilterNl.predictNonlinear(f, noiseDistribution);
+            testCase.applyFixture(SuppressedWarningsFixture('PDF:UseInterpolated'));
             testCase.verifyEqual(fourierFilterNl.gd.pdf(gridReshaped), fvalsPredUsingInt, 'AbsTol', 1E-7);
             
             function [xPropagated] = a2Dvec(x)

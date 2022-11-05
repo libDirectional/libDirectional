@@ -107,10 +107,22 @@ classdef GaussianDistribution < AbstractLinearDistribution
                 this (1,1) GaussianDistribution
                 other (1,1) GaussianDistribution
             end
-            dist = this; % Skip constructor (attention, due to numerical issues, this may lead to non spd matrices
+            assert(this.dim == other.dim);
+            dist = this; % Skip constructor (attention, due to numerical issues, this may lead to non spd matrices)
             K = this.C / (this.C + other.C);
             dist.mu = this.mu + K * (other.mu - this.mu);
             dist.C = this.C - K*this.C;
+        end
+
+        function dist = convolve(this, other)
+            arguments
+                this (1,1) GaussianDistribution
+                other (1,1) GaussianDistribution
+            end
+            assert(this.dim == other.dim);
+            dist = this; % Skip constructor
+            dist.mu = this.mu + other.mu;
+            dist.C = this.C + other.C;
         end
         
         function dist = marginalizeOut(this,dimensions)

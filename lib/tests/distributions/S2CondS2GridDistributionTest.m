@@ -12,7 +12,7 @@ classdef S2CondS2GridDistributionTest < matlab.unittest.TestCase
             trans = @(xkk,xk)1./(sum((diag([0.1,0.15,1])*(xkk-xk)).^2,1)+0.01);
             testCase.verifyWarning(@()...
                 S2CondS2GridDistribution.fromFunction(trans,noGridPoints,false,'eq_point_set'),...
-                'Normalization:unnormalized');
+                'Normalization:notNormalized');
         end
         function testWarningFreeCustomNormalized(testCase)
             noGridpoints = 1000;

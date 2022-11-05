@@ -27,11 +27,11 @@ classdef (Abstract) AbstractParticleFilter < AbstractFilter
                 noiseDistribution (1,1) AbstractDistribution
             end
             % Predicts assuming identity system model, i.e.,
-            % x(k+1) = x(k) + w(k)    mod 2pi,
+            % x(k+1) = x(k) + w(k) and for periodic domains mod 2pi,
             % where w(k) is additive noise given by noiseDistribution.
             %
             % Parameters:
-            %   noiseDistribution (AbstractHypertoroidalDistribution)
+            %   noiseDistribution (AbstractDistribution)
             %       distribution of additive noise
             this.predictNonlinear(@(x) x, noiseDistribution);
         end
@@ -98,7 +98,7 @@ classdef (Abstract) AbstractParticleFilter < AbstractFilter
             %   noiseWeights (1 x n vector)
             %       weight of each sample
             arguments
-                this (1,1) HypercylindricalParticleFilter
+                this (1,1) AbstractParticleFilter
                 f (1,1) function_handle
                 samples (:,:) double
                 weights (1,:) double

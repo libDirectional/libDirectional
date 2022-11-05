@@ -12,6 +12,24 @@ classdef (Abstract) AbstractDistribution
     end
     
     methods
+        function result = mtimes(this, other)
+            result = this.multiply(other);
+        end
+        function result = eq(this, other)
+            arguments
+                this AbstractDistribution
+                other AbstractDistribution
+            end
+            if isequal(size(this), size(other))
+                result = arrayfun(@isequal, this, other);
+            elseif numel(this) == 1
+                result = arrayfun(@(currRight)isequal(this, currRight), other);
+            elseif numel(other) == 1
+                result = arrayfun(@(currLeft)isequal(currLeft, other), this);
+            else
+                error('Dimensions not compatible for comparison.')
+            end
+        end
         function s = sample(this, n)
             % Obtain n samples from the distribution
             % use metropolics hastings by default

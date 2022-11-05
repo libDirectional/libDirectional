@@ -34,7 +34,7 @@ classdef TdCondTdGridDistribution < AbstractConditionalDistribution & AbstractGr
                 if all(abs(ints-1)<=tol)
                     error('Normalization:maybeWrongOrder','Not normalized but would be normalized if order of the spheres were swapped. Check input.');
                 else
-                    warning('Normalization:unnormalized',...
+                    warning('Normalization:notNormalized',...
                         'When conditioning values for first torus on second, normalization is not ensured. Check input or increase tolerance.');
                     warning('Not normalizing for TdCondTdDistribution. Do this manually.');
                 end
