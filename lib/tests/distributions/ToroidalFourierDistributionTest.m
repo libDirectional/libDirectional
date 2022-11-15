@@ -8,7 +8,9 @@ classdef ToroidalFourierDistributionTest < matlab.unittest.TestCase
             testCase.verifyEqual(tfd.pdf(testPoints), hfd.pdf(testPoints), 'AbsTol', 1E-6);
         end
         function testSingleElementVector(testCase)
-            testCase.verifyWarning(@(x)ToroidalFourierDistribution([0; 1; 0]), 'ToroidalFourierDistribution:VectorGiven');
+            import matlab.unittest.constraints.IssuesWarnings
+            testCase.verifyThat(@()ToroidalFourierDistribution([0; 1; 0]),...
+                IssuesWarnings({'ToroidalFourierDistribution:VectorGiven', 'Normalization:notNormalized'}));
         end
         function testFromFunction(testCase)
             tvm = ToroidalVMSineDistribution([1; 2], [0.3; 0.5], 0.5);

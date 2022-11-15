@@ -9,8 +9,8 @@ classdef SphericalHarmonicsFilterTest < matlab.unittest.TestCase
                 
                 vmf1 = VMFDistribution([0; 1; 0], 1);
                 vmf2 = VMFDistribution([0; 0; 1], 0.1);
-                shd1 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf1, 30);
-                shd2 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf2, 30);
+                shd1 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf1, 30, [transformation{:}]);
+                shd2 = SphericalHarmonicsDistributionComplex.fromDistributionNumericalFast(vmf2, 30, [transformation{:}]);
                 
                 fixture = testCase.applyFixture(SuppressedWarningsFixture('SphericalHarmonicsFilter:rotationRequired'));
                 vmfFilter.setState(vmf1);
@@ -20,7 +20,7 @@ classdef SphericalHarmonicsFilterTest < matlab.unittest.TestCase
                 shdFilter.updateIdentity(shd2, [1; 0; 0]);
                 fixture.teardown;
                 
-                testCase.verifyEqual(vmfFilter.getEstimateMean, shdFilter.getEstimateMean, 'AbsTol', 1E-10);
+                testCase.verifyEqual(vmfFilter.getEstimateMean(), shdFilter.getEstimateMean(), 'AbsTol', 1E-10);
             end
         end
         function testUpdateUsingLikelihood(testCase)

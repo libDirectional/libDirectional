@@ -20,7 +20,7 @@ classdef S2HalfCondS2HalfGridDistributionTest < matlab.unittest.TestCase
             trans = @(xkk,xk)1./(sum((diag([0.1,0.15,1])*(xkk-xk)).^2,1)+0.01);
             testCase.verifyWarning(@()...
                 S2HalfCondS2HalfGridDistribution.fromFunction(trans,noGridPoints,false,'eq_point_set'),...
-                'Normalization:unnormalized');
+                'Normalization:notNormalized');
         end
         function testWarningFreeCustomNormalized(testCase)
             noGridpoints = 1000;

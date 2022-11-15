@@ -235,7 +235,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
         end
         function testTransformationViaIntegral(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
-            global enableExpensive
+            global enableExpensive %#ok<GVMIS> 
             if ~islogical(enableExpensive) || ~enableExpensive, return; end
             % Test approximating a VMF
             dist = VMFDistribution([0; -1; 0], 10);
@@ -255,7 +255,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
         end
         function testCovergence(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
-            global enableExpensive
+            global enableExpensive %#ok<GVMIS> 
             if ~islogical(enableExpensive), enableExpensive = true; end
             if enableExpensive
                 noDiffs = 10;
@@ -272,12 +272,14 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             testCase.verifyLessThan(diff(diffs), 0);
         end
         function testMultiplicationFixedCoeffs(testCase)
+            import matlab.unittest.constraints.IssuesWarnings
             [phi, theta] = meshgrid(linspace(0, 2*pi, 100), linspace(-pi/2, pi/2, 100));
             [x, y, z] = sph2cart(phi(:)', theta(:)', 1);
             
             cshd1 = SphericalHarmonicsDistributionComplex([sqrt(1/pi) / 2, NaN, NaN; 0, 1, 0]);
             cshd2 = SphericalHarmonicsDistributionComplex([sqrt(1/pi) / 2, NaN, NaN, NaN, NaN, NaN, NaN; 0, 0, 0, NaN, NaN, NaN, NaN; 0, 0, 0, 0, 0, NaN, NaN; 1i / sqrt(2), 0, 0, 0, 0, 0, 1i / sqrt(2)]);
-            testCase.verifyWarning(@()cshd1.multiply(cshd2, size(cshd1.coeffMat, 1)+size(cshd2.coeffMat, 1)-1), 'Multiplication:degreeTooHigh');
+            testCase.verifyThat(@()cshd1.multiply(cshd2, size(cshd1.coeffMat, 1)+size(cshd2.coeffMat, 1)-1),...
+                IssuesWarnings({'Multiplication:degreeTooHigh', 'Truncate:TooFewCoefficients'}));
             cshdMult = cshd1.multiply(cshd2, size(cshd1.coeffMat, 1)+size(cshd2.coeffMat, 1)-2);
             testCase.verifySize(cshdMult.coeffMat, [size(cshd1.coeffMat, 1) + size(cshd2.coeffMat, 1) - 1, 2 * (size(cshd1.coeffMat, 1) + size(cshd2.coeffMat, 1) - 1) - 1]);
             % Only test if ratio is constant because cshdMult is
@@ -375,7 +377,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             % Test rotation by verifying function values at identically
             % transformed points.
             rng default
-            global enableExpensive
+            global enableExpensive %#ok<GVMIS> 
             if ~islogical(enableExpensive), enableExpensive = true; end
             if enableExpensive
                 gridpoints = 7;
@@ -405,7 +407,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             % The angles are sequentially increased in the order they are
             % used. This is interesting not only as a unit test but also
             % for plotting and debugging purposes.
-            global enableExpensive
+            global enableExpensive %#ok<GVMIS> 
             if ~islogical(enableExpensive) || ~enableExpensive, return; end
             [phi, theta] = meshgrid(linspace(0, 2*pi, 30), linspace(-pi/2, pi/2, 30));
             [x, y, z] = sph2cart(phi(:)', theta(:)', 1);
@@ -489,9 +491,9 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             dist = HypersphericalMixture(...
                 {VMFDistribution(1/sqrt(2)*[-1;0;1],2),VMFDistribution([0;-1;0],2)},[0.5,0.5]);
-            fixture = testCase.applyFixture(SuppressedWarningsFixture('Transformation:notEq_Point_set'));
+            testCase.applyFixture(...
+                SuppressedWarningsFixture({'Transformation:notEq_Point_set','Normalization:notNormalized'}));
             sgd = SphericalGridDistribution.fromDistribution(dist, 1012, 'sh_grid');
-            fixture.teardown();
             
             % Test without providing grid
             deg = (-6+sqrt(36-8*(4-numel(sgd.gridValues))))/4;

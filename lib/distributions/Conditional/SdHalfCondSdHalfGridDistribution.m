@@ -26,18 +26,20 @@ classdef SdHalfCondSdHalfGridDistribution < AbstractConditionalDistribution & Ab
             this.normalize; % Not this = because we only test and do not actually normalize
         end      
         
-        function this = normalize(this)
+        function this = normalize(this, tol)
             % Do not normalize. Returning identical object for
             % compatibility.
-            tol = 0.01;
+            arguments
+                this (1,1) SdHalfCondSdHalfGridDistribution
+                tol = 0.01;
+            end
             ints = mean(this.gridValues,1)*0.5*AbstractHypersphericalDistribution.computeUnitSphereSurface(this.dim/2);
             if any(abs(ints-1)>tol)
                 if all(abs(ints-1)<=tol)
                     error('Normalization:maybeWrongOrder','Not normalized but would be normalized if order of the spheres were swapped. Check input.');
                 else
-                    warning('Normalization:unnormalized',...
-                        'When conditioning values for first sphere on second, normalization is not ensured. One reason may be that you are approximating a density on the entire sphere that is not symmetrical. Otherwise, input or increase tolerance.');
-                    warning('Not normalizing for SdHalfCondSdHalfDistribution. Do this manually.');
+                    warning('Normalization:notNormalized',...
+                        'When conditioning values for first sphere on second, normalization is not ensured. One reason may be that you are approximating a density on the entire sphere that is not symmetrical. You can try to increase tolerance.');
                 end
             end
             % Could normalize via this.gridValues = this.gridValues./(ints);

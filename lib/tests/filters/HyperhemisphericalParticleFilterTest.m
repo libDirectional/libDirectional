@@ -11,6 +11,9 @@ classdef HyperhemisphericalParticleFilterTest< matlab.unittest.TestCase
 
             hgf=HyperhemisphericalGridFilter(151,3);
             hpf=HyperhemisphericalParticleFilter(nSamples,3);
+            % Disable warning for grid filter since we are only interested in the
+            % PF in this test case
+            testCase.applyFixture(SuppressedWarningsFixture('setState:nonGrid'))
             hgf.setState(watsonHemiInit);
             hpf.setState(watsonHemiInit);
             est = hpf.getEstimate();
@@ -18,8 +21,11 @@ classdef HyperhemisphericalParticleFilterTest< matlab.unittest.TestCase
             % Minimum of distance of point estimate to mu or -mu should be
             % close to 0
             testCase.verifyEqual(min(vecnorm(hpf.getPointEstimate()-[watsonHemiInit.mode(),-watsonHemiInit.mode()])),0, 'AbsTol', 1E-2);
-            
             testCase.verifyEqual(min(vecnorm(hpf.getPointEstimate()-[hgf.getPointEstimate(),-hgf.getPointEstimate()])),0,'AbsTol',0.05);
+            % For the tests of the PF, ignore all warnings of the grid
+            % filter that is used for comparison
+            testCase.applyFixture(SuppressedWarningsFixture({...
+                'PredictIdentity:Inefficient', 'Normalization:notNormalized'}));
             hgf.predictIdentity(watsonHemiSys);
             hpf.predictIdentity(watsonHemiSys);
             testCase.verifyEqual(min(vecnorm(hpf.getPointEstimate()-[hgf.getPointEstimate(),-hgf.getPointEstimate()])),0,'AbsTol',0.05);

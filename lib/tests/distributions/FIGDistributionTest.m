@@ -135,11 +135,14 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             import matlab.unittest.constraints.AbsoluteTolerance
             import matlab.unittest.constraints.IsEqualTo
             import matlab.unittest.fixtures.SuppressedWarningsFixture
+            import matlab.unittest.constraints.IssuesWarnings
             
             vm = VMDistribution(1,10);
             fd = FourierDistribution.fromDistribution(vm,3,'identity');
-            testCase.verifyWarning(@()FIGDistribution.fromDistribution(fd,3,false),'FourierToFIG:ImpreciseId');
-            testCase.verifyWarning(@()FIGDistribution.fromDistribution(fd,3,false),'Normalization:notNormalized');
+            % Using IssuesWarnings instead of verifyWarning to prevent
+            % failure from FailOnWarning.
+            testCase.verifyThat(@()FIGDistribution.fromDistribution(fd,3,false),...
+                IssuesWarnings({'FourierToFIG:ImpreciseId', 'Normalization:notNormalized'}))
             
             testCase.applyFixture(SuppressedWarningsFixture('FourierToFIG:ImpreciseId'));
             testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
@@ -399,11 +402,12 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
         function testIntegral(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             dist = VMDistribution(0, 5);
-            testCase.applyFixture(SuppressedWarningsFixture('Grid:CanOnlyIntegralNumericallyWithLimits'));
+            testCase.applyFixture(SuppressedWarningsFixture('Grid:CanOnlyIntegrateWithLimitsNumerically'));
             for transformation = {false, true}
                 fixture = testCase.applyFixture(SuppressedWarningsFixture('Normalization:cannotTest'));
                 fd = FIGDistribution.fromDistribution(dist, 15, [transformation{:}]);
                 fixture.teardown();
+
                 testCase.verifyEqual(fd.integral(0, 1.5), fd.integralNumerical(0, 1.5), 'RelTol', 1E-8);
                 testCase.verifyEqual(fd.integral(1.5, 0), fd.integralNumerical(1.5, 0), 'RelTol', 1E-8);
                 testCase.verifyEqual(fd.integral(10, -10), fd.integralNumerical(10, -10), 'RelTol', 1E-8);

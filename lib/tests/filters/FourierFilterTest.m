@@ -11,6 +11,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
         end
         
         function testSetState(testCase)
+            import matlab.unittest.constraints.IssuesWarnings
             filter = FourierFilter(101);
             fd = FourierDistribution.fromDistribution(VMDistribution(2, 3), 101);
             filter.setState(fd);
@@ -22,7 +23,8 @@ classdef FourierFilterTest < matlab.unittest.TestCase
             testCase.verifyWarning(@()filter.setState(fdtmp), 'setState:noOfCoeffsDiffer');
             fdtmp = fd;
             fdtmp.transformation = 'identity';
-            testCase.verifyWarning(@()filter.setState(fdtmp), 'setState:transDiffer');
+            testCase.verifyThat(@()filter.setState(fdtmp), ...
+                IssuesWarnings({'setState:transDiffer','setState:noOfCoeffsDiffer'}));
             testCase.verifyWarning(@()filter.setState(VMDistribution(2, 3)), 'setState:nonFourier');
         end
         
@@ -52,7 +54,7 @@ classdef FourierFilterTest < matlab.unittest.TestCase
                 filter = FourierFilter(101, [transformation{:}]);
                 vmMultiply = VMDistribution(3, 2);
                 vmFilter = VMDistribution(0, 2);
-                fixture = testCase.applyFixture(SuppressedWarningsFixture('Predict:automaticConversion'));
+                fixture = testCase.applyFixture(SuppressedWarningsFixture('Update:automaticConversion'));
                 filter.updateIdentity(vmFilter, 3);
                 fixture.teardown;
                 fd1 = FourierDistribution.fromDistribution(CircularUniformDistribution(), 101, [transformation{:}]);
@@ -63,6 +65,9 @@ classdef FourierFilterTest < matlab.unittest.TestCase
                 testCase.verifyEqual(filter.fd.a, fd3.a, 'AbsTol', 1E-8);
                 testCase.verifyEqual(filter.fd.b, fd3.b, 'AbsTol', 1E-8);
             end
+        end
+        function testUpdateIdentityWarning(testCase)
+            filter = FourierFilter(101, 'identity');
             testCase.verifyWarning(@()filter.updateIdentity(WNDistribution(1, 2), 3), 'Update:automaticConversion');
         end
         

@@ -5,6 +5,7 @@ classdef DiscreteFilterTest < matlab.unittest.TestCase
     
     methods (Test)
         function testDiscreteFilter(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
             nParticles = 30;
             filter = DiscreteFilter(nParticles);
             wd = filter.getEstimate();
@@ -31,6 +32,7 @@ classdef DiscreteFilterTest < matlab.unittest.TestCase
             
             %% test conversion from continous distribution
             vm = VMDistribution(2,3);
+            testCase.applyFixture(SuppressedWarningsFixture('Dirac:WeightsUnnormalized'));
             filter.setState(vm);
             testCase.verifyClass(filter.getEstimate(), 'WDDistribution');
             testCase.verifyEqual(filter.getEstimateMean(), vm.circularMean(), 'RelTol', 1E-8);

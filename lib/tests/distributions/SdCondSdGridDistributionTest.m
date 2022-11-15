@@ -40,14 +40,14 @@ classdef SdCondSdGridDistributionTest < matlab.unittest.TestCase
             trans = @(xkk,xk)1./(sum((diag([0.1,0.15,1])*(xkk-xk)).^2,1)+0.01);
             testCase.verifyWarning(@()...
                 SdCondSdGridDistribution.fromFunction(trans,noGridPoints,false,'eq_point_set',6),...
-                'Normalization:unnormalized');
+                'Normalization:notNormalized');
         end
         function testWarningUnnormalizedS3(testCase)
             noGridPoints = 112;
             trans = @(xkk,xk)1./(sum((diag([0.1,0.15,1,2])*(xkk-xk)).^2,1)+0.01);
             testCase.verifyWarning(@()...
                 SdCondSdGridDistribution.fromFunction(trans,noGridPoints,false,'eq_point_set',8),...
-                'Normalization:unnormalized');
+                'Normalization:notNormalized');
         end
         function testWarningFreeCustomNormalized(testCase)
             noGridpoints = 1000;
