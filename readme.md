@@ -142,7 +142,7 @@ libDrectional relies on the following external libraries, which are also include
   * Modified versions of [Slepian Alpha](http://csdms.colorado.edu/wiki/Model:SLEPIAN_Alpha) and [Slepian Bravo](http://csdms.colorado.edu/wiki/Model:SLEPIAN_Bravo) (GPLv2 or later)
   * [Wigner3j](https://de.mathworks.com/matlabcentral/fileexchange/20619-wigner3j-symbol) (BSD)
   * A modified version of the [Recursive Zonal Equal Area Sphere Partitioning Toolbox](http://eqsp.sourceforge.net/) (MIT)
-  * [UKF-M](https://de.mathworks.com/matlabcentral/fileexchange/71994-arrow-3d) (BSD)
+  * [UKF-M](https://github.com/CAOR-MINES-ParisTech/ukfm) (BSD)
   * The farrow function of [Arrow 3d](https://de.mathworks.com/matlabcentral/fileexchange/71994-arrow-3d) (BSD)
 
 Furthermore, we use the script `circVMcdf` by Shai Revzen (GPLv3). We also use some code from [libBingham](https://github.com/sebastianriedel/bingham) (BSD), but this library is not in the externals folder as only small parts are used.
