@@ -1,0 +1,35 @@
+name: Run MATLAB Tests on GitHub-Hosted Runner
+
+permissions: read-all
+
+on: # yamllint disable-line rule:truthy
+  push:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run-tests:
+    name: Checkout, Compile and Test
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v1
+
+      - name: Add lib directory to path and compile
+        uses: matlab-actions/run-command@v1
+        with:
+          command: "addpath(genpath('lib')); compileAll;"
+
+      - name: Run tests in lib/tests
+        uses: matlab-actions/run-tests@v1
+        with:
+          test-results-junit: test-results/results.xml
+          code-coverage-cobertura: code-coverage/coverage.xml
+          source-folder: lib/tests
