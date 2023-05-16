@@ -33,3 +33,16 @@ jobs:
           test-results-junit: test-results/results.xml
           code-coverage-cobertura: code-coverage/coverage.xml
           source-folder: lib/tests
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-results/results.xml
+  
+      - name: Publish Code Coverage Results
+        uses: 5monkeys/cobertura-action@master
+        if: always()
+        with:
+          path: code-coverage/coverage.xml
+          minimum_coverage: 1
