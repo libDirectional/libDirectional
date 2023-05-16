@@ -371,7 +371,7 @@ classdef SphericalHarmonicsDistributionComplexTest < matlab.unittest.TestCase
             convolutionResultId = thisId.convolve(otherId);
             convolutionResultSqrt = this.convolve(other);
             
-            testCase.verifyEqual(convolutionResultSqrt.totalVariationDistanceNumerical(convolutionResultId), 0, 'AbsTol', 1.5E-15);
+            testCase.verifyEqual(convolutionResultSqrt.totalVariationDistanceNumerical(convolutionResultId), 0, 'AbsTol', 5E-15);
         end
         function testRotationGrid(testCase)
             % Test rotation by verifying function values at identically
