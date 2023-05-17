@@ -27,9 +27,14 @@ jobs:
         with:
           command: "addpath(genpath('lib')); compileAll;"
 
-      # Unclear why this is not working, GitHub uses a 64 bit Ubuntu with the latest version of Matlab and the table comes in a .h file that is part of the repository.
-      - name: Remove unwanted test
-        run: rm lib/tests/util/HypergeometricRatioTest.m
+      # Unclear why HypergeometricRatioTest is not working, GitHub uses a 64 bit Ubuntu with the latest version of Matlab and the table comes in a .h file that is part of the repository.
+      # Also remove files that would result in a code coverage of 0%
+      - name: Remove unwanted tests
+        run: |
+          rm lib/tests/util/HypergeometricRatioTest.m
+          rm lib/tests/runLibDirectionalUnitTests.m
+          rm lib/tests/runTest.m
+          rm lib/tests/util/findLastWorking.m
 
       - name: Run tests in lib/tests
         uses: matlab-actions/run-tests@v1
@@ -49,4 +54,4 @@ jobs:
         if: always()
         with:
           path: code-coverage/coverage.xml
-          minimum_coverage: 1
+          minimum_coverage: 20
