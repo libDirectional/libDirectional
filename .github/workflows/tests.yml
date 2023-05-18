@@ -1,0 +1,57 @@
+name: Run MATLAB Tests on GitHub-Hosted Runner
+
+permissions: read-all
+
+on: # yamllint disable-line rule:truthy
+  push:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run-tests:
+    name: Checkout, Compile and Test
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v1
+
+      - name: Add lib directory to path and compile
+        uses: matlab-actions/run-command@v1
+        with:
+          command: "addpath(genpath('lib')); compileAll;"
+
+      # Unclear why HypergeometricRatioTest is not working, GitHub uses a 64 bit Ubuntu with the latest version of Matlab and the table comes in a .h file that is part of the repository.
+      # Also remove files that would result in a code coverage of 0%
+      - name: Remove unwanted tests
+        run: |
+          rm lib/tests/util/HypergeometricRatioTest.m
+          rm lib/tests/runLibDirectionalUnitTests.m
+          rm lib/tests/runTest.m
+          rm lib/tests/util/findLastWorking.m
+
+      - name: Run tests in lib/tests
+        uses: matlab-actions/run-tests@v1
+        with:
+          test-results-junit: test-results/results.xml
+          code-coverage-cobertura: code-coverage/coverage.xml
+          source-folder: lib/tests
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-results/results.xml
+  
+      - name: Publish Code Coverage Results
+        uses: 5monkeys/cobertura-action@master
+        if: always()
+        with:
+          path: code-coverage/coverage.xml
+          minimum_coverage: 20
