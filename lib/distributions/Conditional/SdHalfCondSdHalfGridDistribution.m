@@ -146,6 +146,10 @@ classdef SdHalfCondSdHalfGridDistribution < AbstractConditionalDistribution & Ab
         function getManifoldSize(~)
             error('Not defined for conditional distributions because interpretation may not be 100% obvious.');
         end
+
+        function getClosestPoint(this, xa)
+            error('Not implemented.')
+        end
     end
     
     methods (Static)

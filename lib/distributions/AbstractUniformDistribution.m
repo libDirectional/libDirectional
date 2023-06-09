@@ -1,5 +1,5 @@
 classdef (Abstract) AbstractUniformDistribution < AbstractDistribution
-    % Uniform distribution on the hypertorus.
+    % Uniform distribution.
     
     methods
         function p = pdf(this,xa)

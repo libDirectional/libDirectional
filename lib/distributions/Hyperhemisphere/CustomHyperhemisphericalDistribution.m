@@ -3,7 +3,7 @@ classdef CustomHyperhemisphericalDistribution < CustomDistribution & AbstractHyp
     
     methods (Static)
         function chhd = fromDistribution(dist)
-            % Creates a CustomHypertoroidalDistribution from some other distribution
+            % Creates a CustomHyperhemisphericalDistribution from some other distribution
             %
             % Parameters:
             %   dist (AbstractHypertoroidalDistribution)

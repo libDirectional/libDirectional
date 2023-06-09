@@ -151,7 +151,7 @@ classdef TdCondTdGridDistribution < AbstractConditionalDistribution & AbstractGr
                 end
                 set(gcf,'CurrentAxes',firstAx);
                 if this.dim==2
-%                     plotHighlightLeft = stem(this.grid(i), this.gridValues
+                    plotHighlightLeft = stem(this.grid(i), this.gridValues);
                 elseif this.dim==4
                     plotHighlightLeft = scatter(this.grid(1,i),this.grid(2,i),100,[0.8500, 0.3250, 0.0980],'filled');
                 elseif this.dim==6     
@@ -164,8 +164,8 @@ classdef TdCondTdGridDistribution < AbstractConditionalDistribution & AbstractGr
             end
         end
         
-        function getManifoldSize(~)
-            error('Not defined for conditional distributions because interpretation may not be 100% obvious.');
+        function getClosestPoint(this, xa)
+            error('Not implemented.')
         end
     end
     

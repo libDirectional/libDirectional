@@ -11,7 +11,6 @@ classdef AbstractLinearDistributionTest< matlab.unittest.TestCase
             mu = [5,1]';
             C = [2, 1; 1, 1];
             g = GaussianDistribution(mu,C);
-            
             testCase.verifyEqual(g.modeNumerical(),mu,'AbsTol',1e-5);
         end
         
@@ -19,7 +18,6 @@ classdef AbstractLinearDistributionTest< matlab.unittest.TestCase
             mu = [5,10]';
             C = [2, 1; 1, 1];
             g = GaussianDistribution(mu,C);
-            
             testCase.verifyWarning(@()g.modeNumerical(),'ModeNumerical:StoppedEarly');
             testCase.verifyEqual(g.modeNumerical([4;11]),mu,'AbsTol',1e-5);
         end
@@ -28,7 +26,6 @@ classdef AbstractLinearDistributionTest< matlab.unittest.TestCase
             mu = [1,2,3]';
             C = [ 1.1 0.4 0; 0.4 0.9 0; 0 0 1];
             g = GaussianDistribution(mu,C);
-            
             testCase.verifyEqual(g.modeNumerical(),mu,'AbsTol',1e-6);
         end
         
@@ -36,7 +33,7 @@ classdef AbstractLinearDistributionTest< matlab.unittest.TestCase
             mu = [5,10]';
             C = [2, 1; 1, 1];
             g = GaussianDistribution(mu,C);
-            
+
             testCase.verifyEqual(g.meanNumerical(),mu,'AbsTol',1e-6);
         end
         
@@ -64,10 +61,17 @@ classdef AbstractLinearDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(g.covarianceNumerical(),C,'AbsTol',1e-9);
         end
 
-        function testPlotState(testCase)
+        function testPlotStateR2(testCase)
             import matlab.unittest.fixtures.SuppressedWarningsFixture
             testCase.applyFixture(SuppressedWarningsFixture('MATLAB:hg:AutoSoftwareOpenGL')); % Supress warnings on jenkins server
-            gd = GaussianDistribution([1;2;3],blkdiag([1,0.5;0.5,1],1));
+            gd = GaussianDistribution([1;2], [1,0.5;0.5,1]);
+            testCase.verifyWarningFree(@()gd.plotState());
+        end
+
+        function testPlotStateR3(testCase)
+            import matlab.unittest.fixtures.SuppressedWarningsFixture
+            testCase.applyFixture(SuppressedWarningsFixture('MATLAB:hg:AutoSoftwareOpenGL')); % Supress warnings on jenkins server
+            gd = GaussianDistribution([1;2;3], blkdiag([1,0.5;0.5,1],1));
             testCase.verifyWarningFree(@()gd.plotState());
         end
     end

@@ -24,7 +24,10 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             % Parameters:
             %   hfd_ (HypertoroidalFourierDistribution)
             %       new state
-            assert(isa(hfd_,'AbstractHypertoroidalDistribution'));
+            arguments
+                this (1,1) HypertoroidalFourierFilter
+                hfd_ (1,1) AbstractHypertoroidalDistribution
+            end
             if ~(isa(hfd_,'HypertoroidalFourierDistribution'))
                 warning('setState:nonFourier','hfd_ is not a HypertoroidalFourierDistribution. Transforming with a number of coefficients that is equal to that of the filter.');
                 sizeHfdC=size(this.hfd.C); % Needed for workaround for 1D case
@@ -175,9 +178,11 @@ classdef HypertoroidalFourierFilter < AbstractHypertoroidalFilter
             % conditional density that, when integrated over x_k+1
             % always yields 1. By also integrating over x_k, we get
             % (2*pi)^d when d is the dimension of x_k.
-
-            if nargin==2,truncateJointSqrt=true;end
-            
+            arguments
+                this (1,1) HypertoroidalFourierFilter
+                fTrans
+                truncateJointSqrt (1,1) logical = true
+            end            
             % As explained above, fTrans acutally integrates to (2*pi)^d.
             % This would result in a warning due to the lack of
             % normalization. Warning is therefore disabled.

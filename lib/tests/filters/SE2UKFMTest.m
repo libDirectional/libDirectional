@@ -81,6 +81,13 @@ classdef SE2UKFMTest < matlab.unittest.TestCase
             testCase.verifySize(est, [3,1]);
             testCase.verifyEqual(est,forcedMeas,'AbsTol',0.1);            
         end
+
+        function testPlotStateError(testCase)
+            % With prediction update cycles, we should converge to a forced
+            % (noise-free measurement)
+            ukfm = SE2UKFM(3);
+            testCase.verifyError(@()ukfm.plotFilterState(), 'plotFilterState:CannotPlot');
+        end
     end
 end
 

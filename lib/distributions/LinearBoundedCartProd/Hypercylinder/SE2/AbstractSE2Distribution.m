@@ -19,7 +19,7 @@ classdef (Abstract) AbstractSE2Distribution < AbstractHypercylindricalDistributi
             hold on
             xs = [linspace(0,2*pi,100),0];
             ps = scalingFactor*linearCovmat*[cos(xs);sin(xs)];
-            h(1) = plot(ps(1,:)+linearMean(1),ps(2,:)+linearMean(2),'color',circleColor);hold on
+            h(1) = plot(ps(1,:)+linearMean(1),ps(2,:)+linearMean(2),'color',circleColor);
             
             plotAngRange = 0.1*periodicVar*pi; % 0.1*variance (between 0 and 1) * pi (max -pi to +pi)
             xs = linspace(periodicMean-plotAngRange, periodicMean+plotAngRange,100);

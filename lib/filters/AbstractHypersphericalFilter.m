@@ -17,5 +17,11 @@ classdef (Abstract) AbstractHypersphericalFilter < AbstractFilter
             end
             mean = this.getPointEstimate();
         end
+        function est = plotFilterState(this)
+            arguments
+                this (1,1) AbstractHypertoroidalFilter
+            end
+            est = this.getEstimate().meanDirection();
+        end
     end
 end
