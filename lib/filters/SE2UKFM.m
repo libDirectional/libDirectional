@@ -93,5 +93,8 @@ classdef SE2UKFM < AbstractSE2Filter
                 @(state)[atan2(state.Rot(2, 1),state.Rot(1, 1));state.p],...
                 @localization_phi, R, this.weights);   
         end
+        function plotFilterState(~)
+            error('plotFilterState:CannotPlot', 'Filter currently not supported for plotting state.')
+        end
     end
 end

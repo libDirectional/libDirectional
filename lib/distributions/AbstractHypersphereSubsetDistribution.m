@@ -157,7 +157,7 @@ classdef (Abstract) AbstractHypersphereSubsetDistribution < AbstractPeriodicDist
             [Dsorted, order] = sort(diag(D));
             Vsorted = V(:,order);
             if abs(Dsorted(end)/Dsorted(end-1))<1.01
-                warning('Eigenvalues are very similar. Axis may be unreliable.');
+                warning('AbstractHypersphereSubsetDistribution:meanAxisUnreliable', 'Eigenvalues are very similar. Mean axis may be unreliable or distribution may not have one (e.g., uniformd distribution).');
             end            
             if Vsorted(end,end)>=0
                 m = Vsorted(:,end);

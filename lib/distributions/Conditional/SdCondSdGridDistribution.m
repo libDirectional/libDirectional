@@ -162,8 +162,8 @@ classdef SdCondSdGridDistribution < AbstractConditionalDistribution & AbstractGr
             end
         end
         
-        function getManifoldSize(~)
-            error('Not defined for conditional distributions because there is some room for interpretation.');
+        function getClosestPoint(this, xa)
+            error('Not implemented.')
         end
     end
     

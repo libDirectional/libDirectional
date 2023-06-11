@@ -25,12 +25,14 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractPeriodicDistribu
                     theta = linspace(0,2*pi,resolution);
                     ftheta = this.pdf(theta);
                     p = plot(theta, ftheta,varargin{:});
+                    setupAxisCircular('x');
                 case 2
                     step = 2*pi/resolution;
                     [alpha,beta] = meshgrid(0:step:2*pi,0:step:2*pi);
                     f = this.pdf([alpha(:)'; beta(:)']);
                     f = reshape(f,size(alpha,1), size(alpha,2));
                     p = surf(alpha, beta, f, varargin{:});
+                    setupAxisCircular('x', 'y');
                 case 3
                     stepCirc = 0.5;
                     [X,Y,Z] = sphere(4);
@@ -69,7 +71,7 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractPeriodicDistribu
         
         function m = meanDirection(this)
             % More general name for circular mean.
-            m = circularMean(this);
+            m = this.circularMean();
         end
         
         function m = mode(this)
@@ -390,6 +392,19 @@ classdef (Abstract) AbstractHypertoroidalDistribution < AbstractPeriodicDistribu
                 otherwise
                     error('Numerical calculation of total variation distance is currently not supported for this dimension.')
             end
+        end
+
+        function [points, indices] = getClosestPoint(this, xa)
+            % Overload if class does not have .grid
+            allDistances = angularError(reshape(this.grid,this.dim,1,[]),xa);
+            if this.dim>1 % Combine into single dimension for multidimensional case
+                % This is good for both hypertori and hyperspheres (the
+                % ordering is the same as with the orthodromic distance)
+                % Not for hyperhemispheres (is overloaded there)
+                allDistances = vecnorm(allDistances,2,1);
+            end
+            [~,indices] = min(allDistances,[],3);
+            points = this.getGridPoint(indices);
         end
         
         function s = getManifoldSize(this)

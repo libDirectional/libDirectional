@@ -118,6 +118,19 @@ classdef HypertoroidalGridDistributionTest < matlab.unittest.TestCase
             HypertoroidalGridDistributionTest.verifyPdfEqual(testCase,hgd2,hfd2,1e-6);
         end
         
+        function [points, indices] = getClosestPoint(this, xa)
+            % Overload if class does not have .grid
+            allDistances = angularError(reshape(this.grid,this.dim,1,[]),xa);
+            if this.dim>1 % Combine into single dimension for multidimensional case
+                % This is good for both hypertori and hyperspheres (the
+                % ordering is the same as with the orthodromic distance)
+                % Not for hyperhemispheres (is overloaded there)
+                allDistances = vecnorm(allDistances,2,1);
+            end
+            [~,indices] = min(allDistances,[],3);
+            points = this.getGridPoint(indices);
+        end
+
         function testPdfUnnormalized(testCase)
             twn = ToroidalWNDistribution([1;1],[1,0.5;0.5,1]);
             hgd = HypertoroidalGridDistribution.fromDistribution(twn, [41,41]);

@@ -54,6 +54,13 @@ classdef HypersphericalGridDistribution < AbstractHypersphereSubsetGridDistribut
             gridValuesHalf = 0.5 * (this.gridValues(1:size(this.grid,2)/2) + this.gridValues(size(this.grid,2)/2+1:end));
             hhgd = HypersphericalGridDistribution(this.grid, [gridValuesHalf; gridValuesHalf]);
         end
+
+        function [points, indices] = getClosestPoint(this, xa)
+            % Use distance in R^3 instead of arc length for efficiency
+            allDistances = vecnorm(reshape(this.grid,this.dim,1,[])-xa);
+            [~,indices] = min(allDistances,[],3);
+            points = this.getGridPoint(indices);
+        end
         
         function hhgd = toHemisphere(this, tol)
             arguments

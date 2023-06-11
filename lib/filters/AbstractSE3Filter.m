@@ -1,2 +1,2 @@
-classdef (Abstract) AbstractSE3Filter < AbstractHypercylindricalFilter
+classdef (Abstract) AbstractSE3Filter < AbstractLinPeriodicFilter
 end

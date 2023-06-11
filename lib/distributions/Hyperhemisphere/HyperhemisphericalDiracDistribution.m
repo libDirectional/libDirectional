@@ -19,10 +19,6 @@ classdef HyperhemisphericalDiracDistribution < AbstractHypersphereSubsetDiracDis
             this@AbstractHypersphereSubsetDiracDistribution(d_, w_);
         end      
         
-        function C = moment(this)
-            C = this.d.*this.w*this.d';
-        end
-        
         function p = plot(this, varargin)
             % Create an appropriate plot
             %

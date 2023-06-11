@@ -44,7 +44,7 @@ classdef HypertoroidalParticleFilter < AbstractHypertoroidalFilter & AbstractPar
                 this (1,1) HypertoroidalParticleFilter
                 f (1,1) function_handle
                 % Can be empty for no noise, therefore do not enforce (1,1)
-                noiseDistribution AbstractHypertoroidalDistribution = HypercylindricalDiracDistribution.empty
+                noiseDistribution AbstractHypertoroidalDistribution = HypertoroidalDiracDistribution.empty
                 functionIsVectorized (1,1) logical = true
             end
             predictNonlinear@AbstractParticleFilter(this, f, noiseDistribution, functionIsVectorized, false);

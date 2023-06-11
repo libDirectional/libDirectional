@@ -58,8 +58,8 @@ classdef HyperhemisphericalGridDistribution < AbstractHypersphereSubsetGridDistr
             % multidimensional so we always use vecnorm. For more
             % explanation see the definition in AbstractGridDistribution.
             allDistances = min(...
-                vecnorm(angularError(reshape(this.grid,this.dim,1,[]),xa),2,1),...
-                vecnorm(angularError(reshape(-this.grid,this.dim,1,[]),xa),2,1));
+                vecnorm(reshape(this.grid,this.dim,1,[])-xa,2,1),...
+                vecnorm(reshape(-this.grid,this.dim,1,[])-xa,2,1));
             [~,indices] = min(allDistances,[],3);
             points = this.getGridPoint(indices);
         end

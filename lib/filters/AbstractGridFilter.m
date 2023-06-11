@@ -42,10 +42,14 @@ classdef (Abstract) AbstractGridFilter < AbstractFilter
             gridValsNew=this.gd.gridValues.*reshape(likelihood(z, this.gd.getGrid()),[],1);
             assert(isequal(size(gridValsNew),size(this.gd.gridValues)));
             this.gd.gridValues = gridValsNew;
-            warnStruct = warning('off','Normalization:notNormalized');
-            this.gd = this.gd.normalize;
-            warning(warnStruct);
+            this.gd = this.gd.normalize(warnUnnorm=false);
+        end
+
+        function plotFilterState(this)
+            arguments
+                this (1,1) AbstractSE2Filter
+            end
+            this.getEstimate().plotState();
         end
     end
-    
 end

@@ -4,7 +4,7 @@ classdef GaussianMixtureDistribution < AbstractMixture & AbstractLinearDistribut
     methods
         function this = GaussianMixtureDistribution(dists, w)
             % Constructor
-            assert(isa(dists,'cell') && all(cellfun(@(dist)isa(dist,'AbstractLinearDistribution'),dists)),...
+            assert(isa(dists,'cell') && all(cellfun(@(dist)isa(dist,'GaussianDistribution'),dists)),...
                 'dists must be a cell array of Gaussian distributions');
             this = this@AbstractMixture(dists, w);
         end

@@ -94,6 +94,14 @@ classdef HypersphericalGridFilter < AbstractHypersphericalFilter & AbstractGridF
             this.gd.gridValues = this.gd.getManifoldSize/size(this.gd.gridValues,1)*fTrans.gridValues*this.gd.gridValues;
             this.gd = this.gd.normalize; % This also enforces a normalization if it is violated
         end
+
+        function plotFilterState(this)
+            if dim==2
+                plotFilterState@AbstractGridFilter(this);
+            else
+                error('Dimension currently not supported for plotting.')
+            end
+
+        end
     end
-    
 end

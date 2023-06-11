@@ -31,6 +31,15 @@ classdef HypertoroidalWNDistribution < AbstractHypertoroidalDistribution
             this.C=C_;
             this.dim=size(mu_,1);
         end
+
+        function dist = setMode(this, m)
+            arguments
+                this (1, 1) HypertoroidalWNDistribution
+                m (:,1) double
+            end
+            dist = this;
+            dist.mu = m;
+        end
         
         function p = pdf(this, xa, m)
             % Evaluate pdf at each column of xa.

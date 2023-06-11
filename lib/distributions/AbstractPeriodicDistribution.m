@@ -1,4 +1,4 @@
-classdef (Abstract) AbstractPeriodicDistribution < AbstractDistribution
+classdef (Abstract) AbstractPeriodicDistribution < AbstractNonConditionalDistribution
     methods
         function m = mean(this)
             m = this.meanDirection();

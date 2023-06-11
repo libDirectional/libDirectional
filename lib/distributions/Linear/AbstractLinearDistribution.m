@@ -1,4 +1,4 @@
-classdef (Abstract) AbstractLinearDistribution < AbstractDistribution
+classdef (Abstract) AbstractLinearDistribution < AbstractNonConditionalDistribution
     methods
         function mu = mean(this)
             arguments
@@ -112,6 +112,53 @@ classdef (Abstract) AbstractLinearDistribution < AbstractDistribution
             end
         end
         
+        function h = plotState(this, scalingFactor, circleColor)
+            % Plot mean and uncertainty in R^2
+            arguments
+                this (1,1) AbstractLinearDistribution
+                scalingFactor (1,1) double = 1
+                circleColor (3,1) double = [0    0.4470    0.7410]
+            end
+            switch this.dim
+                case 2
+                    linearCovmat = this.covariance;
+                    linearMean = this.mean;
+                    
+                    xs = [linspace(0,2*pi,100),0];
+                    ps = scalingFactor*linearCovmat*[cos(xs);sin(xs)];
+                    h(1) = plot(ps(1,:)+linearMean(1),ps(2,:)+linearMean(2),'color',circleColor);
+                case 3
+                    [x,y,z]=sphere(150); % Create smooth sphere
+                    htmp=mesh(x,y,z);
+                    
+                    skipx=10;
+                    skipy=10;
+                    x=get(htmp,'xdata'); % Get lines from smooth sphere
+                    y=get(htmp,'ydata');
+                    z=get(htmp,'zdata');
+                    delete(htmp)
+        
+                    [V,D] = eig(this.C);
+                    allCoords=V*sqrt(D)*[x(:)';y(:)';z(:)'] + this.mean();
+                    x = reshape(allCoords(1,:),size(x));
+                    y = reshape(allCoords(2,:),size(y));
+                    z = reshape(allCoords(3,:),size(z));
+        
+                    xKeep=x(1:skipx:end,:); % Only plot some of the lines as grid would be too fine otherwise
+                    yKeep=y(1:skipx:end,:);
+                    zKeep=z(1:skipx:end,:);
+                    lineHandles=line(xKeep',yKeep',zKeep','color',0.7*[1 1 1]);
+        
+                    xKeep=x(:,1:skipy:end);
+                    yKeep=y(:,1:skipy:end);
+                    zKeep=z(:,1:skipy:end);
+                    h=[lineHandles;...
+                        line(xKeep,yKeep,zKeep,'color',0.7*[1 1 1])]';
+                otherwise
+                    error('Dimension currently not supported for plotting the state.')
+            end
+        end
+
         function val = getManifoldSize(this)
             arguments
                 this (1,1) AbstractLinearDistribution
@@ -209,44 +256,10 @@ classdef (Abstract) AbstractLinearDistribution < AbstractDistribution
             m = this.mode();
             l = NaN(this.dim,1);
             r = NaN(this.dim,1);
-            for i=this.boundD+1:this.boundD+this.linD % Change for linear dimensions
-                l(i) = m(i)-scalingFactor*sqrt(P(i-this.boundD,i-this.boundD));
-                r(i) = m(i)+scalingFactor*sqrt(P(i-this.boundD,i-this.boundD));
+            for i=1:this.dim% Change for linear dimensions
+                l(i) = m(i)-scalingFactor*sqrt(P(i,i));
+                r(i) = m(i)+scalingFactor*sqrt(P(i,i));
             end
-        end
-
-        function lineHandles = plotState(this)
-            arguments
-                this (1,1) AbstractLinearDistribution
-            end
-            assert(this.dim==3);
-            [x,y,z]=sphere(150); % Create smooth sphere
-            h=mesh(x,y,z);
-            
-
-            skipx=10;
-            skipy=10;
-            x=get(h,'xdata'); % Get lines from smooth sphere
-            y=get(h,'ydata');
-            z=get(h,'zdata');
-            delete(h)
-
-            [V,D] = eig(this.C);
-            allCoords=V*sqrt(D)*[x(:)';y(:)';z(:)'] + this.mean();
-            x = reshape(allCoords(1,:),size(x));
-            y = reshape(allCoords(2,:),size(y));
-            z = reshape(allCoords(3,:),size(z));
-
-            xKeep=x(1:skipx:end,:); % Only plot some of the lines as grid would be too fine otherwise
-            yKeep=y(1:skipx:end,:);
-            zKeep=z(1:skipx:end,:);
-            lineHandles=line(xKeep',yKeep',zKeep','color',0.7*[1 1 1]);
-
-            xKeep=x(:,1:skipy:end);
-            yKeep=y(:,1:skipy:end);
-            zKeep=z(:,1:skipy:end);
-            lineHandles=[lineHandles;...
-                line(xKeep,yKeep,zKeep,'color',0.7*[1 1 1])]';
         end
     end
 end
