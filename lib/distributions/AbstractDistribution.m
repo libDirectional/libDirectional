@@ -1,7 +1,7 @@
 classdef (Abstract) AbstractDistribution
     % Abstract base class for all distributions
     
-    properties (SetAccess = protected) % Cannot be immutable becaues it needs to be set in a subclass constructor
+    properties (SetAccess = protected) % Cannot be immutable because it needs to be set in a subclass constructor
         dim {mustBePositive, mustBeInteger, mustBeScalarOrEmpty}
     end
     

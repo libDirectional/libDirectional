@@ -16,6 +16,7 @@ classdef SphericalGridDistributionTest < matlab.unittest.TestCase
             % properly normalize (just keeps it in the reasonable range).
             testCase.applyFixture(SuppressedWarningsFixture('Transformation:notEq_Point_set'));
             testCase.applyFixture(SuppressedWarningsFixture('SphericalGridDistribution:CannotNormalizeShGrid'));
+            testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
             sgd = SphericalGridDistribution.fromDistribution(dist, 1012, 'sh_grid');
             verifyPdfEqual(testCase,sgd,dist,1e-11);
             sgd = SphericalGridDistribution.fromDistribution(dist, 1012, 'sh_grid', true);
@@ -37,6 +38,7 @@ classdef SphericalGridDistributionTest < matlab.unittest.TestCase
                 if strcmp([grid_pattern{:}],'sh_grid')
                     testCase.applyFixture(SuppressedWarningsFixture('Transformation:notEq_Point_set'));
                     testCase.applyFixture(SuppressedWarningsFixture('SphericalGridDistribution:CannotNormalizeShGrid'));
+                    testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));
                 end
                 
                 sgd = SphericalGridDistribution.fromDistribution(dist, 1012, [grid_pattern{:}]);

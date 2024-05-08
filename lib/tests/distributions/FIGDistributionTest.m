@@ -135,11 +135,14 @@ classdef FIGDistributionTest < matlab.unittest.TestCase
             import matlab.unittest.constraints.AbsoluteTolerance
             import matlab.unittest.constraints.IsEqualTo
             import matlab.unittest.fixtures.SuppressedWarningsFixture
+            import matlab.unittest.constraints.IssuesWarnings
             
             vm = VMDistribution(1,10);
             fd = FourierDistribution.fromDistribution(vm,3,'identity');
-            testCase.verifyWarning(@()FIGDistribution.fromDistribution(fd,3,false),'FourierToFIG:ImpreciseId');
-            testCase.verifyWarning(@()FIGDistribution.fromDistribution(fd,3,false),'Normalization:notNormalized');
+            % Using IssuesWarnings instead of verifyWarning to prevent
+            % failure from FailOnWarning.
+            testCase.verifyThat(@()FIGDistribution.fromDistribution(fd,3,false),...
+                IssuesWarnings({'FourierToFIG:ImpreciseId', 'Normalization:notNormalized'}))
             
             testCase.applyFixture(SuppressedWarningsFixture('FourierToFIG:ImpreciseId'));
             testCase.applyFixture(SuppressedWarningsFixture('Normalization:notNormalized'));

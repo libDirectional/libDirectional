@@ -108,7 +108,7 @@ classdef WDDistributionTest< matlab.unittest.TestCase
             testCase.verifyEqual(wdRew.w, wNew/sum(wNew));
             
             %% convolution
-            wd2 = WDDistribution([0, 4, 5, 6], [1, 3, 4, 2]);
+            wd2 = WDDistribution([0, 4, 5, 6], [1, 3, 4, 2]/10);
             wdConv = wd.convolve(wd2);
             testCase.verifyClass(wdConv, 'WDDistribution');
             testCase.verifyEqual(length(wdConv.d), length(wd.d)*length(wd2.d));
