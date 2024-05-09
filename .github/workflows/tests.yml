@@ -17,13 +17,15 @@ jobs:
       pull-requests: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up MATLAB
-        uses: matlab-actions/setup-matlab@v1
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          products: Image_Processing_Toolbox Statistics_and_Machine_Learning_Toolbox Symbolic_Math_Toolbox Optimization_Toolbox Signal_Processing_Toolbox Robotics_System_Toolbox Deep_Learning_Toolbox
 
       - name: Add lib directory to path and compile
-        uses: matlab-actions/run-command@v1
+        uses: matlab-actions/run-command@v2
         with:
           command: "addpath(genpath('lib')); compileAll;"
 
@@ -37,11 +39,12 @@ jobs:
           rm lib/tests/util/findLastWorking.m
 
       - name: Run tests in lib/tests
-        uses: matlab-actions/run-tests@v1
+        uses: matlab-actions/run-tests@v2
         with:
           test-results-junit: test-results/results.xml
           code-coverage-cobertura: code-coverage/coverage.xml
-          source-folder: lib/tests
+          source-folder: lib
+          select-by-folder: lib/tests
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
